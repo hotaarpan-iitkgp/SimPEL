@@ -4,6 +4,8 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { CircuitSimulator } from "./src/solver_ts";
 
+const activeSimulations = new Map<string, { paused: boolean; cancelled: boolean }>();
+
 async function startServer() {
     const app = express();
     const PORT = 3000;
@@ -13,29 +15,73 @@ async function startServer() {
     console.log("Setting up high-performance in-memory Circuit Simulation Engine...");
 
     // API route to trigger the simulation high-speed run
-    app.post("/api/simulate", (req, res) => {
-        try {
-            const netlist = req.body;
-            if (!netlist) {
-                return res.status(400).json({ error: "Missing netlist configuration" });
-            }
+    app.post("/api/simulate", async (req, res) => {
+        const netlist = req.body;
+        if (!netlist) {
+            return res.status(400).json({ error: "Missing netlist configuration" });
+        }
 
-            console.log(`Starting transient simulation (Solver: ${netlist.simulation_parameters?.solver || "euler"}, Step: ${netlist.simulation_parameters?.step_type || "fixed"})...`);
-            
+        const sessionId = netlist.sessionId || "default_session";
+
+        // Cancel any active simulations first to prevent runaway loops
+        for (const [id, state] of activeSimulations.entries()) {
+            console.log(`Cancelling previous active simulation session: ${id}`);
+            state.cancelled = true;
+        }
+
+        console.log(`Starting transient simulation (Session: ${sessionId}, Solver: ${netlist.simulation_parameters?.solver || "euler"}, Step: ${netlist.simulation_parameters?.step_type || "fixed"})...`);
+        
+        try {
             const sim = new CircuitSimulator(
                 netlist.physical_stage || [],
                 netlist.control_loops || [],
                 netlist.simulation_parameters || {}
             );
 
-            const solution = sim.run();
-            console.log("Simulation solved successfully! Records count:", solution.time.length);
+            activeSimulations.set(sessionId, { paused: false, cancelled: false });
+
+            const solution = await sim.runAsync(
+                () => activeSimulations.get(sessionId)?.cancelled || false,
+                () => activeSimulations.get(sessionId)?.paused || false
+            );
+
+            console.log(`Simulation finished/terminated (Session: ${sessionId}). Records count:`, solution.time.length);
             return res.json(solution);
 
         } catch (e: any) {
             console.error("API simulation error:", e);
             res.status(500).json({ error: "Internal server simulation error", message: e.message });
+        } finally {
+            activeSimulations.delete(sessionId);
         }
+    });
+
+    app.post("/api/pause", (req, res) => {
+        const { sessionId } = req.body;
+        if (!sessionId) {
+            return res.status(400).json({ error: "Missing sessionId" });
+        }
+        const state = activeSimulations.get(sessionId);
+        if (state) {
+            state.paused = !state.paused;
+            console.log(`Simulation session ${sessionId} paused: ${state.paused}`);
+            return res.json({ paused: state.paused });
+        }
+        res.status(404).json({ error: "Simulation session not found" });
+    });
+
+    app.post("/api/cancel", (req, res) => {
+        const { sessionId } = req.body;
+        if (!sessionId) {
+            return res.status(400).json({ error: "Missing sessionId" });
+        }
+        const state = activeSimulations.get(sessionId);
+        if (state) {
+            state.cancelled = true;
+            console.log(`Simulation session ${sessionId} cancelled.`);
+            return res.json({ cancelled: true });
+        }
+        res.status(404).json({ error: "Simulation session not found" });
     });
 
     // Vite Middleware for integrated SPA in development

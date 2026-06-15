@@ -315,6 +315,174 @@ export class CustomScriptBlock {
     }
 }
 
+export class CustomEBlock {
+    code_str: string; params: Record<string, number>;
+    state: Record<string, number> = {}; inputs: string[] = []; outputs: string[] = [];
+    init_statements: Statement[] = []; step_statements: Statement[] = [];
+    last_vars: Record<string, number> = {};
+    terminalsCount: number;
+
+    constructor(code: string, inputParams: Record<string, number>, terminalsCount: number) {
+        let processedCode = code || "";
+        processedCode = processedCode.replace(/outputs\.set\(\s*(['"`])(.*?)\1\s*,\s*([^;]*?)\)/g, 'outputs["$2"] = $3');
+        this.code_str = processedCode; this.params = inputParams;
+        this.terminalsCount = terminalsCount;
+        this.discover_ports(); this.compile_code(); this.reset();
+    }
+    discover_ports() {
+        this.inputs = Array.from({ length: this.terminalsCount }, (_, i) => `v${i + 1}`);
+        this.outputs = Array.from({ length: this.terminalsCount }, (_, i) => `i${i + 1}`);
+    }
+    normalize_expression(raw: string): string {
+        let clean = raw.replace(/\bstd::/g, '').replace(/\bMath\./g, '');
+        let norm = ""; let i = 0;
+        while (i < clean.length) {
+            if (i + 7 < clean.length && (clean.substring(i, i + 7) === "inputs[" || clean.substring(i, i + 11) === "inputs.get(")) {
+                const is_get = clean.substring(i, i + 11) === "inputs.get(";
+                i += is_get ? 11 : 7; norm += "inputs_";
+                if (clean[i] === '"' || clean[i] === '\'') i++;
+                while (i < clean.length && !/[\]\)\,\"\']/.test(clean[i])) { if (/[a-zA-Z0-9_]/.test(clean[i])) norm += clean[i]; i++; }
+                while (i < clean.length && clean[i] !== ']' && clean[i] !== ')') i++;
+                if (i < clean.length) i++;
+            } else if (i + 8 < clean.length && (clean.substring(i, i + 8) === "outputs[" || clean.substring(i, i + 12) === "outputs.get(")) {
+                const is_get = clean.substring(i, i + 12) === "outputs.get(";
+                i += is_get ? 12 : 8; norm += "outputs_";
+                if (clean[i] === '"' || clean[i] === '\'') i++;
+                while (i < clean.length && !/[\]\)\,\"\']/.test(clean[i])) { if (/[a-zA-Z0-9_]/.test(clean[i])) norm += clean[i]; i++; }
+                while (i < clean.length && clean[i] !== ']' && clean[i] !== ')') i++;
+                if (i < clean.length) i++;
+            } else if (i + 6 < clean.length && clean.substring(i, i + 6) === "state[") {
+                i += 6; norm += "state_";
+                if (clean[i] === '"' || clean[i] === '\'') i++;
+                while (i < clean.length && !/[\]\"\']/.test(clean[i])) { if (/[a-zA-Z0-9_]/.test(clean[i])) norm += clean[i]; i++; }
+                while (i < clean.length && clean[i] !== ']') i++;
+                if (i < clean.length) i++;
+            } else if (i + 7 < clean.length && clean.substring(i, i + 7) === "params[") {
+                i += 7; norm += "params_";
+                if (clean[i] === '"' || clean[i] === '\'') i++;
+                while (i < clean.length && !/[\]\"\']/.test(clean[i])) { if (/[a-zA-Z0-9_]/.test(clean[i])) norm += clean[i]; i++; }
+                while (i < clean.length && clean[i] !== ']') i++;
+                if (i < clean.length) i++;
+            } else if (i + 11 < clean.length && clean.substring(i, i + 11) === "params.get(") {
+                i += 11; norm += "params_";
+                if (clean[i] === '"' || clean[i] === '\'') i++;
+                while (i < clean.length && !/[\]\)\,\"\']/.test(clean[i])) { if (/[a-zA-Z0-9_]/.test(clean[i])) norm += clean[i]; i++; }
+                while (i < clean.length && clean[i] !== ']' && clean[i] !== ')') i++;
+                if (i < clean.length) i++;
+            } else if (i + 5 < clean.length && clean.substring(i, i + 5) === "math.") {
+                i += 5;
+            } else {
+                norm += clean[i++];
+            }
+        }
+        return norm;
+    }
+    parse_statement(line: string, target: Statement[]) {
+        if (!line) return;
+        let cleanLine = line.trim();
+        if (cleanLine.endsWith(';')) cleanLine = cleanLine.slice(0, -1).trim();
+        
+        const eq = cleanLine.indexOf('='); if (eq === -1) return;
+        let lhs = cleanLine.substring(0, eq).trim(); 
+        let rhs = cleanLine.substring(eq + 1).trim();
+        
+        let op = "=";
+        if (lhs.endsWith('+')) { op = "+="; lhs = lhs.slice(0, -1).trim(); }
+        else if (lhs.endsWith('-')) { op = "-="; lhs = lhs.slice(0, -1).trim(); }
+        else if (lhs.endsWith('*')) { op = "*="; lhs = lhs.slice(0, -1).trim(); }
+        
+        const typePrefixes = ["double", "float", "int", "auto", "double&", "float&", "int&"];
+        for (const pref of typePrefixes) {
+            if (lhs.startsWith(pref + " ")) {
+                lhs = lhs.substring(pref.length + 1).trim();
+                break;
+            }
+        }
+        
+        let lhs_type: "state" | "outputs" | "local" = "local"; 
+        let lhs_key = lhs;
+        
+        if (lhs.startsWith("state[") || lhs.startsWith("state_")) {
+            lhs_type = "state";
+            if (lhs.startsWith("state[")) {
+                let p1 = lhs.indexOf('"'); if (p1 === -1) p1 = lhs.indexOf('\'');
+                if (p1 !== -1) { const p2 = lhs.indexOf(lhs[p1], p1 + 1); if (p2 !== -1) lhs_key = lhs.substring(p1 + 1, p2); }
+            } else lhs_key = lhs.substring(6);
+        } else if (lhs.startsWith("outputs[") || lhs.startsWith("outputs_")) {
+            lhs_type = "outputs";
+            if (lhs.startsWith("outputs[")) {
+                let p1 = lhs.indexOf('"'); if (p1 === -1) p1 = lhs.indexOf('\'');
+                if (p1 !== -1) { const p2 = lhs.indexOf(lhs[p1], p1 + 1); if (p2 !== -1) lhs_key = lhs.substring(p1 + 1, p2); }
+            } else lhs_key = lhs.substring(8);
+        }
+        
+        if (!lhs_key) return;
+        target.push({ lhs_type, lhs_key, op, rhs_expr: this.normalize_expression(rhs) });
+    }
+    compile_code() {
+        this.init_statements = []; this.step_statements = [];
+        const lines = this.code_str.split('\n');
+        let in_init = false, in_step = false;
+        for (const line of lines) {
+            let clean = line.trim();
+            if (clean.includes("//")) {
+                clean = clean.substring(0, clean.indexOf("//")).trim();
+            }
+            if (!clean || clean === "{" || clean === "}") continue;
+            
+            if (clean.includes("initialize(")) { in_init = true; in_step = false; continue; }
+            if (clean.includes("step(")) { in_init = false; in_step = true; continue; }
+            
+            if (in_init) this.parse_statement(clean, this.init_statements);
+            else if (in_step) this.parse_statement(clean, this.step_statements);
+        }
+    }
+    reset() {
+        this.state = {};
+        const ev = new ExpressionEvaluator();
+        const vars: Record<string, number> = {};
+        for (const [k, v] of Object.entries(this.params)) vars["params_" + k] = v;
+        for (const s of this.init_statements) {
+            if (s.lhs_type === "state") {
+                const val = ev.evaluate(s.rhs_expr, vars);
+                this.state[s.lhs_key] = val; vars["state_" + s.lhs_key] = val;
+            }
+        }
+        this.last_vars = { ...vars };
+    }
+    step(time: number, inputs_dict: Record<string, number>): Record<string, number> {
+        const run_outputs: Record<string, number> = {};
+        for (const out of this.outputs) run_outputs[out] = 0.0;
+        const vars: Record<string, number> = { time };
+        for (const [k, v] of Object.entries(this.params)) vars["params_" + k] = v;
+        for (const [k, v] of Object.entries(this.state)) vars["state_" + k] = v;
+        for (const inp of this.inputs) vars["inputs_" + inp] = inputs_dict[inp] ?? 0.0;
+        for (const out of this.outputs) vars["outputs_" + out] = 0.0;
+        
+        const ev = new ExpressionEvaluator();
+        for (const s of this.step_statements) {
+            const rhs = ev.evaluate(s.rhs_expr, vars);
+            if (s.lhs_type === "state") {
+                if (s.op === "=") this.state[s.lhs_key] = rhs;
+                else if (s.op === "+=") this.state[s.lhs_key] = (this.state[s.lhs_key] ?? 0.0) + rhs;
+                else if (s.op === "-=") this.state[s.lhs_key] = (this.state[s.lhs_key] ?? 0.0) - rhs;
+                else if (s.op === "*=") this.state[s.lhs_key] = (this.state[s.lhs_key] ?? 0.0) * rhs;
+                vars["state_" + s.lhs_key] = this.state[s.lhs_key];
+            } else if (s.lhs_type === "outputs") {
+                if (s.op === "=") run_outputs[s.lhs_key] = rhs;
+                else if (s.op === "+=") run_outputs[s.lhs_key] = (run_outputs[s.lhs_key] ?? 0.0) + rhs;
+                else if (s.op === "-=") run_outputs[s.lhs_key] = (run_outputs[s.lhs_key] ?? 0.0) - rhs;
+                else if (s.op === "*=") run_outputs[s.lhs_key] = (run_outputs[s.lhs_key] ?? 0.0) * rhs;
+                vars["outputs_" + s.lhs_key] = run_outputs[s.lhs_key];
+            } else if (s.lhs_type === "local") {
+                vars[s.lhs_key] = rhs;
+            }
+        }
+        this.last_vars = { ...vars };
+        return run_outputs;
+    }
+}
+
 export class Vector {
     data: number[]; constructor(size: number, val = 0.0) { this.data = new Array(size).fill(val); }
     size() { return this.data.length; }
@@ -386,8 +554,11 @@ export class CircuitSimulator {
     diff_idx: number[] = []; alg_idx: number[] = []; is_alg_all_zero = false;
     resistors: ComponentTS[] = []; variable_resistors: ComponentTS[] = []; capacitors: ComponentTS[] = []; inductors: ComponentTS[] = [];
     voltage_sources: ComponentTS[] = []; switches: ComponentTS[] = []; voltmeters: ComponentTS[] = [];
+    transformers: ComponentTS[] = []; all_windings: any[] = []; num_XFMR_windings = 0;
     sw_states: Record<string, string> = {}; control_states: Record<string, Record<string, number>> = {};
     custom_blocks: Record<string, CustomScriptBlock> = {};
+    custom_eblocks: Record<string, CustomEBlock> = {};
+    custom_eblocks_state: Record<string, any> = {};
     wanted_variables: Set<string> = new Set<string>();
     time_log: number[] = []; voltages_log: Record<string, number[]> = {}; inductors_log: Record<string, number[]> = {};
     voltmeters_log: Record<string, number[]> = {}; ammeters_log: Record<string, number[]> = {};
@@ -410,7 +581,8 @@ export class CircuitSimulator {
                 { key: "analog_switches", type: "MOSFET" },
                 { key: "transformers", type: "XFMR" },
                 { key: "voltmeters", type: "Voltmeter" },
-                { key: "ammeters", type: "Ammeter" }
+                { key: "ammeters", type: "Ammeter" },
+                { key: "custom_eblocks", type: "GEN_EBLOCK" }
             ];
 
             for (const cat of categories) {
@@ -446,7 +618,11 @@ export class CircuitSimulator {
                         
                         for (const [k, v] of Object.entries(item)) {
                             if (["id", "nodes", "type", "control_signal", "signal"].includes(k)) continue;
-                            comp.parameters[k] = String(v);
+                            if (typeof v === "object" && v !== null) {
+                                comp.parameters[k] = v;
+                            } else {
+                                comp.parameters[k] = String(v);
+                            }
                         }
 
                         if (["Switch", "MOSFET", "VariableResistor", "ControlledVoltageSource", "ControlledCurrentSource"].includes(compType) || item.control_signal) {
@@ -631,11 +807,26 @@ export class CircuitSimulator {
     initializeNetwork() {
         this.active_nodes = []; this.node_to_idx = {}; this.L_to_idx = {}; this.V_to_idx = {};
         this.resistors = []; this.variable_resistors = []; this.capacitors = []; this.inductors = []; this.voltage_sources = []; this.switches = []; this.voltmeters = [];
+        this.transformers = []; this.all_windings = [];
         const nodes_set = new Set<string>();
         for (const c of this.physical_stage) { 
             for (const n of c.nodes) nodes_set.add(n); 
             if (c.parameters.plus_node) nodes_set.add(c.parameters.plus_node);
             if (c.parameters.minus_node) nodes_set.add(c.parameters.minus_node);
+            if (c.type === "XFMR") {
+                const prims = c.parameters.primary_windings || [];
+                const secs = c.parameters.secondary_windings || [];
+                for (const w of prims) {
+                    if (w && w.nodes) {
+                        for (const n of w.nodes) nodes_set.add(n);
+                    }
+                }
+                for (const w of secs) {
+                    if (w && w.nodes) {
+                        for (const n of w.nodes) nodes_set.add(n);
+                    }
+                }
+            }
         }
         for (const n of nodes_set) { if (n !== "node_0" && n !== "") this.active_nodes.push(n); }
         this.active_nodes.sort();
@@ -650,14 +841,47 @@ export class CircuitSimulator {
             else if (["VoltageSource", "ACVoltageSource", "Ammeter", "ControlledVoltageSource", "OPAMP", "E_COMP"].includes(c.type)) this.voltage_sources.push(c);
             else if (["Switch", "Diode", "MOSFET"].includes(c.type)) this.switches.push(c);
             else if (c.type === "Voltmeter") this.voltmeters.push(c);
+            else if (c.type === "XFMR") this.transformers.push(c);
         }
+
+        for (const xfmr of this.transformers) {
+            const prims = xfmr.parameters.primary_windings || [];
+            const secs = xfmr.parameters.secondary_windings || [];
+            
+            let w_idx = 0;
+            for (const w of prims) {
+                this.all_windings.push({
+                    transformer_id: xfmr.id,
+                    nodes: w.nodes || [],
+                    turns: parseScientific(w.turns ?? "100"),
+                    type: "primary",
+                    winding_index: w_idx++,
+                    idx: -1
+                });
+            }
+            for (const w of secs) {
+                this.all_windings.push({
+                    transformer_id: xfmr.id,
+                    nodes: w.nodes || [],
+                    turns: parseScientific(w.turns ?? "100"),
+                    type: "secondary",
+                    winding_index: w_idx++,
+                    idx: -1
+                });
+            }
+        }
+        this.num_XFMR_windings = this.all_windings.length;
+
         this.num_L = this.inductors.length; this.num_V = this.voltage_sources.length;
-        this.dim = this.num_nodes + this.num_L + this.num_V;
+        this.dim = this.num_nodes + this.num_L + this.num_V + this.num_XFMR_windings;
         this.M = new Matrix(this.dim, this.dim, 0.0); this.K_static = new Matrix(this.dim, this.dim, 0.0);
         this.w = new Array(this.dim).fill(0.0);
 
         for (let i = 0; i < this.num_L; i++) this.L_to_idx[this.inductors[i].id] = this.num_nodes + i;
         for (let i = 0; i < this.num_V; i++) this.V_to_idx[this.voltage_sources[i].id] = this.num_nodes + this.num_L + i;
+        for (let i = 0; i < this.num_XFMR_windings; i++) {
+            this.all_windings[i].idx = this.num_nodes + this.num_L + this.num_V + i;
+        }
 
         for (const r of this.resistors) {
             let r_val = parseScientific(r.parameters.value ?? "10"); if (r_val < 1e-6) r_val = 1e-6;
@@ -697,6 +921,45 @@ export class CircuitSimulator {
             if (i2 >= 0) { this.K_static.add(i2, idx_V, -1.0); this.K_static.add(idx_V, i2, -1.0); }
         }
 
+        // Stamp transformers equations
+        for (const xfmr of this.transformers) {
+            const txWindings = this.all_windings.filter(w => w.transformer_id === xfmr.id);
+            if (txWindings.length === 0) continue;
+            
+            // 1. Stamp KCL contributions of all windings
+            for (const w of txWindings) {
+                const n1 = w.nodes[0] ?? "node_0", n2 = w.nodes[1] ?? "node_0";
+                const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1;
+                const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
+                if (i1 >= 0) this.K_static.add(i1, w.idx, 1.0);
+                if (i2 >= 0) this.K_static.add(i2, w.idx, -1.0);
+            }
+            
+            const w0 = txWindings[0];
+            // 2. Stamp Ampere's Law (MMF balance): Sum(N_k * I_wk) = 0 inside row w0.idx
+            for (const w of txWindings) {
+                this.K_static.add(w0.idx, w.idx, w.turns);
+            }
+            
+            // 3. Stamp Faraday's Law (Voltage ratio): N_j * V0 - N0 * Vj = 0 inside row w_j.idx (for j > 0)
+            const n0_1 = w0.nodes[0] ?? "node_0", n0_2 = w0.nodes[1] ?? "node_0";
+            const i0_1 = (n0_1 !== "node_0") ? this.node_to_idx[n0_1] : -1;
+            const i0_2 = (n0_2 !== "node_0") ? this.node_to_idx[n0_2] : -1;
+            
+            for (let j = 1; j < txWindings.length; j++) {
+                const wj = txWindings[j];
+                const nj_1 = wj.nodes[0] ?? "node_0", nj_2 = wj.nodes[1] ?? "node_0";
+                const ij_1 = (nj_1 !== "node_0") ? this.node_to_idx[nj_1] : -1;
+                const ij_2 = (nj_2 !== "node_0") ? this.node_to_idx[nj_2] : -1;
+                
+                // Row wj.idx: wj.turns * (V(w0_1) - V(w0_2)) - w0.turns * (V(wj_1) - V(wj_2)) = 0
+                if (i0_1 >= 0) this.K_static.add(wj.idx, i0_1, wj.turns);
+                if (i0_2 >= 0) this.K_static.add(wj.idx, i0_2, -wj.turns);
+                if (ij_1 >= 0) this.K_static.add(wj.idx, ij_1, -w0.turns);
+                if (ij_2 >= 0) this.K_static.add(wj.idx, ij_2, w0.turns);
+            }
+        }
+
         this.sw_states = {}; for (const sw of this.switches) this.sw_states[sw.id] = "OFF";
         this.control_states = {}; this.custom_blocks = {};
         for (const b of this.control_loops) {
@@ -716,6 +979,31 @@ export class CircuitSimulator {
                 const dt_block = parseScientific(dt_block_str);
                 
                 this.control_states[b.id] = {
+                    ...inst.state,
+                    next_trigger_time: 0.0,
+                    dt_block: dt_block,
+                    last_outputs: {}
+                };
+            }
+        }
+
+        this.custom_eblocks = {};
+        for (const c of this.physical_stage) {
+            if (c.type === "GEN_EBLOCK") {
+                const termCount = parseInt(c.parameters.terminals) || 3;
+                const bp: Record<string, number> = {};
+                for (const [k, v] of Object.entries(c.parameters)) { 
+                    if (!["code", "timestep", "plot_inputs", "plot_outputs", "plot_custom_vars", "terminals"].includes(k)) {
+                        bp[k] = parseScientific(v);
+                    }
+                }
+                const inst = new CustomEBlock(c.parameters.code ?? "", bp, termCount);
+                this.custom_eblocks[c.id] = inst;
+
+                const dt_block_str = c.parameters.timestep ?? "0";
+                const dt_block = parseScientific(dt_block_str);
+
+                this.control_states[c.id] = {
                     ...inst.state,
                     next_trigger_time: 0.0,
                     dt_block: dt_block,
@@ -750,6 +1038,11 @@ export class CircuitSimulator {
             const v = ((i1 >= 0) ? this.w[i1] : 0.0) - ((i2 >= 0) ? this.w[i2] : 0.0);
             this.cap_history[cap.id] = { v_prev: v, v_prev_prev: v, dt_prev: this.sim_params.h };
         }
+
+        // Add a tiny conductance to ground (gmin shunt) for every node to prevent singular matrices on floating nodes
+        for (let i = 0; i < this.num_nodes; i++) {
+            this.K_static.add(i, i, 1e-12);
+        }
     }
 
     stampSwitch(K: Matrix, sw: ComponentTS, state: string) {
@@ -762,7 +1055,7 @@ export class CircuitSimulator {
         if (i1 >= 0 && i2 >= 0) { K.add(i1, i2, -g); K.add(i2, i1, -g); }
     }
 
-    evaluateControls(time: number, w_curr: number[], cs: Record<string, any>, dt: number, ss: Record<string, string>, first = false, integrate = false): Record<string, number> {
+    evaluateControls(time: number, w_curr: number[], cs: Record<string, any>, dt: number, ss: Record<string, string>, first = false, integrate = false, is_logging = false): Record<string, number> {
         const signals: Record<string, number> = {};
         for (const b of this.control_loops) {
             const out = b.channels.Out; if (!out) continue;
@@ -1511,6 +1804,83 @@ export class CircuitSimulator {
             }
         }
 
+        // Evaluate custom eblocks
+        for (const [ebId, inst] of Object.entries(this.custom_eblocks)) {
+            const stateObj = cs[ebId] ?? {};
+            const dt_block = stateObj.dt_block ?? 0.0;
+            const next_t = stateObj.next_trigger_time ?? 0.0;
+
+            const ind: Record<string, number> = {};
+            const comp = this.physical_stage.find(p => p.id === ebId);
+            if (comp) {
+                const termCount = inst.terminalsCount;
+                for (let i = 1; i <= termCount; i++) {
+                    const nodeName = comp.nodes[i - 1] ?? "node_0";
+                    const nodeIdx = (nodeName !== "node_0") ? this.node_to_idx[nodeName] : -1;
+                    const v_k = (nodeIdx >= 0) ? w_curr[nodeIdx] : 0.0;
+                    ind[`v${i}`] = v_k;
+                }
+            }
+
+            let outputs_to_use = stateObj.last_outputs ?? {};
+            if (!is_logging && (dt_block <= 0.0 || time >= next_t - 1e-15 || first)) {
+                inst.state = { ...stateObj };
+                delete inst.state.next_trigger_time;
+                delete inst.state.dt_block;
+                delete inst.state.last_outputs;
+
+                const od = inst.step(time, ind);
+
+                if (integrate || first) {
+                    stateObj.last_outputs = { ...od };
+
+                    for (const [sk, sv] of Object.entries(inst.state)) {
+                        stateObj[sk] = sv;
+                    }
+
+                    if (dt_block > 0.0) {
+                        if (first && time === 0.0) {
+                            stateObj.next_trigger_time = dt_block;
+                        } else {
+                            stateObj.next_trigger_time = Math.floor(time / dt_block) * dt_block + dt_block;
+                            if (stateObj.next_trigger_time <= time + 1e-15) {
+                                stateObj.next_trigger_time += dt_block;
+                            }
+                        }
+                    }
+                    outputs_to_use = stateObj.last_outputs;
+                } else {
+                    outputs_to_use = { ...od };
+                }
+            }
+
+            // Output terminal currents and voltages
+            for (let i = 1; i <= inst.terminalsCount; i++) {
+                const outKey = `i${i}`;
+                const val = outputs_to_use[outKey] ?? 0.0;
+                signals[`${ebId}.${outKey}`] = val;
+                signals[`${ebId}.v${i}`] = ind[`v${i}`] ?? 0.0;
+            }
+
+            // Store internal states and local variables in the signals dictionary
+            if (inst.last_vars) {
+                for (const [varKey, varVal] of Object.entries(inst.last_vars)) {
+                    if (varKey.startsWith("state_")) {
+                        signals[`${ebId}.${varKey.substring(6)}`] = varVal;
+                    } else if (varKey.startsWith("outputs_")) {
+                        signals[`${ebId}.${varKey.substring(8)}`] = varVal;
+                    } else if (varKey.startsWith("inputs_")) {
+                        signals[`${ebId}.${varKey.substring(7)}`] = varVal;
+                    } else if (varKey.startsWith("params_")) {
+                        // omit params
+                    } else if (varKey !== "time") {
+                        signals[`${ebId}.${varKey}`] = varVal;
+                    }
+                }
+            }
+            cs[ebId] = stateObj;
+        }
+
         return signals;
     }
 
@@ -1580,6 +1950,19 @@ export class CircuitSimulator {
                 if (i1 >= 0) b[i1] -= iv; if (i2 >= 0) b[i2] += iv;
             }
         }
+        for (const c of this.physical_stage) {
+            if (c.type === "GEN_EBLOCK") {
+                const termCount = parseInt(c.parameters.terminals) || 3;
+                for (let i = 1; i <= termCount; i++) {
+                    const nodeName = c.nodes[i - 1] ?? "node_0";
+                    const nodeIdx = (nodeName !== "node_0") ? this.node_to_idx[nodeName] : -1;
+                    if (nodeIdx >= 0) {
+                        const currVal = sigs[`${c.id}.i${i}`] ?? 0.0;
+                        b[nodeIdx] += currVal;
+                    }
+                }
+            }
+        }
         return b;
     }
 
@@ -1630,7 +2013,11 @@ export class CircuitSimulator {
                 const vd = ((i1 >= 0) ? wl[i1] : 0.0) - ((i2 >= 0) ? wl[i2] : 0.0);
                 const old = ss[sw.id] ?? "OFF"; 
                 let swn = "OFF";
-                if (sw.type === "MOSFET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
+                if (sw.type === "MOSFET") {
+                    const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
+                    const diode_on = -vd > (old === "ON" ? 0.0 : 0.7);
+                    swn = (gate_on || diode_on) ? "ON" : "OFF";
+                }
                 else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
                 else if (sw.type === "Switch") {
                     const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
@@ -1694,6 +2081,15 @@ export class CircuitSimulator {
                 for (const sw of this.switches) this.stampSwitch(K, sw, s_stage[sw.id]);
                 this.stampVariableResistors(K, sigs);
                 const b = this.buildRHS(time + dt, wn, sigs);
+                if (time === 0 && loop === 1) {
+                    console.log("DEBUG MNA:", {
+                        node_to_idx: this.node_to_idx,
+                        V_to_idx: this.V_to_idx,
+                        K_static: this.K_static.data,
+                        K: K.data,
+                        b: b
+                    });
+                }
                 
                 const Anum = new Matrix(this.dim, this.dim);
                 for (let r = 0; r < this.dim; r++) {
@@ -1713,7 +2109,11 @@ export class CircuitSimulator {
                     const vd = ((i1 >= 0) ? wn[i1] : 0.0) - ((i2 >= 0) ? wn[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; 
                     let swn = "OFF";
-                    if (sw.type === "MOSFET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
+                    if (sw.type === "MOSFET") {
+                        const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
+                        const diode_on = -vd > (old === "ON" ? 0.0 : 0.7);
+                        swn = (gate_on || diode_on) ? "ON" : "OFF";
+                    }
                     else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
                     else if (sw.type === "Switch") {
                         const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
@@ -1753,7 +2153,11 @@ export class CircuitSimulator {
                     const vd = ((i1 >= 0) ? w_con[i1] : 0.0) - ((i2 >= 0) ? w_con[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; 
                     let swn = "OFF";
-                    if (sw.type === "MOSFET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
+                    if (sw.type === "MOSFET") {
+                        const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
+                        const diode_on = -vd > (old === "ON" ? 0.0 : 0.7);
+                        swn = (gate_on || diode_on) ? "ON" : "OFF";
+                    }
                     else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
                     else if (sw.type === "Switch") {
                         const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
@@ -1830,7 +2234,11 @@ export class CircuitSimulator {
                     const vd = ((i1 >= 0) ? wn[i1] : 0.0) - ((i2 >= 0) ? wn[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; 
                     let swn = "OFF";
-                    if (sw.type === "MOSFET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
+                    if (sw.type === "MOSFET") {
+                        const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
+                        const diode_on = -vd > (old === "ON" ? 0.0 : 0.7);
+                        swn = (gate_on || diode_on) ? "ON" : "OFF";
+                    }
                     else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
                     else if (sw.type === "Switch") {
                         const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
@@ -1864,34 +2272,27 @@ export class CircuitSimulator {
     logAcceptedState(time: number, w_val: number[], sigs: Record<string, number>, ss: Record<string, string>, dt: number) {
         this.time_log.push(time);
         
-        const hasWanted = this.wanted_variables.size > 0;
-
         for (const node of this.active_nodes) {
-            if (hasWanted && !this.wanted_variables.has(node)) continue;
             const idx = this.node_to_idx[node]; if (!this.voltages_log[node]) this.voltages_log[node] = [];
             this.voltages_log[node].push(w_val[idx]);
         }
         for (const ind of this.inductors) {
-            if (hasWanted && !this.wanted_variables.has(ind.id)) continue;
             const idx = this.L_to_idx[ind.id]; if (!this.inductors_log[ind.id]) this.inductors_log[ind.id] = [];
             this.inductors_log[ind.id].push(w_val[idx]);
         }
         for (const comp of this.voltage_sources) {
             if (comp.type === "Ammeter") {
-                if (hasWanted && !this.wanted_variables.has(comp.id)) continue;
                 const idx = this.V_to_idx[comp.id]; if (!this.ammeters_log[comp.id]) this.ammeters_log[comp.id] = [];
                 this.ammeters_log[comp.id].push(w_val[idx]);
             }
         }
         for (const vm of this.voltmeters) {
-            if (hasWanted && !this.wanted_variables.has(vm.id) && !this.wanted_variables.has(`${vm.id}.Out`)) continue;
             const n1 = vm.nodes[0] ?? "node_0", n2 = vm.nodes[1] ?? "node_0";
             const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
             if (!this.voltmeters_log[vm.id]) this.voltmeters_log[vm.id] = [];
             this.voltmeters_log[vm.id].push(((i1 >= 0) ? w_val[i1] : 0.0) - ((i2 >= 0) ? w_val[i2] : 0.0));
         }
         for (const [k, v] of Object.entries(sigs)) {
-            if (hasWanted && !this.wanted_variables.has(k)) continue;
             if (!this.signals_log[k]) this.signals_log[k] = [];
             this.signals_log[k].push(v);
         }
@@ -1901,9 +2302,9 @@ export class CircuitSimulator {
             const ki = "I_" + comp.id; 
             const kc = "Ctrl_" + comp.id;
             
-            const logV = !hasWanted || this.wanted_variables.has(kv);
-            const logI = !hasWanted || this.wanted_variables.has(ki);
-            const logC = !hasWanted || this.wanted_variables.has(kc);
+            const logV = true; // Log unconditionally for current flow animations
+            const logI = true; // Log unconditionally for current flow animations
+            const logC = true; // Log unconditionally for control signals
             
             const ctrlChan = comp.channels.Ctrl || comp.channels.Switch || comp.channels.G;
             if (logC && ctrlChan !== undefined) {
@@ -1912,7 +2313,43 @@ export class CircuitSimulator {
                 this.custom_plots_log[kc].push(ctrlVal);
             }
 
-            if (!logV && !logI) continue;
+            if (comp.type === "XFMR") {
+                const txWindings = this.all_windings.filter(w => w.transformer_id === comp.id);
+                
+                // Log overall/first winding as default for V_comp.id / I_comp.id
+                if (txWindings.length > 0) {
+                    const w0 = txWindings[0];
+                    const wn1 = w0.nodes[0] ?? "node_0", wn2 = w0.nodes[1] ?? "node_0";
+                    const wi1 = (wn1 !== "node_0") ? this.node_to_idx[wn1] : -1;
+                    const wi2 = (wn2 !== "node_0") ? this.node_to_idx[wn2] : -1;
+                    const v0 = ((wi1 >= 0) ? w_val[wi1] : 0.0) - ((wi2 >= 0) ? w_val[wi2] : 0.0);
+                    const curr0 = w_val[w0.idx];
+                    
+                    if (!this.custom_plots_log[kv]) this.custom_plots_log[kv] = [];
+                    this.custom_plots_log[kv].push(v0);
+                    if (!this.custom_plots_log[ki]) this.custom_plots_log[ki] = [];
+                    this.custom_plots_log[ki].push(curr0);
+                }
+                
+                // Log individual winding voltages and currents
+                for (const w of txWindings) {
+                    const wn1 = w.nodes[0] ?? "node_0", wn2 = w.nodes[1] ?? "node_0";
+                    const wi1 = (wn1 !== "node_0") ? this.node_to_idx[wn1] : -1;
+                    const wi2 = (wn2 !== "node_0") ? this.node_to_idx[wn2] : -1;
+                    const vw = ((wi1 >= 0) ? w_val[wi1] : 0.0) - ((wi2 >= 0) ? w_val[wi2] : 0.0);
+                    const currw = w_val[w.idx];
+                    
+                    const label = `${comp.id}_${w.type === "primary" ? "P" : "S"}${w.winding_index}`;
+                    const w_kv = "V_" + label;
+                    const w_ki = "I_" + label;
+                    
+                    if (!this.custom_plots_log[w_kv]) this.custom_plots_log[w_kv] = [];
+                    this.custom_plots_log[w_kv].push(vw);
+                    if (!this.custom_plots_log[w_ki]) this.custom_plots_log[w_ki] = [];
+                    this.custom_plots_log[w_ki].push(currw);
+                }
+                continue;
+            }
 
             const n1 = comp.nodes[0] ?? "node_0", n2 = comp.nodes[1] ?? "node_0";
             const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
@@ -1974,6 +2411,18 @@ export class CircuitSimulator {
                 this.custom_plots_log[ki].push(curr);
             }
         }
+
+        // Update capacitor history at the end of logged accepted states
+        for (const c of this.capacitors) {
+            const n1 = c.nodes[0] ?? "node_0", n2 = c.nodes[1] ?? "node_0";
+            const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
+            const v = ((i1 >= 0) ? w_val[i1] : 0.0) - ((i2 >= 0) ? w_val[i2] : 0.0);
+            if (this.cap_history[c.id]) {
+                this.cap_history[c.id].v_prev_prev = this.cap_history[c.id].v_prev;
+                this.cap_history[c.id].v_prev = v;
+                this.cap_history[c.id].dt_prev = dt;
+            }
+        }
     }
 
     run() {
@@ -1985,7 +2434,14 @@ export class CircuitSimulator {
         const atol = 1e-4, rtol = 1e-3;
         const h_min = Math.max(this.sim_params.h * 1e-4, 1e-12), h_max = this.sim_params.h * 10.0;
         let rejects = 0;
+        let iterations = 0;
+        const max_iterations = 200000;
         while (t < t_end) {
+            iterations++;
+            if (iterations > max_iterations) {
+                console.warn(`Simulation terminated early: exceeded max iterations (${max_iterations})`);
+                break;
+            }
             if (t + h > t_end) h = t_end - t;
             try {
                 const step = this.takeStep(t, this.w, h, this.sim_params.solver, this.control_states, this.sw_states);
@@ -2006,25 +2462,13 @@ export class CircuitSimulator {
                     if (err <= 1.0 || h < h_min) {
                         this.w = half2.w_new; const t_new = t + h;
                         for (const ev of half1.out_trans) this.logAcceptedState(ev.time, ev.w, ev.signals, ev.sw_states, ev.dt);
-                        const sig_half1 = this.evaluateControls(t + h_half, half1.w_new, this.control_states, h_half, half1.sw_new, false, false);
+                        const sig_half1 = this.evaluateControls(t + h_half, half1.w_new, this.control_states, h_half, half1.sw_new, false, false, true);
                         this.logAcceptedState(t + h_half, half1.w_new, sig_half1, half1.sw_new, h_half);
                         for (const ev of half2.out_trans) this.logAcceptedState(ev.time, ev.w, ev.signals, ev.sw_states, ev.dt);
 
-                        for (const c of this.capacitors) {
-                            const n1 = c.nodes[0] ?? "node_0", n2 = c.nodes[1] ?? "node_0";
-                            const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
-                            const v1 = ((i1 >= 0) ? half1.w_new[i1] : 0.0) - ((i2 >= 0) ? half1.w_new[i2] : 0.0);
-                            const hist = this.cap_history[c.id]; hist.v_prev_prev = hist.v_prev; hist.v_prev = v1; hist.dt_prev = h_half;
-                        }
-                        for (const c of this.capacitors) {
-                            const n1 = c.nodes[0] ?? "node_0", n2 = c.nodes[1] ?? "node_0";
-                            const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
-                            const v2 = ((i1 >= 0) ? this.w[i1] : 0.0) - ((i2 >= 0) ? this.w[i2] : 0.0);
-                            const hist = this.cap_history[c.id]; hist.v_prev_prev = hist.v_prev; hist.v_prev = v2; hist.dt_prev = h_half;
-                        }
                         this.control_states = half2.ctrl_new; this.sw_states = half2.sw_new;
                         for (const k of Object.keys(this.custom_blocks)) { if (half2.ctrl_new[k]) this.custom_blocks[k].state = half2.ctrl_new[k]; }
-                        const final_sigs = this.evaluateControls(t_new, this.w, this.control_states, h_half, this.sw_states, false, false);
+                        const final_sigs = this.evaluateControls(t_new, this.w, this.control_states, h_half, this.sw_states, false, false, true);
                         this.logAcceptedState(t_new, this.w, final_sigs, this.sw_states, h_half);
                         t = t_new; rejects = 0;
                         const p = (this.sim_params.solver === "euler" ? 1.0 : (this.sim_params.solver === "rk45" ? 4.0 : 5.0));
@@ -2036,15 +2480,92 @@ export class CircuitSimulator {
                 } else {
                     this.w = step.w_new; const t_new = t + h;
                     for (const ev of step.out_trans) this.logAcceptedState(ev.time, ev.w, ev.signals, ev.sw_states, ev.dt);
-                    for (const c of this.capacitors) {
-                        const n1 = c.nodes[0] ?? "node_0", n2 = c.nodes[1] ?? "node_0";
-                        const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
-                        const v = ((i1 >= 0) ? this.w[i1] : 0.0) - ((i2 >= 0) ? this.w[i2] : 0.0);
-                        const hist = this.cap_history[c.id]; hist.v_prev_prev = hist.v_prev; hist.v_prev = v; hist.dt_prev = h;
-                    }
                     this.control_states = step.ctrl_new; this.sw_states = step.sw_new;
                     for (const k of Object.keys(this.custom_blocks)) { if (step.ctrl_new[k]) this.custom_blocks[k].state = step.ctrl_new[k]; }
-                    const final_sigs = this.evaluateControls(t_new, this.w, this.control_states, h, this.sw_states, false, false);
+                    const final_sigs = this.evaluateControls(t_new, this.w, this.control_states, h, this.sw_states, false, false, true);
+                    this.logAcceptedState(t_new, this.w, final_sigs, this.sw_states, h);
+                    t = t_new;
+                }
+            } catch (_) { if (this.sim_params.step_type === "variable") { h *= 0.5; if (h < 1e-15) break; } else break; }
+        }
+        return {
+            time: this.time_log, voltages: this.voltages_log, inductors: this.inductors_log,
+            voltmeters: this.voltmeters_log, ammeters: this.ammeters_log, signals: this.signals_log,
+            custom_plots: this.custom_plots_log
+        };
+    }
+
+    async runAsync(shouldCancel: () => boolean, shouldPause: () => boolean) {
+        this.initializeNetwork();
+        this.time_log = []; this.voltages_log = {}; this.inductors_log = {}; this.voltmeters_log = {}; this.ammeters_log = {}; this.signals_log = {}; this.custom_plots_log = {};
+        let t = 0.0; let h = this.sim_params.h; const t_end = this.sim_params.t_end;
+        const init_sigs = this.evaluateControls(0.0, this.w, this.control_states, h, this.sw_states, true, false);
+        this.logAcceptedState(0.0, this.w, init_sigs, this.sw_states, h);
+        const atol = 1e-4, rtol = 1e-3;
+        const h_min = Math.max(this.sim_params.h * 1e-4, 1e-12), h_max = this.sim_params.h * 10.0;
+        let rejects = 0;
+        let iterations = 0;
+        const max_iterations = 200000;
+        while (t < t_end) {
+            iterations++;
+            if (iterations > max_iterations) {
+                console.warn(`Simulation terminated early in runAsync: exceeded max iterations (${max_iterations})`);
+                break;
+            }
+
+            if (iterations % 200 === 0) {
+                await new Promise(resolve => setImmediate(resolve));
+                if (shouldCancel()) {
+                    console.log("runAsync simulation cancelled.");
+                    break;
+                }
+                while (shouldPause()) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    if (shouldCancel()) break;
+                }
+            }
+
+            if (t + h > t_end) h = t_end - t;
+            try {
+                const step = this.takeStep(t, this.w, h, this.sim_params.solver, this.control_states, this.sw_states);
+                if (this.sim_params.step_type === "variable") {
+                    const h_half = h / 2.0;
+                    const half1 = this.takeStep(t, this.w, h_half, this.sim_params.solver, this.control_states, this.sw_states);
+                    const half2 = this.takeStep(t + h_half, half1.w_new, h_half, this.sim_params.solver, half1.ctrl_new, half1.sw_new);
+                    let err = 0.0;
+                    if (this.diff_idx.length > 0) {
+                        let me = 0.0;
+                        for (const idx of this.diff_idx) {
+                            const scale = atol + rtol * Math.max(Math.abs(step.w_new[idx]), Math.abs(half2.w_new[idx]));
+                            const e = Math.abs(step.w_new[idx] - half2.w_new[idx]) / scale;
+                            if (e > me) me = e;
+                        }
+                        err = me;
+                    }
+                    if (err <= 1.0 || h < h_min) {
+                        this.w = half2.w_new; const t_new = t + h;
+                        for (const ev of half1.out_trans) this.logAcceptedState(ev.time, ev.w, ev.signals, ev.sw_states, ev.dt);
+                        const sig_half1 = this.evaluateControls(t + h_half, half1.w_new, this.control_states, h_half, half1.sw_new, false, false, true);
+                        this.logAcceptedState(t + h_half, half1.w_new, sig_half1, half1.sw_new, h_half);
+                        for (const ev of half2.out_trans) this.logAcceptedState(ev.time, ev.w, ev.signals, ev.sw_states, ev.dt);
+
+                        this.control_states = half2.ctrl_new; this.sw_states = half2.sw_new;
+                        for (const k of Object.keys(this.custom_blocks)) { if (half2.ctrl_new[k]) this.custom_blocks[k].state = half2.ctrl_new[k]; }
+                        const final_sigs = this.evaluateControls(t_new, this.w, this.control_states, h_half, this.sw_states, false, false, true);
+                        this.logAcceptedState(t_new, this.w, final_sigs, this.sw_states, h_half);
+                        t = t_new; rejects = 0;
+                        const p = (this.sim_params.solver === "euler" ? 1.0 : (this.sim_params.solver === "rk45" ? 4.0 : 5.0));
+                        let hn = err > 0 ? 0.9 * h * Math.pow(err, -1.0 / (p + 1.0)) : 5.0 * h;
+                        h = Math.max(0.1 * h, Math.min(5.0 * h, hn)); h = Math.min(h_max, Math.max(h_min, h));
+                    } else {
+                        rejects++; if (rejects >= 50) { this.w = half2.w_new; t += h; rejects = 0; h = h_min; } else h = Math.max(h_min, h * 0.5);
+                    }
+                } else {
+                    this.w = step.w_new; const t_new = t + h;
+                    for (const ev of step.out_trans) this.logAcceptedState(ev.time, ev.w, ev.signals, ev.sw_states, ev.dt);
+                    this.control_states = step.ctrl_new; this.sw_states = step.sw_new;
+                    for (const k of Object.keys(this.custom_blocks)) { if (step.ctrl_new[k]) this.custom_blocks[k].state = step.ctrl_new[k]; }
+                    const final_sigs = this.evaluateControls(t_new, this.w, this.control_states, h, this.sw_states, false, false, true);
                     this.logAcceptedState(t_new, this.w, final_sigs, this.sw_states, h);
                     t = t_new;
                 }

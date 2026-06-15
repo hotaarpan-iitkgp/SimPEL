@@ -474,7 +474,7 @@ export function draw(): void {
       
       // Manual double-click detection for CSCRIPT or SCOPE blocks
       const now = Date.now();
-      if (comp.type === 'CSCRIPT' && comp.lastClickTime && (now - comp.lastClickTime < 300)) {
+      if (['CSCRIPT', 'GEN_EBLOCK'].includes(comp.type) && comp.lastClickTime && (now - comp.lastClickTime < 300)) {
         e.stopPropagation();
         e.preventDefault();
         comp.lastClickTime = 0;

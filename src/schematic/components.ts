@@ -3,7 +3,7 @@ import { state } from './state';
 import { draw } from './renderer';
 import { getTerminalCoords } from './routing';
 import { completeWire } from './actions';
-import { getComponentPins, parseTurnsList, discoverPortsJS } from './config';
+import { getComponentPins, parseTurnsList, discoverPortsJS, getTerminalNameFromCode } from './config';
 
 // Return custom component SVG structures centered at (0, 0)
 export function getComponentSVG(comp: any): string {
@@ -357,6 +357,38 @@ export function getComponentSVG(comp: any): string {
         <rect class="comp-bounds" x="-${halfWidth + 2}" y="${-halfHeight}" width="${halfWidth * 2 + 4}" height="${halfHeight * 2}" rx="6" />
         <rect class="comp-path" x="-${halfWidth}" y="${-halfHeight}" width="${halfWidth * 2}" height="${halfHeight * 2}" rx="4" fill="none" stroke="currentColor" stroke-width="2" />
         <text x="0" y="${-halfHeight + 12}" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">C++</text>
+        ${paths}
+        <g transform="translate(0, ${halfHeight + 14}) rotate(${-rotation})">
+          <text class="comp-label" x="0" y="4" text-anchor="middle" fill="currentColor">${id}</text>
+        </g>
+      `;
+    }
+    case 'GEN_EBLOCK': {
+      const n = parseInt(comp.parameters && comp.parameters.terminals) || 3;
+      const spacing = 20;
+      const halfHeight = Math.max(40, Math.round(n * spacing / 2) + 20);
+      const halfWidth = 50;
+      let paths = '';
+      for (let i = 1; i <= n; i++) {
+        const y = n > 1 ? Math.round((i - 1 - (n - 1) / 2) * spacing) : 0;
+        const termName = getTerminalNameFromCode(comp.parameters && comp.parameters.code || "", i);
+        paths += `
+          <line class="comp-path" x1="-${halfWidth}" y1="${y}" x2="-${halfWidth - 5}" y2="${y}" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          <text x="-${halfWidth - 8}" y="${y + 3}" font-family="Inter, sans-serif" font-size="8" fill="currentColor" text-anchor="start" stroke="none" opacity="0.8">${termName}</text>
+        `;
+      }
+      
+      // Icon in the center: square with round edges and text "GEN BLOCK"
+      paths += `
+        <rect x="-22" y="-22" width="44" height="44" rx="6" class="comp-path" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.85;" />
+        <text x="0" y="-4" font-family="Inter, sans-serif" font-size="8" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">GEN</text>
+        <text x="0" y="8" font-family="Inter, sans-serif" font-size="8" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">BLOCK</text>
+      `;
+      
+      return `
+        <rect class="comp-bounds" x="-${halfWidth + 2}" y="${-halfHeight}" width="${halfWidth * 2 + 4}" height="${halfHeight * 2}" rx="6" />
+        <rect class="comp-path" x="-${halfWidth}" y="${-halfHeight}" width="${halfWidth * 2}" height="${halfHeight * 2}" rx="4" fill="none" stroke="currentColor" stroke-width="2" />
+        <text x="0" y="${-halfHeight + 12}" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">GEN_EBLOCK</text>
         ${paths}
         <g transform="translate(0, ${halfHeight + 14}) rotate(${-rotation})">
           <text class="comp-label" x="0" y="4" text-anchor="middle" fill="currentColor">${id}</text>

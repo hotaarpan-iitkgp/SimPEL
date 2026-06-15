@@ -10,7 +10,7 @@ import {
   getComponentBounds,
   getEndpointDomain
 } from './routing';
-import { parseTurnsList, discoverPortsJS, DEFAULT_PARAMETERS, EXPORT_TYPE_NAMES, getComponentPins } from './config';
+import { parseTurnsList, discoverPortsJS, DEFAULT_PARAMETERS, EXPORT_TYPE_NAMES, getComponentPins, discoverParamsFromCode } from './config';
 import { updatePropertiesPanel } from './properties';
 import { DETAILED_COMPONENTS } from './detailedLibrary';
 
@@ -592,8 +592,71 @@ class UnionFind {
   }
 }
 
+const getTapPointsOnWire = (wireId: string, wires: any[]) => {
+  const points: { x: number; y: number }[] = [];
+  wires.forEach(w => {
+    if (w.from && w.from.type === 'wire' && w.from.wireId === wireId) {
+      points.push({ x: w.from.x, y: w.from.y });
+    }
+    if (w.to && w.to.type === 'wire' && w.to.wireId === wireId) {
+      points.push({ x: w.to.x, y: w.to.y });
+    }
+  });
+  return points;
+};
+
+const insertTapPointsAndSplit = (path: { x: number; y: number }[], taps: { x: number; y: number }[]): { x: number; y: number }[][] => {
+  let augmented = [...path];
+  
+  for (const tap of taps) {
+    let alreadyExists = false;
+    for (const p of augmented) {
+      if (Math.hypot(p.x - tap.x, p.y - tap.y) < 3) {
+        alreadyExists = true;
+        break;
+      }
+    }
+    if (alreadyExists) continue;
+    
+    for (let i = 0; i < augmented.length - 1; i++) {
+      const p1 = augmented[i];
+      const p2 = augmented[i + 1];
+      
+      const minX = Math.min(p1.x, p2.x);
+      const maxX = Math.max(p1.x, p2.x);
+      const minY = Math.min(p1.y, p2.y);
+      const maxY = Math.max(p1.y, p2.y);
+      
+      const isCollinear = Math.abs((p2.y - p1.y) * (tap.x - p1.x) - (p2.x - p1.x) * (tap.y - p1.y)) < 10;
+      if (isCollinear && tap.x >= minX - 2 && tap.x <= maxX + 2 && tap.y >= minY - 2 && tap.y <= maxY + 2) {
+        augmented.splice(i + 1, 0, tap);
+        break;
+      }
+    }
+  }
+  
+  const subPaths: { x: number; y: number }[][] = [];
+  let currentSubPath: { x: number; y: number }[] = [augmented[0]];
+  
+  for (let i = 1; i < augmented.length; i++) {
+    const p = augmented[i];
+    currentSubPath.push(p);
+    
+    const isTap = taps.some(t => Math.hypot(t.x - p.x, t.y - p.y) < 3);
+    if (isTap) {
+      subPaths.push(currentSubPath);
+      currentSubPath = [p];
+    }
+  }
+  if (currentSubPath.length > 1) {
+    subPaths.push(currentSubPath);
+  }
+  
+  return subPaths;
+};
+
 // CRITICAL EXPORTER: Converts the schematic spatial representation into structured Dual-Graph simulation Netlist
-export function exportDualGraphJSON(): any {
+export function exportDualGraphJSON(fastMode: boolean = false): any {
   const uf = new UnionFind();
   
   // 1. Map all physical power-stage component pins to unique strings
@@ -652,34 +715,114 @@ export function exportDualGraphJSON(): any {
   // 2. Disjoint Union-Find wire paths routing to connect endpoints
   const electricalWires = state.wires.filter((w: any) => getWireDomain(w) === 'electrical');
   
-  electricalWires.forEach((wire: any) => {
-    // Union wire ID with from endpoint
-    if (wire.from.type === 'pin') {
-      const pinKey = `${wire.from.compId}.${wire.from.terminal}`;
-      uf.union(wire.id, pinKey);
-    } else if (wire.from.type === 'wire') {
-      uf.union(wire.id, wire.from.wireId);
-    }
-    
-    // Union wire ID with to endpoint
-    if (wire.to) {
-      if (wire.to.type === 'pin') {
-        const pinKey = `${wire.to.compId}.${wire.to.terminal}`;
+  const wireSegments: Record<string, {
+    segmentId: string;
+    path: { x: number; y: number }[];
+    fromKey: string;
+    toKey: string;
+  }[]> = {};
+
+  if (fastMode) {
+    electricalWires.forEach((wire: any) => {
+      // Union wire ID with from endpoint
+      if (wire.from.type === 'pin') {
+        const pinKey = `${wire.from.compId}.${wire.from.terminal}`;
         uf.union(wire.id, pinKey);
-      } else if (wire.to.type === 'wire') {
-        uf.union(wire.id, wire.to.wireId);
+      } else if (wire.from.type === 'wire') {
+        uf.union(wire.id, wire.from.wireId);
       }
-    }
-  });
+      
+      // Union wire ID with to endpoint
+      if (wire.to) {
+        if (wire.to.type === 'pin') {
+          const pinKey = `${wire.to.compId}.${wire.to.terminal}`;
+          uf.union(wire.id, pinKey);
+        } else if (wire.to.type === 'wire') {
+          uf.union(wire.id, wire.to.wireId);
+        }
+      }
+    });
+  } else {
+    // Phase A: Split tapped wires into discrete sub-segments
+    electricalWires.forEach((wire: any) => {
+      const origPath = getWirePath(wire);
+      const taps = getTapPointsOnWire(wire.id, electricalWires);
+      
+      const pStartCoords = getWireEndpointCoords(wire.from);
+      const pEndCoords = getWireEndpointCoords(wire.to);
+      const filteredTaps = taps.filter(t => 
+        Math.hypot(t.x - pStartCoords.x, t.y - pStartCoords.y) > 5 &&
+        Math.hypot(t.x - pEndCoords.x, t.y - pEndCoords.y) > 5
+      );
+
+      const subPaths = insertTapPointsAndSplit(origPath, filteredTaps);
+      const segs = subPaths.map((subPath, j) => {
+        const segmentId = `${wire.id}_seg${j}`;
+        const fromKey = (j === 0) ? `W_from_${wire.id}` : `W_junc_${Math.round(subPath[0].x)}_${Math.round(subPath[0].y)}`;
+        const toKey = (j === subPaths.length - 1) ? `W_to_${wire.id}` : `W_junc_${Math.round(subPath[subPath.length - 1].x)}_${Math.round(subPath[subPath.length - 1].y)}`;
+        return { segmentId, path: subPath, fromKey, toKey };
+      });
+      wireSegments[wire.id] = segs;
+    });
+
+    // Phase B: Disjoint Union-Find using Segment endpoints
+    const endpointCoords: Record<string, { x: number; y: number }> = {};
+    electricalWires.forEach((wire: any) => {
+      const pStartKey = `W_from_${wire.id}`;
+      const pEndKey = `W_to_${wire.id}`;
+      
+      const pStartCoords = getWireEndpointCoords(wire.from);
+      const pEndCoords = getWireEndpointCoords(wire.to);
+      
+      endpointCoords[pStartKey] = pStartCoords;
+      endpointCoords[pEndKey] = pEndCoords;
+      
+      uf.find(pStartKey);
+      uf.find(pEndKey);
+
+      const segs = wireSegments[wire.id] || [];
+      segs.forEach(seg => {
+        endpointCoords[seg.fromKey] = seg.path[0];
+        endpointCoords[seg.toKey] = seg.path[seg.path.length - 1];
+        uf.find(seg.fromKey);
+        uf.find(seg.toKey);
+      });
+      
+      if (wire.from.type === 'pin') {
+        const pinKey = `${wire.from.compId}.${wire.from.terminal}`;
+        uf.union(pStartKey, pinKey);
+      } else if (wire.from.type === 'wire') {
+        const juncKey = `W_junc_${Math.round(pStartCoords.x)}_${Math.round(pStartCoords.y)}`;
+        uf.union(pStartKey, juncKey);
+      }
+
+      if (wire.to && wire.to.type === 'pin') {
+        const pinKey = `${wire.to.compId}.${wire.to.terminal}`;
+        uf.union(pEndKey, pinKey);
+      } else if (wire.to && wire.to.type === 'wire') {
+        const juncKey = `W_junc_${Math.round(pEndCoords.x)}_${Math.round(pEndCoords.y)}`;
+        uf.union(pEndKey, juncKey);
+      }
+    });
+  }
   
   // 3. Resolve Node grouping indices mapping
   const partitions: Record<string, string[]> = {};
   Object.keys(uf.parent).forEach(key => {
-    // Group only component pins, skip wire ID key strings
-    if (key.includes('.')) {
-      const root = uf.find(key);
-      if (!partitions[root]) partitions[root] = [];
-      partitions[root].push(key);
+    if (fastMode) {
+      // Group only component pins, skip wire ID key strings
+      if (key.includes('.')) {
+        const root = uf.find(key);
+        if (!partitions[root]) partitions[root] = [];
+        partitions[root].push(key);
+      }
+    } else {
+      // Group component pins AND segment keys
+      if (key.includes('.') || key.startsWith('W_from_') || key.startsWith('W_to_') || key.startsWith('W_junc_')) {
+        const root = uf.find(key);
+        if (!partitions[root]) partitions[root] = [];
+        partitions[root].push(key);
+      }
     }
   });
   
@@ -747,7 +890,8 @@ export function exportDualGraphJSON(): any {
     analog_switches: [], // e.g. MOSFETs
     transformers: [],
     voltmeters: [],
-    ammeters: []
+    ammeters: [],
+    custom_eblocks: []
   };
   
   const control_loops: any = {
@@ -1215,6 +1359,30 @@ export function exportDualGraphJSON(): any {
           src_type: comp.type.toLowerCase()
         });
         break;
+      case 'GEN_EBLOCK': {
+        const n = parseInt(comp.parameters && comp.parameters.terminals) || 3;
+        const terminalLabels = Array.from({ length: n }, (_, i) => `T${i + 1}`);
+        const resolvedNodes = resolveNodes(comp.id, n, terminalLabels);
+        const codeParams: Record<string, string> = {};
+        if (comp.parameters && comp.parameters.code) {
+          const parsed = discoverParamsFromCode(comp.parameters.code);
+          parsed.forEach(p => {
+            codeParams[p.name] = p.value;
+          });
+        }
+        physical_stage.custom_eblocks.push({
+          id: comp.id,
+          nodes: resolvedNodes,
+          code: comp.parameters && comp.parameters.code ? comp.parameters.code : "",
+          timestep: comp.parameters.timestep || "0",
+          plot_inputs: comp.parameters.plot_inputs || "true",
+          plot_outputs: comp.parameters.plot_outputs || "true",
+          plot_custom_vars: comp.parameters.plot_custom_vars || "",
+          terminals: String(n),
+          ...codeParams
+        });
+        break;
+      }
       default: {
         const isDetailedElect = DETAILED_COMPONENTS.some(dc => dc.type === comp.type && dc.category === 'electrical');
         if (isDetailedElect) {
@@ -1229,6 +1397,32 @@ export function exportDualGraphJSON(): any {
       }
     }
   });
+  
+  // 5.5. Export wires as resistors if Detailed (non-fastMode)
+  if (!fastMode) {
+    electricalWires.forEach((wire: any) => {
+      const segs = wireSegments[wire.id] || [];
+      if (segs.length === 0) {
+        const fromNode = pinToNodeMap[`W_from_${wire.id}`] || "node_0";
+        const toNode = pinToNodeMap[`W_to_${wire.id}`] || "node_0";
+        physical_stage.resistors.push({
+          id: wire.id,
+          nodes: [fromNode, toNode],
+          value: 1e-4
+        });
+      } else {
+        segs.forEach(seg => {
+          const fromNode = pinToNodeMap[seg.fromKey] || "node_0";
+          const toNode = pinToNodeMap[seg.toKey] || "node_0";
+          physical_stage.resistors.push({
+            id: seg.segmentId,
+            nodes: [fromNode, toNode],
+            value: 1e-4
+          });
+        });
+      }
+    });
+  }
   
   // 6. Populate Control Loops Stage
   state.components.forEach((comp: any) => {

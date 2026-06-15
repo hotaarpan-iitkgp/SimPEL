@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, RotateCcw, Settings, Sliders, ChevronDown, ChevronRight, 
   Trash2, RotateCw, PlusCircle, ArrowUpRight, Code, Sparkles, BarChart3,
-  Undo2, FileJson, Upload, FolderInput, LogOut, CheckCircle2, AlertTriangle, Info
+  Undo2, FileJson, Upload, FolderInput, LogOut, CheckCircle2, AlertTriangle, Info,
+  Pause, StopCircle
 } from 'lucide-react';
 import { state, saveState } from '../schematic/state';
 import { draw, updateAllWirePathsInDOM } from '../schematic/renderer';
@@ -18,9 +19,20 @@ import { DETAILED_COMPONENTS } from '../schematic/detailedLibrary';
 interface SchematicEditorProps {
   onRunSimulation: (netlistJson: string) => void;
   availableTraces: string[];
+  isLoading?: boolean;
+  isPaused?: boolean;
+  onPauseResume?: () => void;
+  onTerminate?: () => void;
 }
 
-export default function SchematicEditor({ onRunSimulation, availableTraces }: SchematicEditorProps) {
+export default function SchematicEditor({ 
+  onRunSimulation, 
+  availableTraces,
+  isLoading = false,
+  isPaused = false,
+  onPauseResume,
+  onTerminate
+}: SchematicEditorProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   
@@ -168,6 +180,21 @@ export default function SchematicEditor({ onRunSimulation, availableTraces }: Sc
       rotation: 0,
       parameters
     });
+
+    if (type === 'GEN_EBLOCK') {
+      const n = parseInt(parameters.terminals) || 3;
+      if (!state.plotConfiguration.plots || state.plotConfiguration.plots.length === 0) {
+        state.plotConfiguration.plots = [{ title: 'Waveform analysis', variables: [] }];
+      }
+      const firstPlot = state.plotConfiguration.plots[0];
+      if (!firstPlot.variables) firstPlot.variables = [];
+      for (let i = 1; i <= n; i++) {
+        firstPlot.variables.push(`${id}.v${i}`);
+        firstPlot.variables.push(`${id}.i${i}`);
+      }
+      const ev = new CustomEvent('plotConfigUpdated', { detail: state.plotConfiguration });
+      window.dispatchEvent(ev);
+    }
     
     draw();
     updatePropertiesPanel();
@@ -344,13 +371,42 @@ export default function SchematicEditor({ onRunSimulation, availableTraces }: Sc
           <div className="h-4 w-[1px] bg-slate-900 mx-1" />
 
           {/* Run simulated */}
-          <button 
-            onClick={handleSimulateBtn}
-            className="px-5 py-2 border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/25 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/5 select-none hover:scale-[1.02] active:scale-95 duration-100"
-          >
-            <Play className="h-4.5 w-4.5 fill-current text-emerald-400" />
-            <span>COMPILE & RUN SIMULATION</span>
-          </button>
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-2 border border-slate-800 bg-slate-900 text-slate-400 rounded-lg text-xs font-bold flex items-center gap-1.5 animate-pulse select-none">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                SIMULATING...
+              </span>
+              {onPauseResume && (
+                <button 
+                  onClick={onPauseResume}
+                  className="px-3 py-2 border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/25 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 duration-100"
+                  title={isPaused ? "Resume simulation" : "Pause simulation"}
+                >
+                  {isPaused ? <Play className="h-4 w-4 fill-current" /> : <Pause className="h-4 w-4 fill-current" />}
+                  <span>{isPaused ? "RESUME" : "PAUSE"}</span>
+                </button>
+              )}
+              {onTerminate && (
+                <button 
+                  onClick={onTerminate}
+                  className="px-3 py-2 border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/25 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 duration-100"
+                  title="Terminate simulation and plot current data"
+                >
+                  <StopCircle className="h-4 w-4 text-red-400" />
+                  <span>TERMINATE & PLOT</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <button 
+              onClick={handleSimulateBtn}
+              className="px-5 py-2 border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/25 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/5 select-none hover:scale-[1.02] active:scale-95 duration-100"
+            >
+              <Play className="h-4.5 w-4.5 fill-current text-emerald-400" />
+              <span>COMPILE & RUN SIMULATION</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -742,10 +798,15 @@ export default function SchematicEditor({ onRunSimulation, availableTraces }: Sc
             />
           </div>
           
-          <div className="p-4 border-t border-slate-800 flex items-center justify-end gap-2 bg-slate-900/10">
-            <button id="code-editor-toggle-plot" className="px-4 py-2 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer mr-auto text-slate-300">Configure Plots</button>
-            <button id="code-editor-cancel" className="px-4 py-2 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer">Discard</button>
-            <button id="code-editor-save" className="px-4 py-2 bg-emerald-500 hover:bg-emerald-650 font-bold rounded text-xs cursor-pointer text-white">Save Code Block</button>
+          <div className="p-4 border-t border-slate-800 flex items-center justify-between gap-2 bg-slate-900/10">
+            <div className="flex gap-2">
+              <button id="code-editor-toggle-plot" className="px-4 py-2 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer text-slate-300">Configure Plots</button>
+              <button id="code-editor-toggle-params" className="px-4 py-2 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer text-slate-300 hidden">Params</button>
+            </div>
+            <div className="flex gap-2">
+              <button id="code-editor-cancel" className="px-4 py-2 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer">Discard</button>
+              <button id="code-editor-save" className="px-4 py-2 bg-emerald-500 hover:bg-emerald-650 font-bold rounded text-xs cursor-pointer text-white">Save Code Block</button>
+            </div>
           </div>
         </div>
       </div>

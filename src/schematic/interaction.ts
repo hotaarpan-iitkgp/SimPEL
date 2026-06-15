@@ -365,25 +365,33 @@ export function initInteractions(svg: SVGSVGElement): () => void {
   // 4. Mouse Scroll Zooming handler
   const handleWheel = (e: WheelEvent) => {
     e.preventDefault();
-    const zoomIntensity = 0.12;
     
-    // Read cursor position in screen space
-    const svgRect = svg.getBoundingClientRect();
-    const mouseX = e.clientX - svgRect.left;
-    const mouseY = e.clientY - svgRect.top;
-    
-    // Backtrace canvas coordinate before scaling
-    const canvasX = (mouseX - state.panX) / state.zoom;
-    const canvasY = (mouseY - state.panY) / state.zoom;
-    
-    // Scale zoom factors with clamps (0.15x min to 4.0x max)
-    const factor = e.deltaY < 0 ? 1 + zoomIntensity : 1 - zoomIntensity;
-    const newZoom = Math.min(4.0, Math.max(0.15, state.zoom * factor));
-    
-    // Shift panning offsets to align pointer cursor after zooming (intuitive centering)
-    state.panX = mouseX - canvasX * newZoom;
-    state.panY = mouseY - canvasY * newZoom;
-    state.zoom = newZoom;
+    if (e.ctrlKey || e.shiftKey) {
+      const zoomIntensity = 0.12;
+      
+      // Read cursor position in screen space
+      const svgRect = svg.getBoundingClientRect();
+      const mouseX = e.clientX - svgRect.left;
+      const mouseY = e.clientY - svgRect.top;
+      
+      // Backtrace canvas coordinate before scaling
+      const canvasX = (mouseX - state.panX) / state.zoom;
+      const canvasY = (mouseY - state.panY) / state.zoom;
+      
+      // Scale zoom factors with clamps (0.15x min to 4.0x max)
+      const factor = e.deltaY < 0 ? 1 + zoomIntensity : 1 - zoomIntensity;
+      const newZoom = Math.min(4.0, Math.max(0.15, state.zoom * factor));
+      
+      // Shift panning offsets to align pointer cursor after zooming (intuitive centering)
+      state.panX = mouseX - canvasX * newZoom;
+      state.panY = mouseY - canvasY * newZoom;
+      state.zoom = newZoom;
+    } else {
+      // Panning/scrolling when no modifier key is pressed
+      const panSpeed = 0.85;
+      state.panX -= e.deltaX * panSpeed;
+      state.panY -= e.deltaY * panSpeed;
+    }
     
     updateViewportTransform();
   };

@@ -1078,14 +1078,6 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     symbol: 'MOSFET'
   },
   {
-    type: 'MOSFET_DIODE',
-    label: 'MOSFET with Diode',
-    desc: 'MOSFET co-packaged with an anti-parallel body diode.',
-    category: 'electrical',
-    subcategory: 'Power Semiconductors (Ideal Behavioral Switches)',
-    symbol: 'MOSFET+d'
-  },
-  {
     type: 'BJT',
     label: 'BJT',
     desc: 'Bipolar Junction Transistor modeled as an ideal switch.',
@@ -1250,6 +1242,14 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     category: 'electrical',
     subcategory: 'Electronics',
     symbol: 'eComp'
+  },
+  {
+    type: 'GEN_EBLOCK',
+    label: 'Generalized Electrical Block',
+    desc: 'Configurable C++/JS script-based electrical multi-terminal machine or load block.',
+    category: 'electrical',
+    subcategory: 'Custom Machine/Load Models',
+    symbol: 'GEN_EBLOCK'
   }
 ];
 
@@ -1258,7 +1258,7 @@ export function getDetailedComponentPins(type: string): Record<string, any> | nu
   if (!libComp) return null;
 
   // Keep basic ones as they are
-  const basicTypes = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM', 'CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'PROBE', 'SCOPE'];
+  const basicTypes = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM', 'CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'PROBE', 'SCOPE', 'GEN_EBLOCK'];
   if (basicTypes.includes(type)) return null;
 
   // Custom configurations for new blocks
@@ -1460,7 +1460,7 @@ export function getDetailedComponentSVG(comp: any): string | null {
   if (!libComp) return null;
 
   // Basic components should use their existing custom SVGs
-  const basicTypes = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM', 'CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'PROBE', 'SCOPE'];
+  const basicTypes = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM', 'CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'PROBE', 'SCOPE', 'GEN_EBLOCK'];
   if (basicTypes.includes(type)) return null;
 
   // Check for electrical schematic custom symbol override

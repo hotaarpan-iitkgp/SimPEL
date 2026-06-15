@@ -1,7 +1,7 @@
 import { state, saveState } from './state';
 import { draw } from './renderer';
 import { showToast } from './utils';
-import { getComponentPins, discoverPortsJS } from './config';
+import { getComponentPins, discoverPortsJS, senseTerminalsFromCode, discoverParamsFromCode, updateParamInCode } from './config';
 import { getAvailableVariables } from './plotConfig';
 import { DETAILED_COMPONENTS } from './detailedLibrary';
 
@@ -35,6 +35,7 @@ export function updatePropertiesPanel(): void {
     if (comp.parameters) {
       Object.keys(comp.parameters).forEach(key => {
         if (key === 'code') return; // Handled by Python Modal editor
+        if (comp.type === 'GEN_EBLOCK' && !['terminals', 'timestep', 'plot_disabled_pins', 'plot_custom_vars'].includes(key)) return;
         
         const row = document.createElement('div');
         row.className = 'prop-row';
@@ -77,8 +78,11 @@ export function updatePropertiesPanel(): void {
           // Re-route wires for dynamic pins counts or custom XFMR winders
           if (comp.type === 'XFMR' && ['primary_turns', 'secondary_turns'].includes(key)) {
             cleanDanglingWires(comp.id);
-          } else if (['SCOPE', 'MUX', 'DEMUX', 'CSCRIPT'].includes(comp.type)) {
+          } else if (['SCOPE', 'MUX', 'DEMUX', 'CSCRIPT', 'GEN_EBLOCK'].includes(comp.type)) {
             cleanDanglingWires(comp.id);
+          }
+          if (comp.type === 'GEN_EBLOCK' && key === 'terminals') {
+            syncScriptPlotConfig(comp);
           }
           
           draw();
@@ -91,9 +95,65 @@ export function updatePropertiesPanel(): void {
     }
     
     card.appendChild(propGroup);
+
+    // Add Custom Parameters Editor for GEN_EBLOCK components
+    if (comp.type === 'GEN_EBLOCK') {
+      const customParamsGroup = document.createElement('div');
+      customParamsGroup.className = 'prop-group';
+      customParamsGroup.style.marginTop = '15px';
+      customParamsGroup.style.borderTop = '1px solid #1e293b';
+      customParamsGroup.style.paddingTop = '12px';
+      
+      const codeParams = discoverParamsFromCode(comp.parameters.code || "");
+      // Sync comp.parameters keys with codeParams
+      const keysToKeep = ['code', 'terminals', 'timestep', 'plot_disabled_pins', 'plot_custom_vars'];
+      const codeParamKeys = new Set(codeParams.map(p => p.name));
+      Object.keys(comp.parameters).forEach(k => {
+        if (!keysToKeep.includes(k) && !codeParamKeys.has(k)) {
+          delete comp.parameters[k];
+        }
+      });
+      codeParams.forEach(p => {
+        comp.parameters[p.name] = p.value;
+      });
+      
+      let html = `<h4 class="category-title" style="margin-bottom: 8px; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Custom Parameters</h4>`;
+      html += `<div id="custom-params-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">`;
+      
+      if (codeParams.length === 0) {
+        html += `<span style="font-size: 10px; color: #64748b; font-style: italic;">No custom parameters defined in code.</span>`;
+      } else {
+        codeParams.forEach(p => {
+          html += `
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <span style="font-family: monospace; font-size: 11px; color: #cbd5e1; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.name}</span>
+              <input type="text" class="custom-param-value-input" data-key="${p.name}" value="${p.value}" style="width: 120px; padding: 4px 8px; border: 1px solid #334155; border-radius: 4px; font-size: 11px; background: #020617; color: #f8fafc; outline: none; font-family: monospace;" />
+            </div>
+          `;
+        });
+      }
+      html += `</div>`;
+      
+      customParamsGroup.innerHTML = html;
+      
+      // Event listeners for value inputs
+      customParamsGroup.querySelectorAll('.custom-param-value-input').forEach((input: any) => {
+        input.addEventListener('change', (e: any) => {
+          const key = input.getAttribute('data-key');
+          const val = e.target.value.trim();
+          saveState();
+          comp.parameters.code = updateParamInCode(comp.parameters.code || "", key, val);
+          comp.parameters[key] = val;
+          updatePropertiesPanel();
+          draw();
+        });
+      });
+      
+      card.appendChild(customParamsGroup);
+    }
     
     // Add special Script Button for block-level scripts
-    if (comp.type === 'CSCRIPT') {
+    if (comp.type === 'CSCRIPT' || comp.type === 'GEN_EBLOCK') {
       const editorBtn = document.createElement('button');
       editorBtn.className = 'btn btn-primary';
       editorBtn.style.width = '100%';
@@ -104,7 +164,7 @@ export function updatePropertiesPanel(): void {
       editorBtn.style.border = 'none';
       editorBtn.style.borderRadius = '4px';
       editorBtn.style.cursor = 'pointer';
-      editorBtn.textContent = 'Edit Python script code';
+      editorBtn.textContent = comp.type === 'GEN_EBLOCK' ? 'Edit Electrical Equations' : 'Edit Python script code';
       editorBtn.addEventListener('click', () => {
         openCodeEditorModal(comp);
       });
@@ -143,6 +203,18 @@ export function updatePropertiesPanel(): void {
       const pinMap = getComponentPins(comp);
       Object.keys(pinMap).forEach(pinName => {
         predicted.push(`${comp.id}.${pinName}`);
+      });
+    }
+    
+    if (comp.type === 'GEN_EBLOCK') {
+      const n = parseInt(comp.parameters.terminals) || 3;
+      for (let i = 1; i <= n; i++) {
+        predicted.push(`${comp.id}.v${i}`);
+        predicted.push(`${comp.id}.i${i}`);
+      }
+      const customVars = (comp.parameters.plot_custom_vars || "").split(",").filter(Boolean);
+      customVars.forEach((v: string) => {
+        predicted.push(`${comp.id}.${v}`);
       });
     }
     
@@ -359,11 +431,17 @@ export function openCodeEditorModal(comp: any): void {
   
   const pane = document.getElementById('code-editor-plot-pane');
   const toggleBtn = document.getElementById('code-editor-toggle-plot');
+  const toggleParamsBtn = document.getElementById('code-editor-toggle-params');
   
+  let activePaneTab: 'plots' | 'params' = 'plots';
+
   const renderPlotPane = () => {
     if (!pane) return;
     
-    const ports = discoverPortsJS(textarea.value);
+    const ports = comp.type === 'GEN_EBLOCK' ? {
+      inputs: Array.from({ length: parseInt(comp.parameters.terminals) || 3 }, (_, i) => `v${i + 1}`),
+      outputs: Array.from({ length: parseInt(comp.parameters.terminals) || 3 }, (_, i) => `i${i + 1}`)
+    } : discoverPortsJS(textarea.value);
     
     let html = `
       <div style="display: flex; flex-direction: column; gap: 16px; height: 100%;">
@@ -479,28 +557,104 @@ export function openCodeEditorModal(comp: any): void {
       });
     });
   };
-  
-  const handleTogglePlotPane = () => {
+
+  const renderParamsPane = () => {
     if (!pane) return;
-    pane.classList.toggle('hidden');
-    const content = modal.querySelector('.modal-content');
-    if (content) {
-      if (pane.classList.contains('hidden')) {
-        content.setAttribute('style', 'max-width: 700px; width: 11/12;');
-      } else {
+    
+    const codeParams = discoverParamsFromCode(textarea.value);
+    
+    let html = `
+      <div style="display: flex; flex-direction: column; gap: 16px; height: 100%;">
+        <h4 style="font-size: 13px; font-weight: 700; color: #f1f5f9; border-bottom: 1px solid #1e293b; padding-bottom: 8px; margin: 0;">Block Parameters</h4>
+        <div style="display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; padding-right: 4px;">
+    `;
+    
+    if (codeParams.length === 0) {
+      html += `<span style="font-size: 10px; color: #64748b; font-style: italic;">No parameters found in the code (e.g. Rs = 0.5;).</span>`;
+    } else {
+      codeParams.forEach(p => {
+        html += `
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-family: monospace; font-size: 11px; color: #94a3b8; font-weight: 600;">${p.name}</label>
+            <input type="text" class="pane-param-input" data-name="${p.name}" value="${p.value}" style="width: 100%; padding: 6px 10px; border: 1px solid #334155; border-radius: 4px; font-size: 11px; font-family: monospace; background: #020617; color: #f8fafc; outline: none;" />
+          </div>
+        `;
+      });
+    }
+    
+    html += `
+        </div>
+        <span style="font-size: 9px; color: #64748b; line-height: 1.4;">
+          Parameters are read directly from code assignments (e.g. <code>Rs = 0.5;</code>). Editing them here will modify their definition in the code.
+        </span>
+      </div>
+    `;
+    
+    pane.innerHTML = html;
+    
+    pane.querySelectorAll('.pane-param-input').forEach((input: any) => {
+      input.addEventListener('input', (e: any) => {
+        const name = input.getAttribute('data-name');
+        const val = e.target.value.trim();
+        textarea.value = updateParamInCode(textarea.value, name, val);
+      });
+    });
+  };
+  
+  const showPane = (tab: 'plots' | 'params') => {
+    if (!pane) return;
+    
+    const isHidden = pane.classList.contains('hidden');
+    
+    if (isHidden) {
+      pane.classList.remove('hidden');
+      const content = modal.querySelector('.modal-content');
+      if (content) {
         content.setAttribute('style', 'max-width: 1000px; width: 11/12;');
       }
+      activePaneTab = tab;
+      if (tab === 'plots') renderPlotPane();
+      else renderParamsPane();
+    } else {
+      if (activePaneTab === tab) {
+        pane.classList.add('hidden');
+        const content = modal.querySelector('.modal-content');
+        if (content) {
+          content.setAttribute('style', 'max-width: 700px; width: 11/12;');
+        }
+      } else {
+        activePaneTab = tab;
+        if (tab === 'plots') renderPlotPane();
+        else renderParamsPane();
+      }
     }
-    renderPlotPane();
   };
   
   if (toggleBtn) {
     const newToggleBtn = toggleBtn.cloneNode(true);
     toggleBtn.parentNode?.replaceChild(newToggleBtn, toggleBtn);
-    newToggleBtn.addEventListener('click', handleTogglePlotPane);
+    newToggleBtn.addEventListener('click', () => showPane('plots'));
   }
   
-  textarea.addEventListener('input', renderPlotPane);
+  if (toggleParamsBtn) {
+    if (comp.type === 'GEN_EBLOCK') {
+      toggleParamsBtn.classList.remove('hidden');
+      const newToggleParamsBtn = toggleParamsBtn.cloneNode(true);
+      toggleParamsBtn.parentNode?.replaceChild(newToggleParamsBtn, toggleParamsBtn);
+      newToggleParamsBtn.addEventListener('click', () => showPane('params'));
+    } else {
+      toggleParamsBtn.classList.add('hidden');
+    }
+  }
+  
+  const handleTextareaInput = () => {
+    if (activePaneTab === 'plots') {
+      renderPlotPane();
+    } else {
+      renderParamsPane();
+    }
+  };
+  textarea.addEventListener('input', handleTextareaInput);
   
   if (pane) {
     pane.classList.add('hidden');
@@ -513,6 +667,24 @@ export function openCodeEditorModal(comp: any): void {
   const handleSave = () => {
     saveState();
     comp.parameters.code = textarea.value;
+    
+    if (comp.type === 'GEN_EBLOCK') {
+      const sensed = senseTerminalsFromCode(textarea.value);
+      comp.parameters.terminals = String(sensed);
+      
+      // Discover and sync parameters to comp.parameters
+      const codeParams = discoverParamsFromCode(textarea.value);
+      const keysToKeep = ['code', 'terminals', 'timestep', 'plot_disabled_pins', 'plot_custom_vars'];
+      const codeParamKeys = new Set(codeParams.map(p => p.name));
+      Object.keys(comp.parameters).forEach(k => {
+        if (!keysToKeep.includes(k) && !codeParamKeys.has(k)) {
+          delete comp.parameters[k];
+        }
+      });
+      codeParams.forEach(p => {
+        comp.parameters[p.name] = p.value;
+      });
+    }
     
     const tsInput: any = document.getElementById('plot-pane-timestep');
     if (tsInput) {
@@ -528,6 +700,7 @@ export function openCodeEditorModal(comp: any): void {
     modal.classList.remove('show');
     cleanup();
     draw();
+    updatePropertiesPanel();
   };
   
   const handleCancel = () => {
@@ -538,7 +711,7 @@ export function openCodeEditorModal(comp: any): void {
   const cleanup = () => {
     saveBtn?.removeEventListener('click', handleSave);
     cancelBtn?.removeEventListener('click', handleCancel);
-    textarea.removeEventListener('input', renderPlotPane);
+    textarea.removeEventListener('input', handleTextareaInput);
   };
   
   saveBtn?.addEventListener('click', handleSave);
@@ -558,7 +731,10 @@ export function syncScriptPlotConfig(comp: any) {
     return true;
   });
   
-  const ports = discoverPortsJS(comp.parameters.code || "");
+  const ports = comp.type === 'GEN_EBLOCK' ? {
+    inputs: Array.from({ length: parseInt(comp.parameters.terminals) || 3 }, (_, i) => `v${i + 1}`),
+    outputs: Array.from({ length: parseInt(comp.parameters.terminals) || 3 }, (_, i) => `i${i + 1}`)
+  } : discoverPortsJS(comp.parameters.code || "");
   const disabledPins = new Set((comp.parameters.plot_disabled_pins || "").split(",").filter(Boolean));
   
   ports.inputs.forEach(p => {

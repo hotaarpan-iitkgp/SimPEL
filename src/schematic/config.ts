@@ -15,6 +15,7 @@ export const COMPONENT_PINS: Record<string, any> = {
   MOSFET: { D: {x: 0, y: -40, dx: 0, dy: -1}, S: {x: 0, y: 40, dx: 0, dy: 1}, G: {x: -20, y: 0, dx: -1, dy: 0} },
   AC_V:   { A: {x: 0, y: -40, dx: 0, dy: -1}, B: {x: 0, y: 40, dx: 0, dy: 1} },
   XFMR:   {}, // Pins dynamically computed in getComponentPins
+  GEN_EBLOCK: {}, // Pins dynamically computed in getComponentPins
 
   CONST:  { Out: {x: 20, y: 0, dx: 1, dy: 0} },
   GAIN:   { In: {x: -20, y: 0, dx: -1, dy: 0}, Out: {x: 20, y: 0, dx: 1, dy: 0} },
@@ -109,6 +110,20 @@ export function getComponentPins(comp: any): Record<string, any> {
     }
     return pins;
   }
+  if (comp.type === 'GEN_EBLOCK') {
+    let n = parseInt(comp.parameters && comp.parameters.terminals);
+    if (isNaN(n) || n <= 0) {
+      n = senseTerminalsFromCode(comp.parameters && comp.parameters.code || "");
+    }
+    const pins: Record<string, any> = {};
+    const spacing = 20;
+    const halfWidth = 50;
+    for (let i = 1; i <= n; i++) {
+      const y = n > 1 ? Math.round((i - 1 - (n - 1) / 2) * spacing) : 0;
+      pins[`T${i}`] = { x: -halfWidth, y: y, dx: -1, dy: 0 };
+    }
+    return pins;
+  }
   if (comp.type === 'CSCRIPT') {
     const ports = discoverPortsJS(comp.parameters && comp.parameters.code);
     const inList = ports.inputs;
@@ -148,7 +163,7 @@ export function discoverPortsJS(code: string): { inputs: string[]; outputs: stri
   const outputs = new Set<string>();
   
   const inputRegex = /inputs\s*\[\s*(['"`])(.*?)\1\s*\]|inputs\.get\s*\(\s*(['"`])(.*?)\3\s*(?:,[^)]*)?\)/g;
-  const outputRegex = /outputs\s*\[\s*(['"`])(.*?)\1\s*\]|outputs\.get\s*\(\s*(['"`])(.*?)\3\s*(?:,[^)]*)?\)/g;
+  const outputRegex = /outputs\s*\[\s*(['"`])(.*?)\1\s*\]|outputs\.(?:get|set)\s*\(\s*(['"`])(.*?)\3\s*(?:,[^)]*)?\)/g;
   
   let match;
   inputRegex.lastIndex = 0;
@@ -167,6 +182,32 @@ export function discoverPortsJS(code: string): { inputs: string[]; outputs: stri
     inputs: Array.from(inputs).sort(),
     outputs: Array.from(outputs).sort()
   };
+}
+
+export function senseTerminalsFromCode(code: string): number {
+  if (!code) return 3;
+  const ports = discoverPortsJS(code);
+  let maxTerm = 0;
+  for (const p of [...ports.inputs, ...ports.outputs]) {
+    const match = p.match(/^[vi](\d+)$/);
+    if (match) {
+      const val = parseInt(match[1]);
+      if (val > maxTerm) maxTerm = val;
+    }
+  }
+  return maxTerm > 0 ? maxTerm : 3;
+}
+
+export function getTerminalNameFromCode(code: string, index: number): string {
+  if (!code) return `T${index}`;
+  const ports = discoverPortsJS(code);
+  const input = ports.inputs[index - 1];
+  if (input) {
+    const match = input.match(/^[vV]_?([a-zA-Z0-9_]+)$/);
+    if (match) return match[1];
+    return input;
+  }
+  return `T${index}`;
 }
 
 // Default engineering parameters for each component
@@ -232,6 +273,31 @@ void step() {
     outputs["gate3"] = pulse;
     outputs["gate4"] = 1.0 - pulse;
 }`
+  },
+  GEN_EBLOCK: {
+    terminals: "3",
+    timestep: "0",
+    plot_inputs: "true",
+    plot_outputs: "true",
+    plot_custom_vars: "",
+    code: `void initialize() {
+    state["integral"] = 0.0;
+    state["last_time"] = 0.0;
+}
+
+void step() {
+    // Inputs: terminal voltages v1, v2, v3 (relative to ground node_0)
+    // Outputs: terminal currents i1, i2, i3 (injected into nodes)
+    double v1 = inputs.get("v1", 0.0);
+    double v2 = inputs.get("v2", 0.0);
+    double v3 = inputs.get("v3", 0.0);
+
+    // Simple resistive load model injecting currents
+    // i = -v / R, to act as a load of 10 Ohms
+    outputs.set("i1", -v1 / 10.0);
+    outputs.set("i2", -v2 / 10.0);
+    outputs.set("i3", -v3 / 10.0);
+}`
   }
 };
 
@@ -265,7 +331,8 @@ export const EXPORT_TYPE_NAMES: Record<string, string> = {
   SCOPE:  "Oscilloscope",
   MUX:    "Mux",
   DEMUX:  "Demux",
-  CSCRIPT: "CustomScript"
+  CSCRIPT: "CustomScript",
+  GEN_EBLOCK: "GeneralizedElectricalBlock"
 };
 
 // Dynamically populate detailed library default parameters and export names
@@ -280,3 +347,28 @@ DETAILED_COMPONENTS.forEach(c => {
   }
 });
 
+export function discoverParamsFromCode(code: string): { name: string; value: string }[] {
+  if (!code) return [];
+  const params: { name: string; value: string }[] = [];
+  const seen = new Set<string>();
+  const regex = /^[ \t]*([a-zA-Z_][a-zA-Z0-9_]*)[ \t]*=[ \t]*([+-]?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?))[ \t]*;/gm;
+  
+  let match;
+  regex.lastIndex = 0;
+  while ((match = regex.exec(code)) !== null) {
+    const name = match[1];
+    const value = match[2];
+    if (name && !seen.has(name)) {
+      seen.add(name);
+      params.push({ name, value });
+    }
+  }
+  return params;
+}
+
+export function updateParamInCode(code: string, name: string, value: string): string {
+  if (!code) return code;
+  const escapedName = name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const regex = new RegExp(`^([ \\t]*${escapedName}[ \\t]*=[ \\t]*)[+-]?(?:(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)([ \\t]*;)`, 'gm');
+  return code.replace(regex, `$1${value}$2`);
+}

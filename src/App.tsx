@@ -3,11 +3,12 @@ import {
   Play, RotateCcw, Plus, Trash2, Cpu, Settings, Activity, Zap, CheckCircle, 
   HelpCircle, Sliders, Layers, BarChart2, PlusCircle, Server, Code, FileText,
   SlidersHorizontal, ChevronRight, Check, Database, UploadCloud, X, ArrowUp, ArrowDown,
-  LayoutGrid, Sparkles, RefreshCcw, FileCode, Edit3, Sun, Moon
+  LayoutGrid, Sparkles, RefreshCcw, FileCode, Edit3, Sun, Moon, Pause, StopCircle
 } from 'lucide-react';
 import { Component, SolverConfig, SimulationResults } from './types';
 import { CIRCUITS_TEMPLATES } from './templates';
 import SchematicEditor from './components/SchematicEditor';
+import SimulationPlayer from './components/SimulationPlayer';
 import { state } from './schematic/state';
 import { getWireDomain } from './schematic/routing';
 
@@ -19,6 +20,9 @@ export default function App() {
     
     // If it is an output pin, it is already the source!
     if (terminal === 'Out' || terminal.startsWith('Out')) return trace;
+    
+    const initialComp = state.components.find(c => c.id === compId);
+    if (initialComp && (initialComp.type === 'CSCRIPT' || initialComp.type === 'GEN_EBLOCK')) return trace;
     
     const visitedPins = new Set<string>();
     const visitedWires = new Set<string>();
@@ -35,6 +39,13 @@ export default function App() {
         
         // Check if this pin is a control source (output)
         if (curr.terminal === 'Out' || curr.terminal.startsWith('Out')) {
+          if (curr.compId !== compId || curr.terminal !== terminal) {
+            return pinKey;
+          }
+        }
+        
+        const c = state.components.find(comp => comp.id === curr.compId);
+        if (c && (c.type === 'CSCRIPT' || c.type === 'GEN_EBLOCK')) {
           if (curr.compId !== compId || curr.terminal !== terminal) {
             return pinKey;
           }
@@ -177,6 +188,8 @@ export default function App() {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
   const [serverStatus, setServerStatus] = useState<'compiling' | 'ready' | 'error'>('ready');
   const [simResults, setSimResults] = useState<SimulationResults | null>(null);
 
@@ -186,6 +199,7 @@ export default function App() {
   const [loadedFileName, setLoadedFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>("buck_converter");
+  const [isVisualFlowOpen, setIsVisualFlowOpen] = useState<boolean>(false);
 
   // Reconfigurable Plotting States
   interface SubplotConfig {
@@ -199,6 +213,7 @@ export default function App() {
   ]);
   const [isGlobalOverlay, setIsGlobalOverlay] = useState<boolean>(false);
   const [layoutMode, setLayoutMode] = useState<'stacked' | 'grid'>('stacked');
+  const [fitStack, setFitStack] = useState<boolean>(false);
   const [syncXZoom, setSyncXZoom] = useState<boolean>(true);
   const [syncHover, setSyncHover] = useState<boolean>(true);
   const [isImPlotTheme, setIsImPlotTheme] = useState<boolean>(false);
@@ -263,15 +278,22 @@ export default function App() {
     setIsLoading(true);
     setServerStatus('compiling');
     
+    const sessionId = 'session_' + Math.random().toString(36).substring(2, 9);
+    setActiveSessionId(sessionId);
+    setIsPaused(false);
+
     // Save raw netlist code to the text editor state
     setJsonText(exportedNetlist);
     parseAndSyncNetlist(exportedNetlist);
 
     try {
+      const parsed = JSON.parse(exportedNetlist);
+      parsed.sessionId = sessionId;
+
       const response = await fetch('/api/simulate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: exportedNetlist
+        body: JSON.stringify(parsed)
       });
 
       if (!response.ok) {
@@ -310,6 +332,8 @@ export default function App() {
       alert(`Simulation failed. Ensure nodes are properly wired (ground reference node_0 is required for open circuits) and control channels match! Error details: ${e.message || e}`);
     } finally {
       setIsLoading(false);
+      setActiveSessionId(null);
+      setIsPaused(false);
     }
   };
 
@@ -552,6 +576,10 @@ export default function App() {
     setIsLoading(true);
     setServerStatus('compiling');
     
+    const sessionId = 'session_' + Math.random().toString(36).substring(2, 9);
+    setActiveSessionId(sessionId);
+    setIsPaused(false);
+
     // Build direct payload compatible with C++ backend
     const currentParsedNetlist = JSON.parse(jsonText);
     const activePlotVars: string[] = [];
@@ -586,6 +614,7 @@ export default function App() {
     });
 
     const netlistPayload = {
+      sessionId: sessionId,
       simulation_parameters: {
         stop_time: currentParsedNetlist.simulation_parameters?.stop_time || solverConfig.stop_time,
         step_size: currentParsedNetlist.simulation_parameters?.step_size || solverConfig.step_size,
@@ -637,6 +666,38 @@ export default function App() {
       alert(`Simulation failed. Ensure nodes are properly wired (ground node_0 is required for electrical nodes) and control loop channels match standard inputs/outputs! Error details: ${e.message || e}`);
     } finally {
       setIsLoading(false);
+      setActiveSessionId(null);
+      setIsPaused(false);
+    }
+  };
+
+  const pauseResumeSimulation = async () => {
+    if (!activeSessionId) return;
+    try {
+      const response = await fetch('/api/pause', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: activeSessionId })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setIsPaused(data.paused);
+      }
+    } catch (err) {
+      console.error("Failed to pause/resume simulation", err);
+    }
+  };
+
+  const terminateSimulation = async () => {
+    if (!activeSessionId) return;
+    try {
+      await fetch('/api/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: activeSessionId })
+      });
+    } catch (err) {
+      console.error("Failed to terminate simulation", err);
     }
   };
 
@@ -683,19 +744,46 @@ export default function App() {
     return [];
   };
 
-  const getTraceColor = (traceName: string): string => {
-    const resolved = resolveInputPinToSource(traceName);
-    if (theme === 'light') {
-      if (resolved.startsWith('V_') || resolved.endsWith('_V') || resolved.includes('ref')) return '#0284c7';
-      if (resolved.startsWith('I_') || resolved.endsWith('_I') || resolved.includes('gate') || resolved.includes('pwm')) return '#059669';
-      if (resolved.includes('feedback') || resolved.includes('Out') || resolved.includes('control')) return '#d97706';
-      return '#7c3aed';
-    } else {
-      if (resolved.startsWith('V_') || resolved.endsWith('_V') || resolved.includes('ref')) return '#38bdf8';
-      if (resolved.startsWith('I_') || resolved.endsWith('_I') || resolved.includes('gate') || resolved.includes('pwm')) return '#10b981';
-      if (resolved.includes('feedback') || resolved.includes('Out') || resolved.includes('control')) return '#f59e0b';
-      return '#a855f7';
+  const getTraceColor = (traceName: string, index?: number): string => {
+    let idx = index;
+    if (idx === undefined && simResults) {
+      const available = extractAvailableTraces(simResults);
+      const resolved = resolveInputPinToSource(traceName);
+      idx = available.indexOf(resolved);
+      if (idx === -1) idx = available.indexOf(traceName);
+      if (idx === -1) idx = 0;
+    } else if (idx === undefined) {
+      idx = 0;
     }
+
+    const darkColors = [
+      '#38bdf8', // Sky Blue
+      '#4ade80', // Emerald Green
+      '#fbbf24', // Amber/Yellow
+      '#c084fc', // Violet/Purple
+      '#fb7185', // Rose/Pink
+      '#fb923c', // Orange
+      '#2dd4bf', // Teal
+      '#818cf8', // Indigo
+      '#a7f3d0', // Light Emerald
+      '#fbcfe8', // Light Pink
+    ];
+
+    const lightColors = [
+      '#0284c7', // Sky Blue (Darker)
+      '#16a34a', // Green
+      '#d97706', // Amber
+      '#7c3aed', // Purple
+      '#e11d48', // Rose/Red
+      '#ea580c', // Orange
+      '#0d9488', // Teal
+      '#4f46e5', // Indigo
+      '#047857', // Emerald
+      '#be185d', // Pink
+    ];
+
+    const colors = theme === 'light' ? lightColors : darkColors;
+    return colors[idx % colors.length];
   };
 
   const calculateRMS = (data: number[]): number => {
@@ -910,23 +998,63 @@ export default function App() {
     };
 
     const width = 800;
-    const height = layoutMode === 'grid' ? 320 : 240;
+    let height = 240;
+    if (layoutMode === 'grid') {
+      height = 320;
+    } else {
+      if (fitStack) {
+        const count = isInsideScopeTab 
+          ? (state.components.find(c => c.id === activeTab) ? (parseInt(state.components.find(c => c.id === activeTab)?.parameters?.channels) || 2) : 2)
+          : subplots.length;
+        height = Math.max(110, Math.min(240, Math.floor(480 / (count || 1))));
+      } else {
+        height = 240;
+      }
+    }
     const padding = 55;
 
     const tMinBound = tData[0];
     const tMaxBound = tData[tData.length - 1];
 
-    // Find local Y boundaries across all selected active traces
+    // Evaluate displays with Zoom states (synchronized or individual local)
+    const displayXMin = syncXZoom 
+      ? (globalZoomX !== null ? globalZoomX.min : tMinBound)
+      : (zoomRangesX[subplot.id] !== null && zoomRangesX[subplot.id] !== undefined ? zoomRangesX[subplot.id]!.min : tMinBound);
+
+    const displayXMax = syncXZoom 
+      ? (globalZoomX !== null ? globalZoomX.max : tMaxBound)
+      : (zoomRangesX[subplot.id] !== null && zoomRangesX[subplot.id] !== undefined ? zoomRangesX[subplot.id]!.max : tMaxBound);
+
+    // Find local Y boundaries across all selected active traces (only inside visible X range)
     let yMinBound = Infinity;
     let yMaxBound = -Infinity;
 
     activeTraces.forEach(tr => {
       const d = getTraceData(tr);
-      d.forEach(v => {
-        if (v < yMinBound) yMinBound = v;
-        if (v > yMaxBound) yMaxBound = v;
-      });
+      for (let i = 0; i < tData.length; i++) {
+        const t = tData[i];
+        if (t >= displayXMin && t <= displayXMax) {
+          const v = d[i];
+          if (v !== undefined && !isNaN(v)) {
+            if (v < yMinBound) yMinBound = v;
+            if (v > yMaxBound) yMaxBound = v;
+          }
+        }
+      }
     });
+
+    if (yMinBound === Infinity || yMaxBound === -Infinity) {
+      // Fallback: search entire data
+      activeTraces.forEach(tr => {
+        const d = getTraceData(tr);
+        d.forEach(v => {
+          if (v !== undefined && !isNaN(v)) {
+            if (v < yMinBound) yMinBound = v;
+            if (v > yMaxBound) yMaxBound = v;
+          }
+        });
+      });
+    }
 
     if (yMinBound === Infinity || yMaxBound === -Infinity) {
       yMinBound = -1.0;
@@ -940,15 +1068,6 @@ export default function App() {
       yMaxBound += range * 0.12;
     }
 
-    // Evaluate displays with Zoom states (synchronized or individual local)
-    const displayXMin = syncXZoom 
-      ? (globalZoomX !== null ? globalZoomX.min : tMinBound)
-      : (zoomRangesX[subplot.id] !== null && zoomRangesX[subplot.id] !== undefined ? zoomRangesX[subplot.id]!.min : tMinBound);
-
-    const displayXMax = syncXZoom 
-      ? (globalZoomX !== null ? globalZoomX.max : tMaxBound)
-      : (zoomRangesX[subplot.id] !== null && zoomRangesX[subplot.id] !== undefined ? zoomRangesX[subplot.id]!.max : tMaxBound);
-
     const displayYMin = zoomRangesY[subplot.id] !== null && zoomRangesY[subplot.id] !== undefined 
       ? zoomRangesY[subplot.id]!.min 
       : yMinBound;
@@ -957,11 +1076,37 @@ export default function App() {
       ? zoomRangesY[subplot.id]!.max 
       : yMaxBound;
 
-    const scaleX = (width - padding * 2) / (displayXMax - displayXMin || 1);
-    const scaleY = (height - padding * 2) / (displayYMax - displayYMin || 1);
+    let isStacked = false;
+    let stackLength = 0;
+    
+    if (isInsideScopeTab) {
+      const scopeComp = state.components.find(c => c.id === activeTab);
+      const numChannels = scopeComp ? (parseInt(scopeComp.parameters?.channels) || 2) : 2;
+      const isOverlay = scopeOverlayModes[activeTab] || false;
+      isStacked = !isOverlay && numChannels > 1;
+      stackLength = numChannels;
+    } else if (!isGlobalOverlay) {
+      isStacked = layoutMode === 'stacked' && subplots.length > 1;
+      stackLength = subplots.length;
+    }
 
-    const getXCoords = (t: number) => padding + (t - displayXMin) * scaleX;
-    const getYCoords = (y: number) => height - padding - (y - displayYMin) * scaleY;
+    let padLeft = 60;
+    let padRight = 40;
+    let padTop = 20;
+    let padBottom = 35;
+
+    if (isStacked) {
+      const isFirst = idx === 0;
+      const isLast = idx === stackLength - 1;
+      padTop = isFirst ? 20 : 0;
+      padBottom = isLast ? 35 : 0;
+    }
+
+    const scaleX = (width - padLeft - padRight) / (displayXMax - displayXMin || 1);
+    const scaleY = (height - padTop - padBottom) / (displayYMax - displayYMin || 1);
+
+    const getXCoords = (t: number) => padLeft + (t - displayXMin) * scaleX;
+    const getYCoords = (y: number) => height - padBottom - (y - displayYMin) * scaleY;
 
     // AXIS TEXT FORMATTING
     const formatTimeVal = (t: number) => {
@@ -996,11 +1141,11 @@ export default function App() {
       const svgMouseX = (mX / svgRect.width) * width;
       const svgMouseY = (mY / svgRect.height) * height;
 
-      if (svgMouseX < padding || svgMouseX > width - padding || svgMouseY < padding || svgMouseY > height - padding) return;
+      if (svgMouseX < padLeft || svgMouseX > width - padRight || svgMouseY < padTop || svgMouseY > height - padBottom) return;
 
-      const fX = (svgMouseX - padding) / (width - padding * 2);
+      const fX = (svgMouseX - padLeft) / (width - padLeft - padRight);
       const clickedT = displayXMin + fX * (displayXMax - displayXMin);
-      const fY = (height - padding - svgMouseY) / (height - padding * 2);
+      const fY = (height - padBottom - svgMouseY) / (height - padTop - padBottom);
       const clickedY = displayYMin + fY * (displayYMax - displayYMin);
 
       setIsPlotMouseDown(true);
@@ -1027,15 +1172,15 @@ export default function App() {
       const svgMouseX = (mX / svgRect.width) * width;
       const svgMouseY = (mY / svgRect.height) * height;
 
-      const cX = Math.min(Math.max(padding, svgMouseX), width - padding);
-      const cY = Math.min(Math.max(padding, svgMouseY), height - padding);
+      const cX = Math.min(Math.max(padLeft, svgMouseX), width - padRight);
+      const cY = Math.min(Math.max(padTop, svgMouseY), height - padBottom);
 
-      const fX = (cX - padding) / (width - padding * 2);
+      const fX = (cX - padLeft) / (width - padLeft - padRight);
       const currentT = displayXMin + fX * (displayXMax - displayXMin);
-      const fY = (height - padding - cY) / (height - padding * 2);
+      const fY = (height - padBottom - cY) / (height - padTop - padBottom);
       const currentY = displayYMin + fY * (displayYMax - displayYMin);
 
-      if (svgMouseX >= padding && svgMouseX <= width - padding) {
+      if (svgMouseX >= padLeft && svgMouseX <= width - padRight) {
         const idxSample = Math.min(Math.max(0, Math.floor(fX * tData.length)), tData.length - 1);
         const tVal = tData[idxSample];
 
@@ -1070,8 +1215,8 @@ export default function App() {
         const rx = dragStartRangeX.max - dragStartRangeX.min;
         const ry = dragStartRangeY.max - dragStartRangeY.min;
 
-        const shiftT = -(mouseDeltaX / (width - padding * 2)) * rx;
-        const shiftY = (mouseDeltaY / (height - padding * 2)) * ry;
+        const shiftT = -(mouseDeltaX / (width - padLeft - padRight)) * rx;
+        const shiftY = (mouseDeltaY / (height - padTop - padBottom)) * ry;
 
         const nextX = { min: dragStartRangeX.min + shiftT, max: dragStartRangeX.max + shiftT };
         const nextY = { min: dragStartRangeY.min + shiftY, max: dragStartRangeY.max + shiftY };
@@ -1109,7 +1254,22 @@ export default function App() {
         const dx = Math.abs(activePlotMouseCurrentPos.x - activePlotMouseDownPos.x);
         const dy = Math.abs(activePlotMouseCurrentPos.y - activePlotMouseDownPos.y);
 
-        if (dx > 4 && dy > 4) {
+        const isXOnly = dx > 8 && (dy < 15 || dy / dx < 0.35);
+        const isYOnly = dy > 8 && (dx < 15 || dx / dy < 0.35);
+
+        if (isXOnly) {
+          const minT = Math.min(activePlotMouseDownPos.time, activePlotMouseCurrentPos.time);
+          const maxT = Math.max(activePlotMouseDownPos.time, activePlotMouseCurrentPos.time);
+          if (syncXZoom) {
+            setGlobalZoomX({ min: minT, max: maxT });
+          } else {
+            setZoomRangesX({ ...zoomRangesX, [subplot.id]: { min: minT, max: maxT } });
+          }
+        } else if (isYOnly) {
+          const minY = Math.min(activePlotMouseDownPos.val, activePlotMouseCurrentPos.val);
+          const maxY = Math.max(activePlotMouseDownPos.val, activePlotMouseCurrentPos.val);
+          setZoomRangesY({ ...zoomRangesY, [subplot.id]: { min: minY, max: maxY } });
+        } else if (dx > 4 && dy > 4) {
           const minT = Math.min(activePlotMouseDownPos.time, activePlotMouseCurrentPos.time);
           const maxT = Math.max(activePlotMouseDownPos.time, activePlotMouseCurrentPos.time);
           const minY = Math.min(activePlotMouseDownPos.val, activePlotMouseCurrentPos.val);
@@ -1121,7 +1281,6 @@ export default function App() {
             setZoomRangesX({ ...zoomRangesX, [subplot.id]: { min: minT, max: maxT } });
           }
           setZoomRangesY({ ...zoomRangesY, [subplot.id]: { min: minY, max: maxY } });
-          // Note: DO NOT set plotMode back to 'hover'! Zoom mode stays active.
         } else {
           // Click zoom: zoom in by 0.8, shift-click zooms out by 1.25
           const factor = e.shiftKey ? 1.25 : 0.8;
@@ -1149,37 +1308,50 @@ export default function App() {
       setActivePlotMouseCurrentPos(null);
     };
 
-    const onWheel = (e: React.WheelEvent<SVGSVGElement>) => {
+    const onWheelDOM = (e: WheelEvent) => {
+      const zoomX = e.shiftKey;
+      const zoomY = e.ctrlKey;
+      if (!zoomX && !zoomY) {
+        return; 
+      }
+      
       e.preventDefault();
-      const svgRect = e.currentTarget.getBoundingClientRect();
+      
+      const svgRect = e.currentTarget
+        ? (e.currentTarget as SVGSVGElement).getBoundingClientRect()
+        : null;
+      if (!svgRect) return;
+
       const mX = e.clientX - svgRect.left;
       const mY = e.clientY - svgRect.top;
       const svgMouseX = (mX / svgRect.width) * width;
       const svgMouseY = (mY / svgRect.height) * height;
 
-      if (svgMouseX < padding || svgMouseX > width - padding || svgMouseY < padding || svgMouseY > height - padding) return;
+      if (svgMouseX < padLeft || svgMouseX > width - padRight || svgMouseY < padTop || svgMouseY > height - padBottom) return;
 
-      const fX = (svgMouseX - padding) / (width - padding * 2);
+      const fX = (svgMouseX - padLeft) / (width - padLeft - padRight);
       const mouseT = displayXMin + fX * (displayXMax - displayXMin);
-      const fY = (height - padding - svgMouseY) / (height - padding * 2);
+      const fY = (height - padBottom - svgMouseY) / (height - padTop - padBottom);
       const mouseY = displayYMin + fY * (displayYMax - displayYMin);
 
       const factor = e.deltaY < 0 ? 0.85 : 1.15;
 
-      const newTMin = mouseT - (mouseT - displayXMin) * factor;
-      const newTMax = mouseT + (displayXMax - mouseT) * factor;
-      const newYMin = mouseY - (mouseY - displayYMin) * factor;
-      const newYMax = mouseY + (displayYMax - mouseY) * factor;
-
-      const nextX = { min: newTMin, max: newTMax };
-      const nextY = { min: newYMin, max: newYMax };
-
-      if (syncXZoom) {
-        setGlobalZoomX(nextX);
-      } else {
-        setZoomRangesX({ ...zoomRangesX, [subplot.id]: nextX });
+      if (zoomX) {
+        const newTMin = mouseT - (mouseT - displayXMin) * factor;
+        const newTMax = mouseT + (displayXMax - mouseT) * factor;
+        const nextX = { min: newTMin, max: newTMax };
+        if (syncXZoom) {
+          setGlobalZoomX(nextX);
+        } else {
+          setZoomRangesX(prev => ({ ...prev, [subplot.id]: nextX }));
+        }
       }
-      setZoomRangesY({ ...zoomRangesY, [subplot.id]: nextY });
+      if (zoomY) {
+        const newYMin = mouseY - (mouseY - displayYMin) * factor;
+        const newYMax = mouseY + (displayYMax - mouseY) * factor;
+        const nextY = { min: newYMin, max: newYMax };
+        setZoomRangesY(prev => ({ ...prev, [subplot.id]: nextY }));
+      }
     };
 
     const resetLocalZoom = () => {
@@ -1215,6 +1387,530 @@ export default function App() {
       gridTickColor = "#9fa0ad";
       selectionColorFill = "#df9f2422";
       selectionBorderStroke = "#df9f24";
+    }
+
+    const renderSvgCanvas = () => (
+      <div className={`relative overflow-hidden select-none transition-all ${
+        isStacked 
+        ? 'w-full h-full' 
+        : `rounded-lg border ${theme === 'light' ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-950 border-slate-900'}`
+      }`}>
+        {activeTraces.length === 0 ? (
+          <div 
+            style={{ height }} 
+            className="w-full flex flex-col items-center justify-center text-slate-500 bg-slate-950/20 border border-dashed border-slate-800 rounded-lg p-6"
+          >
+            <Activity className="h-7 w-7 text-slate-600 mb-2 animate-pulse" />
+            <p className="text-[10px] font-semibold text-slate-400">Empty Subplot Lane</p>
+            <p className="text-[9px] text-slate-500 mt-0.5">Toggle variable checkboxes below to render waveforms in this pane!</p>
+          </div>
+        ) : (
+          <svg 
+            viewBox={`0 0 ${width} ${height}`} 
+            className="w-full h-auto"
+            style={{ backgroundColor: bgColor }}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            ref={el => {
+              if (el) {
+                const oldHandler = (el as any)._onWheelHandler;
+                if (oldHandler) {
+                  el.removeEventListener('wheel', oldHandler);
+                }
+                (el as any)._onWheelHandler = onWheelDOM;
+                el.addEventListener('wheel', onWheelDOM, { passive: false });
+              }
+            }}
+            onMouseLeave={() => {
+              setHoveredData(null);
+              setHoveredPosition(null);
+              setHoverTime(null);
+            }}
+            onDoubleClick={resetLocalZoom}
+          >
+            <defs>
+              <clipPath id={`viewport-clip-${subplot.id}`}>
+                <rect x={padLeft} y={padTop} width={width - padLeft - padRight} height={height - padTop - padBottom} />
+              </clipPath>
+            </defs>
+
+            {/* Grid lines X axes */}
+            {Array.from({ length: gridCols + 1 }).map((_, i) => {
+              const val = displayXMin + i * colStep;
+              const x = getXCoords(val);
+              return (
+                <g key={`x-grid-${subplot.id}-${i}`}>
+                  <line x1={x} y1={padTop} x2={x} y2={height - padBottom} stroke={lineGridColor} strokeWidth="1" strokeDasharray="3,4" />
+                  {(!isStacked || idx === stackLength - 1) && (
+                    <text x={x} y={height - padBottom + 14} fill={gridTickColor} fontSize="8" textAnchor="middle" fontFamily="monospace">
+                      {formatTimeVal(val)}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+
+            {/* Grid lines Y axes */}
+            {Array.from({ length: gridRows + 1 }).map((_, i) => {
+              const val = displayYMin + i * rowStep;
+              const y = getYCoords(val);
+              return (
+                <g key={`y-grid-${subplot.id}-${i}`}>
+                  <line x1={padLeft} y1={y} x2={width - padRight} y2={y} stroke={lineGridColor} strokeWidth="1" strokeDasharray="3,4" />
+                  <text x={padLeft - 8} y={y + 3.5} fill={gridTickColor} fontSize="8" textAnchor="end" fontFamily="monospace">
+                    {formatYVal(val)}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* Main boundaries */}
+            <line x1={padLeft} y1={padTop} x2={padLeft} y2={height - padBottom} stroke={frameAxisColor} strokeWidth="1.2" />
+            <line x1={width - padRight} y1={padTop} x2={width - padRight} y2={height - padBottom} stroke={frameAxisColor} strokeWidth="1.2" />
+            
+            {/* Top border (only for the first plot in the stack, or all plots if not stacked) */}
+            {(!isStacked || idx === 0) && (
+              <line x1={padLeft} y1={padTop} x2={width - padRight} y2={padTop} stroke={frameAxisColor} strokeWidth="1.2" />
+            )}
+            
+            {/* Bottom border (always draw as the divider/bottom axis) */}
+            <line x1={padLeft} y1={height - padBottom} x2={width - padRight} y2={height - padBottom} stroke={frameAxisColor} strokeWidth="1.2" />
+
+            {/* Active Waveforms curves */}
+            {activeTraces.map((trace) => {
+              const signalDataPoints = getTraceData(trace);
+              const color = isImPlotTheme 
+                ? ((trace.startsWith('V_') || trace.endsWith('_V')) ? '#eab308' : (trace.startsWith('I_') || trace.endsWith('_I')) ? '#ef4444' : '#10b981')
+                : getTraceColor(trace);
+              
+              let pathD = "";
+              let startIdx = 0;
+              let endIdx = tData.length - 1;
+              for (let i = 0; i < tData.length; i++) {
+                if (tData[i] >= displayXMin) {
+                  startIdx = i;
+                  break;
+                }
+              }
+              for (let i = tData.length - 1; i >= 0; i--) {
+                if (tData[i] <= displayXMax) {
+                  endIdx = i;
+                  break;
+                }
+              }
+              
+              const countVisible = endIdx - startIdx + 1;
+              const stepCount = Math.min(countVisible, 800);
+              const step = Math.max(1, Math.floor(countVisible / stepCount));
+              
+              let sampleIndex = 0;
+              for (let i = startIdx; i <= endIdx; i += step) {
+                const xPoint = getXCoords(tData[i]);
+                const yPoint = getYCoords(signalDataPoints[i]);
+                if (sampleIndex === 0) {
+                  pathD = `M ${xPoint} ${yPoint}`;
+                } else {
+                  pathD += ` L ${xPoint} ${yPoint}`;
+                }
+                sampleIndex++;
+              }
+
+              return (
+                <path
+                  key={`trace-path-${subplot.id}-${trace}`}
+                  d={pathD}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={isImPlotTheme ? "2" : "1.8"}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  clipPath={`url(#viewport-clip-${subplot.id})`}
+                  style={{ filter: isImPlotTheme ? 'none' : `drop-shadow(0 0 1px ${color}22)` }}
+                />
+              );
+            })}
+
+            {/* Dynamic Box-zoom overlay */}
+            {plotMode === 'zoom' && isPlotMouseDown && activePlotMouseDownPos && activePlotMouseDownPos.plotId === subplot.id && activePlotMouseCurrentPos && (() => {
+              const x1 = activePlotMouseDownPos.x;
+              const x2 = activePlotMouseCurrentPos.x;
+              const y1 = activePlotMouseDownPos.y;
+              const y2 = activePlotMouseCurrentPos.y;
+              const dx = Math.abs(x2 - x1);
+              const dy = Math.abs(y2 - y1);
+              
+              const isXOnly = dx > 8 && (dy < 15 || dy / dx < 0.35);
+              const isYOnly = dy > 8 && (dx < 15 || dx / dy < 0.35);
+              
+              let boxX = Math.min(x1, x2);
+              let boxY = Math.min(y1, y2);
+              let boxW = dx;
+              let boxH = dy;
+              
+              if (isXOnly) {
+                boxY = padTop;
+                boxH = height - padTop - padBottom;
+              } else if (isYOnly) {
+                boxX = padLeft;
+                boxW = width - padLeft - padRight;
+              }
+              
+              return (
+                <rect
+                  x={boxX}
+                  y={boxY}
+                  width={boxW}
+                  height={boxH}
+                  fill={selectionColorFill}
+                  stroke={selectionBorderStroke}
+                  strokeWidth="1.2"
+                  strokeDasharray="4,4"
+                />
+              );
+            })()}
+
+            {/* Cursors segments overlays */}
+            {displayedMeasureRange && (
+              <g clipPath={`url(#viewport-clip-${subplot.id})`}>
+                <rect 
+                  x={Math.min(getXCoords(displayedMeasureRange.start), getXCoords(displayedMeasureRange.end))} 
+                  y={padTop} 
+                  width={Math.abs(getXCoords(displayedMeasureRange.end) - getXCoords(displayedMeasureRange.start))} 
+                  height={height - padTop - padBottom} 
+                  fill={isImPlotTheme ? "#df9f2415" : "#eab30810"} 
+                  stroke={isImPlotTheme ? "#df9f243a" : "#eab3082a"}
+                  strokeWidth="1"
+                />
+                <line 
+                  x1={getXCoords(displayedMeasureRange.start)} 
+                  y1={padTop} 
+                  x2={getXCoords(displayedMeasureRange.start)} 
+                  y2={height - padBottom} 
+                  stroke={isImPlotTheme ? "#f59e0b" : "#eab308"} 
+                  strokeWidth="1.2" 
+                  strokeDasharray="3,2" 
+                />
+                <line 
+                  x1={getXCoords(displayedMeasureRange.end)} 
+                  y1={padTop} 
+                  x2={getXCoords(displayedMeasureRange.end)} 
+                  y2={height - padBottom} 
+                  stroke={isImPlotTheme ? "#f1c40f" : "#f59e0b"} 
+                  strokeWidth="1.2" 
+                  strokeDasharray="3,2" 
+                />
+              </g>
+            )}
+
+            {/* Segment Markers icons */}
+            {displayedMeasureRange && (
+              <>
+                <g transform={`translate(${getXCoords(displayedMeasureRange.start)}, ${padTop - 4})`}>
+                  <polygon points="-6,-10 6,-10 6,-2 -6,-2" fill={isImPlotTheme ? "#df9f24" : "#eab308"} />
+                  <polygon points="-6,-2 6,-2 0,2" fill={isImPlotTheme ? "#df9f24" : "#eab308"} />
+                  <text y="-4" fill="#000" fontSize="7" fontWeight="bold" textAnchor="middle" fontFamily="monospace">A</text>
+                </g>
+                <g transform={`translate(${getXCoords(displayedMeasureRange.end)}, ${padTop - 4})`}>
+                  <polygon points="-6,-10 6,-10 6,-2 -6,-2" fill={isImPlotTheme ? "#eab308" : "#f59e0b"} />
+                  <polygon points="-6,-2 6,-2 0,2" fill={isImPlotTheme ? "#eab308" : "#f59e0b"} />
+                  <text y="-4" fill="#000" fontSize="7" fontWeight="bold" textAnchor="middle" fontFamily="monospace">B</text>
+                </g>
+              </>
+            )}
+
+            {/* Vertical line crosshair syncing times */}
+            {plotMode === 'hover' && hoverTime !== null && hoverTime >= displayXMin && hoverTime <= displayXMax && (
+              <line
+                x1={getXCoords(hoverTime)}
+                y1={padTop}
+                x2={getXCoords(hoverTime)}
+                y2={height - padBottom}
+                stroke={isImPlotTheme ? "#ef444466" : "#64748b66"}
+                strokeWidth="1"
+                strokeDasharray="3,3"
+              />
+            )}
+          </svg>
+        )}
+
+        {/* Hover cursors details tooltip */}
+        {isHoverActiveOnThisPlot && (
+          <div 
+            className={`absolute z-10 pointer-events-none p-2.5 border rounded-lg backdrop-blur-md shadow-2xl text-[10px] font-mono flex flex-col gap-1 w-44 ${
+              theme === 'light'
+              ? 'bg-white/95 border-slate-200 text-slate-800 shadow-slate-300/40'
+              : 'bg-slate-950/90 border-slate-900 text-slate-300'
+            }`}
+            style={{ 
+              left: `${Math.min(hoverPosition.x + 15, width - 110)}px`, 
+              top: `${Math.min(hoverPosition.y - 10, height - 90)}px`,
+            }}
+          >
+            <div className={`font-semibold border-b pb-0.5 mb-1 flex justify-between ${
+              theme === 'light' ? 'text-sky-655 border-slate-200' : 'text-sky-400 border-slate-900'
+            }`}>
+              <span>Time:</span> <span>{(hoveredData.time * 1000).toFixed(3)} ms</span>
+            </div>
+            {Object.entries(hoveredData.values).map(([trace, val]) => (
+              <div key={trace} className="flex justify-between items-center gap-2">
+                <span className="truncate max-w-[100px] text-slate-400" style={{ color: getTraceColor(trace) }}>{formatTraceLabel(trace)}:</span>
+                <span className={`font-bold ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`}>{(val as number).toFixed(4)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+
+    if (isStacked) {
+      return (
+        <div 
+          key={subplot.id} 
+          className={`flex flex-row gap-0 relative transition-all ${
+            idx === stackLength - 1 ? '' : (theme === 'light' ? 'border-b border-slate-200' : 'border-b border-slate-900')
+          } ${
+            theme === 'light' ? 'bg-white text-slate-800' : 'bg-slate-950 text-slate-200'
+          }`}
+        >
+          {/* Left panel: Controls (width: w-60) */}
+          <div className={`w-60 shrink-0 p-3 flex flex-col justify-between gap-3 border-r ${
+            theme === 'light' ? 'border-slate-200 bg-slate-50/30' : 'border-slate-900 bg-slate-900/10'
+          }`}>
+            <div className="flex flex-col gap-2.5">
+              {/* Lane Identifier & Title / Rename */}
+              <div className="flex items-center gap-1.5 justify-between">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className={`text-[9px] font-mono font-bold border px-1.5 py-0.5 rounded shrink-0 ${
+                    theme === 'light'
+                    ? 'bg-slate-100 border-slate-200 text-slate-500'
+                    : 'bg-slate-900/60 border-slate-800 text-slate-450'
+                  }`}>{isInsideScopeTab ? "CH" : "LANE"} {idx + 1}</span>
+                  
+                  {isInsideScopeTab ? (
+                    <span className="text-[11px] font-bold text-sky-400 truncate">{subplot.title}</span>
+                  ) : (
+                    <input 
+                      type="text"
+                      value={subplot.title}
+                      onChange={(e) => renameSubplot(subplot.id, e.target.value)}
+                      className={`text-[11px] font-bold bg-transparent outline-none border-b border-transparent pb-0.5 w-full transition-all truncate ${
+                        theme === 'light'
+                        ? 'text-slate-800 hover:border-slate-350 focus:border-sky-500 placeholder-slate-450'
+                        : 'text-slate-250 hover:border-slate-800 focus:border-sky-500 placeholder-slate-650'
+                      }`}
+                      placeholder="Name lane..."
+                    />
+                  )}
+                </div>
+
+                {!isInsideScopeTab && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button 
+                      onClick={() => moveSubplotOrder(idx, 'up')}
+                      disabled={idx === 0}
+                      className={`p-0.5 disabled:opacity-25 rounded transition-all cursor-pointer ${
+                        theme === 'light' ? 'hover:bg-slate-200 text-slate-500' : 'text-slate-400 hover:bg-slate-850'
+                      }`}
+                      title="Move up"
+                    >
+                      <ArrowUp className="h-2.5 w-2.5" />
+                    </button>
+                    <button 
+                      onClick={() => moveSubplotOrder(idx, 'down')}
+                      disabled={idx === subplots.length - 1}
+                      className={`p-0.5 disabled:opacity-25 rounded transition-all cursor-pointer ${
+                        theme === 'light' ? 'hover:bg-slate-200 text-slate-500' : 'text-slate-400 hover:bg-slate-850'
+                      }`}
+                      title="Move down"
+                    >
+                      <ArrowDown className="h-2.5 w-2.5" />
+                    </button>
+                    {subplots.length > 1 && (
+                      <button 
+                        onClick={() => deleteSubplotById(subplot.id)}
+                        className={`p-0.5 rounded transition-all cursor-pointer ${
+                          theme === 'light' ? 'text-slate-450 hover:text-rose-500 hover:bg-slate-100' : 'text-slate-500 hover:text-rose-450 hover:bg-slate-855'
+                        }`}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-2.5 w-2.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Tool Selection for this plot */}
+              <div className={`flex border rounded p-0.5 gap-0.5 text-[8.5px] font-semibold select-none transition-all ${
+                theme === 'light'
+                ? 'bg-slate-100/50 border-slate-200 shadow-sm'
+                : 'bg-slate-950/80 border-slate-850'
+              }`}>
+                <button
+                  onClick={() => setPlotMode('hover')}
+                  className={`flex-1 text-center py-0.5 rounded cursor-pointer transition-all ${
+                    plotMode === 'hover' 
+                    ? (theme === 'light' ? 'bg-white text-sky-600 font-bold shadow-sm' : 'bg-sky-500/15 text-sky-400 font-bold border border-sky-500/20') 
+                    : (theme === 'light' ? 'text-slate-500 hover:text-slate-800' : 'text-slate-500 hover:text-slate-350')
+                  }`}
+                  title="Probe mode"
+                >
+                  Probe
+                </button>
+                <button
+                  onClick={() => setPlotMode('zoom')}
+                  className={`flex-1 text-center py-0.5 rounded cursor-pointer transition-all ${
+                    plotMode === 'zoom' 
+                    ? (theme === 'light' ? 'bg-white text-indigo-600 font-bold shadow-sm' : 'bg-indigo-500/15 text-indigo-400 font-bold border border-indigo-500/30') 
+                    : (theme === 'light' ? 'text-slate-500 hover:text-slate-800' : 'text-slate-500 hover:text-slate-355')
+                  }`}
+                  title="Zoom mode"
+                >
+                  Zoom
+                </button>
+                <button
+                  onClick={() => setPlotMode('pan')}
+                  className={`flex-1 text-center py-0.5 rounded cursor-pointer transition-all ${
+                    plotMode === 'pan' 
+                    ? (theme === 'light' ? 'bg-white text-emerald-600 font-bold shadow-sm' : 'bg-emerald-500/15 text-emerald-400 font-bold border border-emerald-500/30') 
+                    : (theme === 'light' ? 'text-slate-500 hover:text-slate-800' : 'text-slate-500 hover:text-slate-350')
+                  }`}
+                  title="Pan mode"
+                >
+                  Pan
+                </button>
+                <button
+                  onClick={() => {
+                    setPlotMode('measure');
+                    if (!globalMeasureRange) {
+                      const tData = simResults?.time || [0, 0.01];
+                      setGlobalMeasureRange({ start: tData[0], end: tData[tData.length-1] });
+                    }
+                  }}
+                  className={`flex-1 text-center py-0.5 rounded cursor-pointer transition-all ${
+                    plotMode === 'measure' 
+                    ? (theme === 'light' ? 'bg-white text-yellow-600 font-bold shadow-sm' : 'bg-yellow-500/15 text-yellow-500 font-bold border border-yellow-500/30') 
+                    : (theme === 'light' ? 'text-slate-500 hover:text-slate-800' : 'text-slate-500 hover:text-slate-350')
+                  }`}
+                  title="Cursors mode"
+                >
+                  Cursors
+                </button>
+              </div>
+
+              {/* Autofit Options */}
+              <div className={`flex border rounded p-0.5 gap-0.5 text-[8.5px] font-semibold select-none transition-all ${
+                theme === 'light'
+                ? 'bg-slate-100/50 border-slate-200 shadow-sm'
+                : 'bg-slate-950/80 border-slate-850'
+              }`}>
+                <button
+                  onClick={() => {
+                    if (syncXZoom) {
+                      setGlobalZoomX(null);
+                    } else {
+                      setZoomRangesX({ ...zoomRangesX, [subplot.id]: null });
+                    }
+                  }}
+                  className={`flex-1 text-center py-0.5 rounded cursor-pointer transition-all ${
+                    theme === 'light' ? 'text-slate-655 hover:text-slate-900 hover:bg-white/60' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
+                  }`}
+                >
+                  Fit X
+                </button>
+                <button
+                  onClick={() => {
+                    setZoomRangesY({ ...zoomRangesY, [subplot.id]: null });
+                  }}
+                  className={`flex-1 text-center py-0.5 rounded cursor-pointer transition-all ${
+                    theme === 'light' ? 'text-slate-655 hover:text-slate-900 hover:bg-white/60' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
+                  }`}
+                >
+                  Fit Y
+                </button>
+                <button
+                  onClick={() => {
+                    if (syncXZoom) {
+                      setGlobalZoomX(null);
+                    } else {
+                      setZoomRangesX({ ...zoomRangesX, [subplot.id]: null });
+                    }
+                    setZoomRangesY({ ...zoomRangesY, [subplot.id]: null });
+                  }}
+                  className={`flex-1 text-center py-0.5 rounded cursor-pointer font-bold transition-all ${
+                    theme === 'light' ? 'text-sky-600 hover:text-sky-700 hover:bg-white/60' : 'text-sky-400 hover:text-sky-300 hover:bg-slate-900/40'
+                  }`}
+                >
+                  All
+                </button>
+              </div>
+            </div>
+
+            {/* Trace Selection and Statistics */}
+            <div className="flex flex-col gap-2 overflow-y-auto max-h-[120px] pr-1 scrollbar-thin">
+              {/* Statistics for measurement segment if active */}
+              {displayedMeasureRange && activeTraces.length > 0 && (
+                <div className={`p-1.5 rounded text-[8.5px] font-mono border ${
+                  theme === 'light' ? 'bg-slate-100 border-slate-200' : 'bg-slate-900/50 border-slate-850'
+                }`}>
+                  <div className={`font-bold border-b pb-0.5 mb-1 text-[8px] flex justify-between ${
+                    theme === 'light' ? 'text-amber-700 border-slate-200' : 'text-amber-500 border-slate-855'
+                  }`}>
+                    <span>dt: {((displayedMeasureRange.end - displayedMeasureRange.start) * 1000).toFixed(3)} ms</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {activeTraces.slice(0, 3).map(tr => {
+                      const stats = getSegmentStatsForTrace(tr, displayedMeasureRange.start, displayedMeasureRange.end);
+                      if (!stats) return null;
+                      return (
+                        <div key={`seg-stat-${subplot.id}-${tr}`} className="flex justify-between items-center text-[7.5px]">
+                          <span className="truncate max-w-[65px]" style={{ color: getTraceColor(tr) }}>{formatTraceLabel(tr)}:</span>
+                          <span className="text-slate-400 shrink-0 font-bold">
+                            avg:{stats.average.toFixed(2)} rms:{stats.rms.toFixed(2)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Trace Selection Chips */}
+              {!isInsideScopeTab && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[8px] font-mono font-bold text-slate-500 uppercase tracking-wide">Signals:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {availableTraces.map(trace => {
+                      const isChecked = subplot.traces.includes(trace);
+                      const color = getTraceColor(trace);
+                      return (
+                        <button
+                          key={`filter-${subplot.id}-${trace}`}
+                          onClick={() => toggleTraceSelection(subplot.id, trace)}
+                          className={`px-1.5 py-0.5 rounded text-[8px] border font-semibold font-mono transition-all flex items-center gap-1 cursor-pointer ${
+                            isChecked 
+                            ? (theme === 'light' ? 'bg-slate-100 border-slate-350 text-slate-800' : 'bg-slate-900 border-slate-700 text-white') 
+                            : (theme === 'light' ? 'border-slate-200 bg-slate-50/50 text-slate-500 hover:text-slate-700' : 'border-slate-950 bg-slate-950 text-slate-500 hover:text-slate-400')
+                          }`}
+                        >
+                          <span className="h-1 w-1 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                          <span className="truncate max-w-[50px]">{trace.replace('_', ' ')}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right panel: SVG Canvas Grid */}
+          <div className="flex-1 min-w-0 relative flex flex-col justify-center">
+            {renderSvgCanvas()}
+          </div>
+        </div>
+      );
     }
 
     return (
@@ -1302,7 +1998,7 @@ export default function App() {
                 }}
                 className={`px-1.5 py-0.5 rounded cursor-pointer transition-all ${
                   plotMode === 'measure' 
-                  ? (theme === 'light' ? 'bg-white text-yellow-600 font-bold shadow-sm' : 'bg-yellow-500/15 text-yellow-500 font-bold border border-yellow-500/30') 
+                  ? (theme === 'light' ? 'bg-white text-yellow-600 font-bold shadow-sm' : 'bg-yellow-500/15 text-yellow-550 font-bold border border-yellow-500/30') 
                   : (theme === 'light' ? 'text-slate-500 hover:text-slate-800' : 'text-slate-500 hover:text-slate-300')
                 }`}
                 title="Cursors mode"
@@ -1408,233 +2104,7 @@ export default function App() {
         </div>
 
         {/* Graphics Plot SVG view screen */}
-        <div className={`relative overflow-hidden rounded-lg select-none border transition-all ${
-          theme === 'light'
-          ? 'bg-white border-slate-200 shadow-sm'
-          : 'bg-slate-950 border-slate-900'
-        }`}>
-          {activeTraces.length === 0 ? (
-            <div 
-              style={{ height }} 
-              className="w-full flex flex-col items-center justify-center text-slate-600 bg-slate-950/40 border border-dashed border-slate-900 rounded-lg p-6"
-            >
-              <Activity className="h-7 w-7 text-slate-850 mb-2" />
-              <p className="text-[10px] font-semibold text-slate-400">Empty Subplot Lane</p>
-              <p className="text-[9px] text-slate-500 mt-0.5">Toggle variable checkboxes below to render waveforms in this pane!</p>
-            </div>
-          ) : (
-            <svg 
-              viewBox={`0 0 ${width} ${height}`} 
-              className="w-full h-auto"
-              style={{ backgroundColor: bgColor }}
-              onMouseDown={onMouseDown}
-              onMouseMove={onMouseMove}
-              onMouseUp={onMouseUp}
-              onWheel={onWheel}
-              onMouseLeave={() => {
-                setHoveredData(null);
-                setHoveredPosition(null);
-                setHoverTime(null);
-              }}
-              onDoubleClick={resetLocalZoom}
-            >
-              <defs>
-                <clipPath id={`viewport-clip-${subplot.id}`}>
-                  <rect x={padding} y={padding} width={width - padding * 2} height={height - padding * 2} />
-                </clipPath>
-              </defs>
-
-              {/* Grid lines X axes */}
-              {Array.from({ length: gridCols + 1 }).map((_, i) => {
-                const val = displayXMin + i * colStep;
-                const x = getXCoords(val);
-                return (
-                  <g key={`x-grid-${subplot.id}-${i}`}>
-                    <line x1={x} y1={padding} x2={x} y2={height - padding} stroke={lineGridColor} strokeWidth="1" strokeDasharray="3,4" />
-                    <text x={x} y={height - padding + 15} fill={gridTickColor} fontSize="8" textAnchor="middle" fontFamily="monospace">
-                      {formatTimeVal(val)}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Grid lines Y axes */}
-              {Array.from({ length: gridRows + 1 }).map((_, i) => {
-                const val = displayYMin + i * rowStep;
-                const y = getYCoords(val);
-                return (
-                  <g key={`y-grid-${subplot.id}-${i}`}>
-                    <line x1={padding} y1={y} x2={width - padding} y2={y} stroke={lineGridColor} strokeWidth="1" strokeDasharray="3,4" />
-                    <text x={padding - 8} y={y + 3.5} fill={gridTickColor} fontSize="8" textAnchor="end" fontFamily="monospace">
-                      {formatYVal(val)}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Main boundaries */}
-              <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke={frameAxisColor} strokeWidth="1.2" />
-              <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke={frameAxisColor} strokeWidth="1.2" />
-
-              {/* Active Waveforms curves */}
-              {activeTraces.map((trace) => {
-                const signalDataPoints = getTraceData(trace);
-                const color = isImPlotTheme 
-                  ? ((trace.startsWith('V_') || trace.endsWith('_V')) ? '#eab308' : (trace.startsWith('I_') || trace.endsWith('_I')) ? '#ef4444' : '#10b981')
-                  : getTraceColor(trace);
-                
-                let pathD = "";
-                let startIdx = 0;
-                let endIdx = tData.length - 1;
-                for (let i = 0; i < tData.length; i++) {
-                  if (tData[i] >= displayXMin) {
-                    startIdx = i;
-                    break;
-                  }
-                }
-                for (let i = tData.length - 1; i >= 0; i--) {
-                  if (tData[i] <= displayXMax) {
-                    endIdx = i;
-                    break;
-                  }
-                }
-                
-                const countVisible = endIdx - startIdx + 1;
-                const stepCount = Math.min(countVisible, 800);
-                const step = Math.max(1, Math.floor(countVisible / stepCount));
-                
-                let sampleIndex = 0;
-                for (let i = startIdx; i <= endIdx; i += step) {
-                  const xPoint = getXCoords(tData[i]);
-                  const yPoint = getYCoords(signalDataPoints[i]);
-                  if (sampleIndex === 0) {
-                    pathD = `M ${xPoint} ${yPoint}`;
-                  } else {
-                    pathD += ` L ${xPoint} ${yPoint}`;
-                  }
-                  sampleIndex++;
-                }
-
-                return (
-                  <path
-                    key={`trace-path-${subplot.id}-${trace}`}
-                    d={pathD}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={isImPlotTheme ? "2" : "1.8"}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    clipPath={`url(#viewport-clip-${subplot.id})`}
-                    style={{ filter: isImPlotTheme ? 'none' : `drop-shadow(0 0 1px ${color}22)` }}
-                  />
-                );
-              })}
-
-              {/* Dynamic Box-zoom overlay */}
-              {plotMode === 'zoom' && isPlotMouseDown && activePlotMouseDownPos && activePlotMouseDownPos.plotId === subplot.id && activePlotMouseCurrentPos && (
-                <rect
-                  x={Math.min(activePlotMouseDownPos.x, activePlotMouseCurrentPos.x)}
-                  y={Math.min(activePlotMouseDownPos.y, activePlotMouseCurrentPos.y)}
-                  width={Math.abs(activePlotMouseCurrentPos.x - activePlotMouseDownPos.x)}
-                  height={Math.abs(activePlotMouseCurrentPos.y - activePlotMouseDownPos.y)}
-                  fill={selectionColorFill}
-                  stroke={selectionBorderStroke}
-                  strokeWidth="1"
-                  strokeDasharray="4,4"
-                />
-              )}
-
-              {/* Cursors segments overlays */}
-              {displayedMeasureRange && (
-                <g clipPath={`url(#viewport-clip-${subplot.id})`}>
-                  <rect 
-                    x={Math.min(getXCoords(displayedMeasureRange.start), getXCoords(displayedMeasureRange.end))} 
-                    y={padding} 
-                    width={Math.abs(getXCoords(displayedMeasureRange.end) - getXCoords(displayedMeasureRange.start))} 
-                    height={height - padding * 2} 
-                    fill={isImPlotTheme ? "#df9f2415" : "#eab30810"} 
-                    stroke={isImPlotTheme ? "#df9f243a" : "#eab3082a"}
-                    strokeWidth="1"
-                  />
-                  <line 
-                    x1={getXCoords(displayedMeasureRange.start)} 
-                    y1={padding} 
-                    x2={getXCoords(displayedMeasureRange.start)} 
-                    y2={height - padding} 
-                    stroke={isImPlotTheme ? "#f59e0b" : "#eab308"} 
-                    strokeWidth="1.2" 
-                    strokeDasharray="3,2" 
-                  />
-                  <line 
-                    x1={getXCoords(displayedMeasureRange.end)} 
-                    y1={padding} 
-                    x2={getXCoords(displayedMeasureRange.end)} 
-                    y2={height - padding} 
-                    stroke={isImPlotTheme ? "#f1c40f" : "#f59e0b"} 
-                    strokeWidth="1.2" 
-                    strokeDasharray="3,2" 
-                  />
-                </g>
-              )}
-
-              {/* Segment Markers icons */}
-              {displayedMeasureRange && (
-                <>
-                  <g transform={`translate(${getXCoords(displayedMeasureRange.start)}, ${padding - 4})`}>
-                    <polygon points="-6,-10 6,-10 6,-2 -6,-2" fill={isImPlotTheme ? "#df9f24" : "#eab308"} />
-                    <polygon points="-6,-2 6,-2 0,2" fill={isImPlotTheme ? "#df9f24" : "#eab308"} />
-                    <text y="-4" fill="#000" fontSize="7" fontWeight="bold" textAnchor="middle" fontFamily="monospace">A</text>
-                  </g>
-                  <g transform={`translate(${getXCoords(displayedMeasureRange.end)}, ${padding - 4})`}>
-                    <polygon points="-6,-10 6,-10 6,-2 -6,-2" fill={isImPlotTheme ? "#eab308" : "#f59e0b"} />
-                    <polygon points="-6,-2 6,-2 0,2" fill={isImPlotTheme ? "#eab308" : "#f59e0b"} />
-                    <text y="-4" fill="#000" fontSize="7" fontWeight="bold" textAnchor="middle" fontFamily="monospace">B</text>
-                  </g>
-                </>
-              )}
-
-              {/* Vertical line crosshair syncing times */}
-              {plotMode === 'hover' && hoverTime !== null && hoverTime >= displayXMin && hoverTime <= displayXMax && (
-                <line
-                  x1={getXCoords(hoverTime)}
-                  y1={padding}
-                  x2={getXCoords(hoverTime)}
-                  y2={height - padding}
-                  stroke={isImPlotTheme ? "#ef444466" : "#64748b66"}
-                  strokeWidth="1"
-                  strokeDasharray="3,3"
-                />
-              )}
-            </svg>
-          )}
-
-          {/* Hover cursors details tooltip */}
-          {isHoverActiveOnThisPlot && (
-            <div 
-              className={`absolute z-10 pointer-events-none p-2.5 border rounded-lg backdrop-blur-md shadow-2xl text-[10px] font-mono flex flex-col gap-1 w-44 ${
-                theme === 'light'
-                ? 'bg-white/95 border-slate-200 text-slate-800 shadow-slate-300/40'
-                : 'bg-slate-950/90 border-slate-900 text-slate-300'
-              }`}
-              style={{ 
-                left: `${Math.min(hoverPosition.x + 15, width - 110)}px`, 
-                top: `${Math.min(hoverPosition.y - 10, height - 90)}px`,
-              }}
-            >
-              <div className={`font-semibold border-b pb-0.5 mb-1 flex justify-between ${
-                theme === 'light' ? 'text-sky-655 border-slate-200' : 'text-sky-400 border-slate-900'
-              }`}>
-                <span>Time:</span> <span>{(hoveredData.time * 1000).toFixed(3)} ms</span>
-              </div>
-              {Object.entries(hoveredData.values).map(([trace, val]) => (
-                <div key={trace} className="flex justify-between items-center gap-2">
-                  <span className="truncate max-w-[100px] text-slate-400" style={{ color: getTraceColor(trace) }}>{formatTraceLabel(trace)}:</span>
-                  <span className={`font-bold ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`}>{(val as number).toFixed(4)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {renderSvgCanvas()}
 
         {/* Subplot trace toggles chips selection */}
         {!isInsideScopeTab && (
@@ -1861,7 +2331,7 @@ export default function App() {
             </button>
           </div>
 
-          <div className="flex-1 flex flex-col gap-5">
+          <div className={isOverlay ? "flex-1 flex flex-col gap-5" : `flex-1 flex flex-col gap-0 border rounded-xl overflow-hidden shadow-md ${theme === 'light' ? 'border-slate-200 shadow-slate-100' : 'border-slate-900 shadow-slate-950/20'}`}>
             {isOverlay ? (
               // Overlay: render all channels in a single plot
               renderSinglePlot({
@@ -1972,6 +2442,15 @@ export default function App() {
             </button>
 
             <button 
+              onClick={() => setIsVisualFlowOpen(true)}
+              className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-lg text-xs flex items-center gap-2 shadow-xl shadow-emerald-500/5 active:scale-95 border border-emerald-400/20 cursor-pointer"
+              title="Open Real-time Visual Flow & Subplot Analyzer Window"
+            >
+              <Play className="h-3.5 w-3.5 fill-current animate-pulse text-white" />
+              <span>VISUAL FLOW WINDOW</span>
+            </button>
+
+            <button 
               onClick={runCppSimulation}
               disabled={isLoading}
               className={`px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-xl shadow-sky-500/5 cursor-pointer select-none transition-all ${
@@ -1983,6 +2462,27 @@ export default function App() {
               <Play className="h-4 w-4 fill-current" />
               {isLoading ? "RUNNING C++..." : "RUN SOLVER"}
             </button>
+
+            {isLoading && activeSessionId && (
+              <>
+                <button
+                  onClick={pauseResumeSimulation}
+                  className="px-3 py-1.5 border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/25 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md duration-100"
+                  title={isPaused ? "Resume simulation" : "Pause simulation"}
+                >
+                  {isPaused ? <Play className="h-3.5 w-3.5 fill-current text-yellow-400" /> : <Pause className="h-3.5 w-3.5 fill-current text-yellow-400" />}
+                  <span>{isPaused ? "RESUME" : "PAUSE"}</span>
+                </button>
+                <button
+                  onClick={terminateSimulation}
+                  className="px-3 py-1.5 border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/25 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md duration-100"
+                  title="Terminate simulation and plot current data"
+                >
+                  <StopCircle className="h-3.5 w-3.5 text-red-400" />
+                  <span>TERMINATE & PLOT</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -1992,6 +2492,10 @@ export default function App() {
           <SchematicEditor 
             onRunSimulation={runSchematicSimulation} 
             availableTraces={extractAvailableTraces(simResults)}
+            isLoading={isLoading}
+            isPaused={isPaused}
+            onPauseResume={pauseResumeSimulation}
+            onTerminate={terminateSimulation}
           />
         </div>
       ) : activeTab === 'simulator' ? (
@@ -2269,6 +2773,18 @@ export default function App() {
                 >
                   {layoutMode === 'grid' ? "Side-by-Side Grid" : "Stacked Lanes"}
                 </button>
+                {layoutMode === 'stacked' && (
+                  <button
+                    onClick={() => setFitStack(!fitStack)}
+                    className={`px-1.5 py-0.5 border text-[9px] rounded font-bold transition-all cursor-pointer ${
+                      fitStack 
+                      ? 'bg-sky-500/10 text-sky-400 border-sky-400/30' 
+                      : (theme === 'light' ? 'bg-white text-slate-600 border-slate-350 hover:bg-slate-50' : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-300')
+                    }`}
+                  >
+                    {fitStack ? "Fit Stack: ON" : "Fit Stack: OFF"}
+                  </button>
+                )}
               </div>
 
               <div className={`flex items-center gap-1.5 border-l pl-4 ${theme === 'light' ? 'border-slate-200' : 'border-slate-900'}`}>
@@ -2356,7 +2872,7 @@ export default function App() {
                 renderSinglePlot({ id: "unified", title: "Consolidated Solver Outputs", traces: [] }, 0)
               ) : (
                 // Display individual subplots list
-                <div className={layoutMode === 'grid' ? "grid grid-cols-1 xl:grid-cols-2 gap-5" : "flex flex-col gap-5"}>
+                <div className={layoutMode === 'grid' ? "grid grid-cols-1 xl:grid-cols-2 gap-5" : (subplots.length > 1 ? `flex flex-col gap-0 border rounded-xl overflow-hidden shadow-md ${theme === 'light' ? 'border-slate-200 shadow-slate-100' : 'border-slate-900 shadow-slate-950/20'}` : "flex flex-col gap-5")}>
                   {subplots.map((sp, idx) => renderSinglePlot(sp, idx))}
                 </div>
               )}
@@ -2370,6 +2886,40 @@ export default function App() {
         {renderScopePlotterView(activeTab)}
       </main>
     )}
+    {isVisualFlowOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-lg p-4 md:p-6 select-none animate-fade-in">
+          <div className={`w-full h-full max-w-[1700px] max-h-[950px] rounded-3xl overflow-hidden shadow-2xl flex flex-col border ${theme === 'light' ? 'bg-slate-50 border-slate-200 shadow-slate-200/50' : 'bg-[#050711] border-slate-800/85'}`}>
+            
+            {/* Modal Header */}
+            <div className={`px-6 py-4 border-b flex items-center justify-between z-10 shrink-0 ${theme === 'light' ? 'border-slate-200 bg-white' : 'border-slate-900 bg-slate-950/90'}`}>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <h2 className={`text-sm font-extrabold tracking-wider uppercase font-sans ${theme === 'light' ? 'text-slate-850' : 'text-slate-100'}`}>
+                  Real-time Visual Flow & Subplot Analyzer Window
+                </h2>
+              </div>
+              <button
+                onClick={() => setIsVisualFlowOpen(false)}
+                className={`px-3 py-1.5 border rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow flex items-center gap-1.5 ${theme === 'light' ? 'border-slate-200 hover:bg-slate-100 text-slate-600 hover:text-slate-800' : 'border-slate-850 hover:border-slate-800 hover:bg-slate-900/65 text-slate-400 hover:text-slate-100'}`}
+                title="Close Visual Flow Window"
+              >
+                <X className="h-4 w-4" />
+                <span>Close Window</span>
+              </button>
+            </div>
+
+            {/* Modal Body: Renders the SimulationPlayer */}
+            <div className={`flex-1 overflow-y-auto p-6 flex flex-col ${theme === 'light' ? 'bg-slate-50' : 'bg-[#050711]'}`}>
+              <SimulationPlayer 
+                simResults={simResults} 
+                onRunSimulation={runSchematicSimulation} 
+                subplots={subplots}
+                theme={theme}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
