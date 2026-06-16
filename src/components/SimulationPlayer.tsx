@@ -245,6 +245,31 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
   const [isSchematicFullScreen, setIsSchematicFullScreen] = useState(false);
   const [openPlotSettingsId, setOpenPlotSettingsId] = useState<string | null>(null);
 
+  // Synced Zoom and Scroll Pan States
+  const [timeZoom, setTimeZoom] = useState(1.0);
+  const [previewPlotId, setPreviewPlotId] = useState<string | null>(null);
+  const draggedTraceRef = useRef<{ name: string; label: string } | null>(null);
+
+  const addSubplotTraces = (subplotId: string, tracesToAdd: string[]) => {
+    setLocalSubplots(prev => prev.map(sp => {
+      if (sp.id === subplotId) {
+        const newTraces = [...sp.traces];
+        tracesToAdd.forEach(t => {
+          if (!newTraces.includes(t)) {
+            newTraces.push(t);
+          }
+        });
+        return {
+          ...sp,
+          traces: newTraces
+        };
+      }
+      return sp;
+    }));
+  };
+
+
+
   const isLight = theme === 'light';
 
   // Theme-specific styles & Tailwind classes
@@ -423,11 +448,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
       return { x: ep.x || 0, y: ep.y || 0 };
     };
 
-    const electricalWires = state.wires.filter((w: any) => {
-      const isControlVal = (w.from && w.from.type === 'pin' && state.components.find((c: any) => c.id === w.from.compId)?.type === 'CONST') || 
-                           (w.to && w.to.type === 'pin' && state.components.find((c: any) => c.id === w.to.compId)?.type === 'CONST');
-      return !isControlVal;
-    });
+    const electricalWires = state.wires.filter((w: any) => getWireDomain(w) === 'electrical');
 
     const fastMode = !isFidelitySimActive;
 
@@ -569,7 +590,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
   const toggleComponentScope = (comp: any) => {
     const scopeId = comp.id;
     setActiveScopes(prev => {
-      const isControlComp = ['CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'CSCRIPT', 'MUX', 'DEMUX'].includes(comp.type);
+      const isControlComp = getPinDomain(comp.type, "") === 'control';
       const next = { ...prev };
 
       if (isControlComp) {
@@ -622,11 +643,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
 
   // Toggle dynamic scope for any wire/signal-line (clicks in schematic viewport)
   const toggleWireScope = (wire: any) => {
-    const isControlWire = (wire.from && wire.from.type === 'pin' && state.components.find((c: any) => c.id === wire.from.compId)?.type === 'CONST') || 
-                          (wire.to && wire.to.type === 'pin' && state.components.find((c: any) => c.id === wire.to.compId)?.type === 'CONST') ||
-                          ['CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'CSCRIPT', 'MUX', 'DEMUX', 'SCOPE'].includes(
-                            state.components.find((c: any) => c.id === (wire.from?.compId || wire.to?.compId))?.type
-                          );
+    const isControlWire = getWireDomain(wire) === 'control';
 
     const scopeId = `wire_${wire.id}`;
     setActiveScopes(prev => {
@@ -863,11 +880,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
       });
     });
 
-    const electricalWires = state.wires.filter((w: any) => {
-      const isControlVal = (w.from && w.from.type === 'pin' && state.components.find((c: any) => c.id === w.from.compId)?.type === 'CONST') || 
-                           (w.to && w.to.type === 'pin' && state.components.find((c: any) => c.id === w.to.compId)?.type === 'CONST');
-      return !isControlVal;
-    });
+    const electricalWires = state.wires.filter((w: any) => getWireDomain(w) === 'electrical');
 
     electricalWires.forEach((wire: any) => {
       const getEndpointKey = (ep: any, id: string, side: 'from' | 'to') => {
@@ -1074,6 +1087,17 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
   const tMin = tData.length > 0 ? tData[0] : 0.0;
   const tMax = tData.length > 0 ? tData[tData.length - 1] : 0.01;
   const totalSimDuration = tMax - tMin;
+
+  const visibleDuration = totalSimDuration / timeZoom;
+  let vStart: number;
+  let vEnd: number;
+  if (timeZoom > 1.0) {
+    vStart = playTime - visibleDuration / 2;
+    vEnd = playTime + visibleDuration / 2;
+  } else {
+    vStart = tMin;
+    vEnd = tMax;
+  }
 
   // Find the closest index in simulation array for a given playTime
   const getClosestTimeIndex = (timeVal: number): number => {
@@ -1476,10 +1500,14 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
     let yMax = -Infinity;
     activeTraces.forEach((trace) => {
       const arr = getFullTraceArray(trace);
-      arr.forEach((val) => {
-        if (val < yMin) yMin = val;
-        if (val > yMax) yMax = val;
-      });
+      for (let i = 0; i < arr.length; i++) {
+        const t = tData[i];
+        if (t >= vStart && t <= vEnd) {
+          const val = arr[i];
+          if (val < yMin) yMin = val;
+          if (val > yMax) yMax = val;
+        }
+      }
     });
 
     if (yMin === Infinity || yMax === -Infinity) {
@@ -1495,7 +1523,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
     }
 
     // Coordinate converters
-    const getX = (t: number) => paddingLeft + ((t - tMin) / totalSimDuration) * (width - paddingLeft - paddingRight);
+    const getX = (t: number) => paddingLeft + ((t - vStart) / (vEnd - vStart || 1)) * (width - paddingLeft - paddingRight);
     const getY = (val: number) => height - paddingBottom - ((val - yMin) / (yMax - yMin || 1)) * (height - paddingTop - paddingBottom);
 
     // Formatter helpers
@@ -1521,7 +1549,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
       const startOffset = plotWidth * (paddingLeft / width);
       const cleanX = Math.max(0, Math.min(innerWidth, clickX - startOffset));
       const fraction = cleanX / innerWidth;
-      const targetT = tMin + (totalSimDuration * fraction);
+      const targetT = vStart + ((vEnd - vStart) * fraction);
       setIsPlaying(false);
       setPlayTime(targetT);
     };
@@ -1534,7 +1562,26 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
     const isSettingsOpen = openPlotSettingsId === subplot.id;
 
     return (
-      <div key={subplot.id} className={`relative border rounded-xl p-1.5 flex flex-col shadow-sm select-none transition-all ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950 border-slate-900'}`}>
+      <div 
+        key={subplot.id} 
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const traceName = e.dataTransfer.getData("traceName");
+          if (traceName) {
+            addSubplotTraces(subplot.id, [traceName]);
+            if (previewPlotId) {
+              setLocalSubplots(prev => prev.filter(sp => sp.id !== previewPlotId));
+              setPreviewPlotId(null);
+            }
+          }
+        }}
+        className={`relative border rounded-xl p-1.5 flex flex-col shadow-sm select-none transition-all ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950 border-slate-900'}`}
+      >
         
         {/* Absolute Live Numerical Values - Top Left */}
         {activeTraces.length > 0 && (
@@ -1644,9 +1691,15 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
                 if (e.buttons === 1) handlePlotInteraction(e);
               }}
             >
+              <defs>
+                <clipPath id={`plot-clip-${subplot.id}`}>
+                  <rect x={paddingLeft} y={paddingTop} width={width - paddingLeft - paddingRight} height={height - paddingTop - paddingBottom} />
+                </clipPath>
+              </defs>
+
               {/* Grid Lines */}
               {[0, 0.25, 0.5, 0.75, 1.0].map((step) => {
-                const clockT = tMin + step * totalSimDuration;
+                const clockT = vStart + step * (vEnd - vStart);
                 const gx = getX(clockT);
                 return (
                   <g key={`sp-xGrid-${step}`}>
@@ -1677,56 +1730,63 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
               <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft} y2={height - paddingBottom} stroke={isLight ? '#cbd5e1' : '#334155'} strokeWidth="1" />
               <line x1={paddingLeft} y1={height - paddingBottom} x2={width - paddingRight} y2={height - paddingBottom} stroke={isLight ? '#cbd5e1' : '#334155'} strokeWidth="1" />
 
-              {/* Plot Waveforms */}
-              {activeTraces.map((trace) => {
-                const arr = getFullTraceArray(trace);
-                let pathStr = "";
-                const stepRate = Math.max(1, Math.floor(arr.length / 500));
-                
-                for (let i = 0; i < arr.length; i += stepRate) {
-                  const px = getX(tData[i]);
-                  const py = getY(arr[i]);
-                  if (i === 0) {
-                    pathStr += `M ${px} ${py}`;
-                  } else {
+              <g clipPath={`url(#plot-clip-${subplot.id})`}>
+                {/* Plot Waveforms */}
+                {activeTraces.map((trace) => {
+                  const arr = getFullTraceArray(trace);
+                  let pathStr = "";
+                  const visibleCount = Math.max(10, Math.floor(tData.length / timeZoom));
+                  const stepRate = Math.max(1, Math.floor(visibleCount / 500));
+                  
+                  for (let i = 0; i < arr.length; i += stepRate) {
+                    const px = getX(tData[i]);
+                    const py = getY(arr[i]);
+                    if (i === 0) {
+                      pathStr += `M ${px} ${py}`;
+                    } else {
+                      pathStr += ` L ${px} ${py}`;
+                    }
+                  }
+                  if (arr.length > 0 && (arr.length - 1) % stepRate !== 0) {
+                    const px = getX(tData[arr.length - 1]);
+                    const py = getY(arr[arr.length - 1]);
                     pathStr += ` L ${px} ${py}`;
                   }
-                }
-                if (arr.length > 0 && (arr.length - 1) % stepRate !== 0) {
-                  const px = getX(tData[arr.length - 1]);
-                  const py = getY(arr[arr.length - 1]);
-                  pathStr += ` L ${px} ${py}`;
-                }
 
-                return (
-                  <path 
-                    key={trace}
-                    d={pathStr}
-                    fill="none"
-                    stroke={getStableTraceColor(trace)}
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    opacity="0.9"
-                  />
-                );
-              })}
+                  return (
+                    <path 
+                      key={trace}
+                      d={pathStr}
+                      fill="none"
+                      stroke={getStableTraceColor(trace)}
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      opacity="0.9"
+                    />
+                  );
+                })}
 
-              {/* Glowing playhead */}
-              <line 
-                x1={getX(playTime)} 
-                y1={paddingTop} 
-                x2={getX(playTime)} 
-                y2={height - paddingBottom} 
-                stroke="#f43f5e" 
-                strokeWidth="1.5" 
-              />
-              <circle 
-                cx={getX(playTime)} 
-                cy={paddingTop} 
-                r="3" 
-                fill="#f43f5e" 
-              />
+                {/* Glowing playhead */}
+                {playTime >= vStart && playTime <= vEnd && (
+                  <>
+                    <line 
+                      x1={getX(playTime)} 
+                      y1={paddingTop} 
+                      x2={getX(playTime)} 
+                      y2={height - paddingBottom} 
+                      stroke="#f43f5e" 
+                      strokeWidth="1.5" 
+                    />
+                    <circle 
+                      cx={getX(playTime)} 
+                      cy={paddingTop} 
+                      r="3" 
+                      fill="#f43f5e" 
+                    />
+                  </>
+                )}
+              </g>
             </svg>
           )}
         </div>
@@ -2065,6 +2125,40 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onWheel={handleWheel}
+              onDragOver={(e) => {
+                e.preventDefault();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const scopeId = e.dataTransfer.getData("scopeId");
+                if (scopeId) {
+                  const svgRect = e.currentTarget.getBoundingClientRect();
+                  const clientX = e.clientX - svgRect.left;
+                  const clientY = e.clientY - svgRect.top;
+                  
+                  // Convert client coordinates to schematic coordinates
+                  const schematicMouseX = (clientX - panX) / zoom;
+                  const schematicMouseY = (clientY - panY) / zoom;
+                  
+                  const dragOffsetX = parseFloat(e.dataTransfer.getData("dragOffsetX") || "31");
+                  const dragOffsetY = parseFloat(e.dataTransfer.getData("dragOffsetY") || "16");
+                  
+                  const W = 62;
+                  const H = 32;
+                  const newX = schematicMouseX + (W / 2 - dragOffsetX) / zoom;
+                  const newY = schematicMouseY + (H / 2 - dragOffsetY) / zoom;
+                  
+                  setActiveScopes(prev => ({
+                    ...prev,
+                    [scopeId]: {
+                      ...prev[scopeId],
+                      x: newX,
+                      y: newY,
+                      isCustomMoved: true
+                    }
+                  }));
+                }
+              }}
               style={{ backgroundColor: styles.svgBg }}
             >
               {/* Grid backdrop */}
@@ -2094,7 +2188,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
                 {state.wires.map((wire: any, wIdx: number) => {
                   const pathPoints = getWirePath(wire);
                   const pathStr = pathPoints ? pathPoints.map((pt, idx) => `${idx === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`).join(' ') : "";
-                  const isControl = (wire.from && wire.from.type === 'pin' && state.components.find((c: any) => c.id === wire.from.compId)?.type === 'CONST') || (wire.to && wire.to.type === 'pin' && state.components.find((c: any) => c.id === wire.to.compId)?.type === 'CONST');
+                  const isControl = getWireDomain(wire) === 'control';
                   
                   return (
                     <g key={`wire-interactive-g-${wire.id}-${wIdx}`}>
@@ -2129,8 +2223,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
                 })}
                                  {/* Dynamic Direct-Wire Flow Dots overlay */}
                 {state.wires.map((wire: any, wIndex: number) => {
-                  const isControl = (wire.from && wire.from.type === 'pin' && state.components.find((c: any) => c.id === wire.from.compId)?.type === 'CONST') || 
-                                    (wire.to && wire.to.type === 'pin' && state.components.find((c: any) => c.id === wire.to.compId)?.type === 'CONST');
+                  const isControl = getWireDomain(wire) === 'control';
                   if (isControl) return null;
 
                   const segs = getSegmentsForWire(wire, state.wires);
@@ -2189,8 +2282,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
 
                 {/* Direct-Wire Current Direction and Magnitude Overlay */}
                 {showWireOverlays && state.wires.map((wire: any, wIdx: number) => {
-                  const isControl = (wire.from && wire.from.type === 'pin' && state.components.find((c: any) => c.id === wire.from.compId)?.type === 'CONST') || 
-                                    (wire.to && wire.to.type === 'pin' && state.components.find((c: any) => c.id === wire.to.compId)?.type === 'CONST');
+                  const isControl = getWireDomain(wire) === 'control';
                   if (isControl) return null;
 
                   const segs = getSegmentsForWire(wire, state.wires);
@@ -2488,7 +2580,32 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
                   }
 
                   return (
-                    <g key={`dynamic-scope-${scopeId}`} className="select-none pointer-events-none">
+                    <g 
+                      key={`dynamic-scope-${scopeId}`} 
+                      className="select-none pointer-events-auto"
+                      draggable="true"
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("traceName", scope.traceName);
+                        e.dataTransfer.setData("label", scope.label || scopeId);
+                        e.dataTransfer.setData("scopeId", scopeId);
+                        
+                        // Calculate click offset relative to the rect bounding box
+                        const rectElement = e.currentTarget.getBoundingClientRect();
+                        const dragOffsetX = e.clientX - rectElement.left;
+                        const dragOffsetY = e.clientY - rectElement.top;
+                        e.dataTransfer.setData("dragOffsetX", String(dragOffsetX));
+                        e.dataTransfer.setData("dragOffsetY", String(dragOffsetY));
+                        
+                        draggedTraceRef.current = { name: scope.traceName, label: scope.label || scopeId };
+                      }}
+                      onDragEnd={() => {
+                        if (previewPlotId) {
+                          setLocalSubplots(prev => prev.filter(sp => sp.id !== previewPlotId));
+                          setPreviewPlotId(null);
+                        }
+                        draggedTraceRef.current = null;
+                      }}
+                    >
                       {/* Connector Line back to anchor source point */}
                       <line
                         x1={anchor.x}
@@ -2623,7 +2740,46 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
         </div>
         {/* Right Column: Tab Plots Subplots List (4 cols) */}
         {!isSchematicFullScreen && (
-          <div className={`lg:col-span-4 flex flex-col gap-3 overflow-y-auto max-h-[500px] border p-3 rounded-2xl shadow-inner ${isLight ? 'bg-slate-100/40 border-slate-200' : 'bg-slate-950/45 border-slate-900'}`}>
+          <div 
+            onDragOver={(e) => {
+              e.preventDefault();
+            }}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              if (draggedTraceRef.current && !previewPlotId) {
+                const { name, label } = draggedTraceRef.current;
+                const alreadyExists = localSubplots.some(sp => sp.traces.includes(name));
+                if (!alreadyExists) {
+                  const newId = `plot_preview_${Date.now()}`;
+                  setPreviewPlotId(newId);
+                  setLocalSubplots(prev => [
+                    ...prev,
+                    { id: newId, title: label, traces: [name] }
+                  ]);
+                }
+              }
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              const rect = e.currentTarget.getBoundingClientRect();
+              const isOutside = (
+                e.clientX < rect.left ||
+                e.clientX > rect.right ||
+                e.clientY < rect.top ||
+                e.clientY > rect.bottom
+              );
+              if (isOutside && previewPlotId) {
+                setLocalSubplots(prev => prev.filter(sp => sp.id !== previewPlotId));
+                setPreviewPlotId(null);
+              }
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setPreviewPlotId(null);
+              draggedTraceRef.current = null;
+            }}
+            className={`lg:col-span-4 flex flex-col gap-3 overflow-y-auto max-h-[500px] border p-3 rounded-2xl shadow-inner ${isLight ? 'bg-slate-100/40 border-slate-200' : 'bg-slate-950/45 border-slate-900'}`}
+          >
             <div className={`flex items-center justify-between px-1.5 select-none shrink-0 border-b pb-1.5 ${isLight ? 'border-slate-200' : 'border-slate-900/60'}`}>
               <span className={`text-[10px] font-bold flex items-center gap-1.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                 <Layers className="h-3.5 w-3.5 text-sky-500" />
@@ -2635,6 +2791,34 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
               >
                 <Plus className="h-3 w-3" /> Add Lane
               </button>
+            </div>
+
+            {/* Synced Zoom Controls */}
+            <div className={`flex flex-col gap-1.5 border-b pb-2 px-1.5 ${isLight ? 'border-slate-200' : 'border-slate-900/60'}`}>
+              <div className="flex items-center justify-between text-[9px] font-bold text-slate-500">
+                <span className="uppercase tracking-tight">Time Zoom</span>
+                <span className="font-mono text-sky-500">{timeZoom.toFixed(1)}x</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="range"
+                  min="1"
+                  max="50"
+                  step="0.5"
+                  value={timeZoom}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setTimeZoom(val);
+                  }}
+                  className={`flex-1 h-1.5 rounded-full appearance-none cursor-pointer outline-none ${isLight ? 'bg-slate-200 accent-sky-500' : 'bg-slate-800 accent-sky-500'}`}
+                />
+                <button 
+                  onClick={() => { setTimeZoom(1); }}
+                  className={`px-1.5 py-0.5 text-[8px] font-bold rounded cursor-pointer ${isLight ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}
+                >
+                  Reset
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-2 flex-1">
@@ -2785,6 +2969,8 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
           </div>
         </div>
       </div>
+
+
     </div>
   );
 }
