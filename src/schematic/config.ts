@@ -14,6 +14,7 @@ export const COMPONENT_PINS: Record<string, any> = {
   
   MOSFET: { D: {x: 0, y: -40, dx: 0, dy: -1}, S: {x: 0, y: 40, dx: 0, dy: 1}, G: {x: -20, y: 0, dx: -1, dy: 0} },
   AC_V:   { A: {x: 0, y: -40, dx: 0, dy: -1}, B: {x: 0, y: 40, dx: 0, dy: 1} },
+  GND:    { Gnd: {x: 0, y: -20, dx: 0, dy: -1} },
   XFMR:   {}, // Pins dynamically computed in getComponentPins
   GEN_EBLOCK: {}, // Pins dynamically computed in getComponentPins
 
@@ -47,6 +48,46 @@ export function parseTurnsList(str: string): number[] {
 // Return pins map dynamically based on component type and customized parameter options
 export function getComponentPins(comp: any): Record<string, any> {
   if (!comp) return {};
+  if (comp.type === 'SUM_ROUND') {
+    const numInputs = parseInt(comp.parameters && comp.parameters.inputs) || 2;
+    const pins: Record<string, any> = {};
+    const radius = Math.max(16, (numInputs - 1) * 10 + 5);
+    for (let i = 1; i <= numInputs; i++) {
+      const y = - (numInputs - 1) * 10 + (i - 1) * 20;
+      const x = - Math.sqrt(Math.max(0, radius * radius - y * y));
+      pins[`In${i}`] = { x: Math.round(x), y: Math.round(y), dx: -1, dy: 0 };
+    }
+    pins['Out'] = { x: radius, y: 0, dx: 1, dy: 0 };
+    return pins;
+  }
+  if (comp.type === 'SUM_RECT' || comp.type === 'PRODUCT_RECT') {
+    const numInputs = parseInt(comp.parameters && comp.parameters.inputs) || 2;
+    const pins: Record<string, any> = {};
+    const width = 50;
+    const height = Math.max(40, numInputs * 20);
+    const halfW = width / 2;
+    for (let i = 1; i <= numInputs; i++) {
+      const y = - (numInputs - 1) * 10 + (i - 1) * 20;
+      pins[`In${i}`] = { x: -halfW, y: Math.round(y), dx: -1, dy: 0 };
+    }
+    pins['Out'] = { x: halfW, y: 0, dx: 1, dy: 0 };
+    pins['Ctrl'] = { x: -halfW, y: -height / 2, dx: -1, dy: 0 };
+    return pins;
+  }
+  if (comp.type === 'MULTIPORT_SWITCH') {
+    const numInputs = parseInt(comp.parameters && comp.parameters.inputs) || 3;
+    const pins: Record<string, any> = {};
+    const width = 50;
+    const height = Math.max(40, numInputs * 20);
+    const halfW = width / 2;
+    for (let i = 1; i <= numInputs; i++) {
+      const y = - (numInputs - 1) * 10 + (i - 1) * 20;
+      pins[`In${i}`] = { x: -halfW, y: Math.round(y), dx: -1, dy: 0 };
+    }
+    pins['Out'] = { x: halfW, y: 0, dx: 1, dy: 0 };
+    pins['Ctrl'] = { x: -halfW, y: -height / 2, dx: -1, dy: 0 };
+    return pins;
+  }
   const detailedPins = getDetailedComponentPins(comp.type);
   if (detailedPins) return detailedPins;
   if (comp.type === 'XFMR') {
@@ -233,6 +274,7 @@ export const DEFAULT_PARAMETERS: Record<string, any> = {
   SUM:    {},
   VM:     {},
   AM:     {},
+  GND:    {},
   PROBE:  { target: "" },
   SCOPE:  { channels: "2" },
   MUX:    { inputs: "2" },

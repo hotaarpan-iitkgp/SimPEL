@@ -3,7 +3,7 @@ import {
   Play, RotateCcw, Settings, Sliders, ChevronDown, ChevronRight, 
   Trash2, RotateCw, PlusCircle, ArrowUpRight, Code, Sparkles, BarChart3,
   Undo2, FileJson, Upload, FolderInput, LogOut, CheckCircle2, AlertTriangle, Info,
-  Pause, StopCircle
+  Pause, StopCircle, Search, X
 } from 'lucide-react';
 import { state, saveState } from '../schematic/state';
 import { draw, updateAllWirePathsInDOM } from '../schematic/renderer';
@@ -13,7 +13,7 @@ import { generateNextId, showToast } from '../schematic/utils';
 import { DEFAULT_PARAMETERS, getComponentPins } from '../schematic/config';
 import { openSimSettings, saveSimSettings, closeSimSettings } from '../schematic/simSettings';
 import { openPlotConfig, savePlotConfig, closePlotConfig, setAvailableVariables } from '../schematic/plotConfig';
-import { exportDualGraphJSON, triggerImport, exportJSON } from '../schematic/actions';
+import { exportDualGraphJSON, triggerImport, exportJSON, clearWorkspace, undo } from '../schematic/actions';
 import { DETAILED_COMPONENTS } from '../schematic/detailedLibrary';
 
 interface SchematicEditorProps {
@@ -37,6 +37,7 @@ export default function SchematicEditor({
   const importInputRef = useRef<HTMLInputElement>(null);
   
   const [showDetailedLibrary, setShowDetailedLibrary] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [detailedAccordion, setDetailedAccordion] = useState<Record<string, boolean>>({
     general: false,
     control: false,
@@ -171,6 +172,8 @@ export default function SchematicEditor({
     
     const id = generateNextId(type);
     const parameters = JSON.parse(JSON.stringify(DEFAULT_PARAMETERS[type] || {}));
+
+
     
     state.components.push({
       id,
@@ -248,8 +251,12 @@ export default function SchematicEditor({
 
   const handleClearWorkspace = () => {
     // Call modular clear workspace action
-    const btn = document.getElementById('btn-clear-action');
-    if (btn) btn.click();
+    clearWorkspace();
+  };
+
+  const handleUndo = () => {
+    // Call modular undo action
+    undo();
   };
 
   const libraryPower = [
@@ -265,6 +272,7 @@ export default function SchematicEditor({
     { type: 'XFMR', label: 'Transformer', desc: 'Ideal multi-winding magnetics' },
     { type: 'VM', label: 'Voltmeter', desc: 'Potential probe sensor' },
     { type: 'AM', label: 'Ammeter', desc: 'Discrete current sensor' },
+    { type: 'GND', label: 'Ground', desc: 'Reference ground node (0V)' }
   ];
 
   const libraryControl = [
@@ -290,6 +298,37 @@ export default function SchematicEditor({
     { type: 'SCOPE', label: 'Oscilloscope', desc: 'Simulated scopes display lines' },
   ];
 
+  // Consolidate all components from basic and detailed libraries for search
+  const allBasicComponents = [
+    ...libraryPower.map(item => ({ type: item.type, label: item.label, desc: item.desc, libType: 'Basic Lib', category: 'electrical', subcategory: 'Power Stage' })),
+    ...libraryControl.map(item => ({ type: item.type, label: item.label, desc: item.desc, libType: 'Basic Lib', category: 'control', subcategory: 'Control Loops' })),
+    ...libraryProbes.map(item => ({ type: item.type, label: item.label, desc: item.desc, libType: 'Basic Lib', category: 'general', subcategory: 'Scope & Probes' }))
+  ];
+
+  const allDetailedComponents = DETAILED_COMPONENTS.map(item => ({
+    type: item.type,
+    label: item.label,
+    desc: item.desc,
+    libType: 'Detailed Lib',
+    category: item.category as string,
+    subcategory: item.subcategory
+  }));
+
+  const allComponents = [...allBasicComponents, ...allDetailedComponents];
+
+  // Filter matching components based on query
+  const filteredComponents = searchQuery.trim() !== ''
+    ? allComponents.filter(item => {
+        const query = searchQuery.toLowerCase();
+        return (
+          item.label.toLowerCase().includes(query) ||
+          item.type.toLowerCase().includes(query) ||
+          item.desc.toLowerCase().includes(query) ||
+          item.subcategory.toLowerCase().includes(query)
+        );
+      })
+    : [];
+
   return (
     <div className="flex-1 flex flex-col min-h-[820px] bg-slate-950/20 border border-slate-900 rounded-xl overflow-hidden shadow-2xl relative">
       <input 
@@ -308,8 +347,8 @@ export default function SchematicEditor({
           
           <button 
             id="btn-undo"
-            style={{ opacity: 0.5, cursor: 'not-allowed' }}
-            className="p-2 border border-slate-800 hover:border-slate-700 bg-slate-900/40 text-slate-300 rounded-lg transition-all cursor-pointer select-none text-xs font-bold flex items-center gap-1.5"
+            onClick={handleUndo}
+            className="p-2 border border-slate-800 hover:border-slate-700 bg-slate-900/20 hover:bg-slate-900/40 text-slate-300 hover:text-sky-400 rounded-lg transition-all cursor-pointer select-none text-xs font-bold flex items-center gap-1.5"
             title="Ctrl+Z Undo"
           >
             <Undo2 className="h-4 w-4 text-sky-400" />
@@ -438,8 +477,96 @@ export default function SchematicEditor({
               Detailed Lib
             </button>
           </div>
+
+          {/* Elegant Search Input */}
+          <div className="p-2 border-b shrink-0" style={{ borderColor: 'var(--color-border)' }}>
+            <div className="relative flex items-center">
+              <Search className="absolute left-2.5 h-3.5 w-3.5 pointer-events-none" style={{ color: 'var(--color-text-secondary)' }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search components..."
+                className="w-full pl-8 pr-7 py-1.5 rounded-lg outline-none text-xs transition-all font-sans focus:ring-1 focus:ring-sky-500/20 border"
+                style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 p-1 transition-colors cursor-pointer rounded-full hover:bg-sky-500/10"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                  title="Clear search"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
           
-          {!showDetailedLibrary ? (
+          {searchQuery.trim() !== '' ? (
+            <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1.5" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
+              <div className="px-1.5 py-1 font-mono text-[9px] uppercase font-bold tracking-wider flex items-center justify-between" style={{ color: 'var(--color-text-secondary)' }}>
+                <span>Search Results</span>
+                <span className="border px-1.5 py-0.5 rounded text-[8px]" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border)' }}>
+                  {filteredComponents.length} found
+                </span>
+              </div>
+              
+              {filteredComponents.length > 0 ? (
+                <div className="flex flex-col gap-1.5 animate-fade-in">
+                  {filteredComponents.map(item => {
+                    const isControl = item.libType === 'Basic Lib' && item.subcategory === 'Control Loops' || item.libType === 'Detailed Lib' && item.category === 'control';
+                    const isProbe = item.subcategory.toLowerCase().includes('probe') || item.subcategory.toLowerCase().includes('scope');
+                    
+                    let nameColor = 'text-slate-300 group-hover:text-white';
+                    let borderHover = 'hover:border-sky-500/30';
+                    
+                    if (item.subcategory === 'Control Loops' || item.libType === 'Detailed Lib' && item.type.includes('CTRL') || item.type === 'PID' || item.type === 'GAIN' || item.type === 'PWM') {
+                      nameColor = 'text-teal-400/90 group-hover:text-teal-350';
+                      borderHover = 'hover:border-emerald-500/30';
+                    } else if (isProbe) {
+                      nameColor = 'text-cyan-400 group-hover:text-cyan-300';
+                      borderHover = 'hover:border-cyan-500/30';
+                    } else if (item.subcategory === 'Power Stage') {
+                      nameColor = 'text-amber-500/90 group-hover:text-amber-400';
+                      borderHover = 'hover:border-amber-500/30';
+                    }
+
+                    return (
+                      <button
+                        key={`search-${item.libType}-${item.type}`}
+                        onClick={() => handleAddComponent(item.type)}
+                        className={`w-full p-2.5 border text-left rounded-lg text-[11px] font-sans transition-all cursor-pointer group hover:scale-[1.01] flex flex-col gap-1 hover:bg-sky-500/5 ${borderHover}`}
+                        style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border)' }}
+                        title={item.desc}
+                      >
+                        <div className="flex items-start justify-between gap-2 w-full">
+                          <div className={`font-bold truncate ${nameColor}`} style={{ maxWidth: '140px' }}>
+                            {item.label}
+                          </div>
+                          <div className="text-[8px] font-mono shrink-0" style={{ color: 'var(--color-text-secondary)' }}>
+                            [{item.type}]
+                          </div>
+                        </div>
+                        <div className="text-[9.5px] line-clamp-2 leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+                          {item.desc}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1 border-t pt-1 text-[8px] font-mono" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
+                          <span className="uppercase">{item.libType}</span>
+                          <span>•</span>
+                          <span className="truncate">{item.subcategory}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-6 text-center text-[11px] font-mono mt-4" style={{ color: 'var(--color-text-secondary)' }}>
+                  No matching components found.
+                </div>
+              )}
+            </div>
+          ) : !showDetailedLibrary ? (
             <>
               {/* Section: Power Stage elements */}
               <div className="border-b border-slate-900">

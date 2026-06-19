@@ -29,6 +29,7 @@ async function startServer() {
             state.cancelled = true;
         }
 
+        console.log("NETLIST PAYLOAD:", JSON.stringify(netlist, null, 2));
         console.log(`Starting transient simulation (Session: ${sessionId}, Solver: ${netlist.simulation_parameters?.solver || "euler"}, Step: ${netlist.simulation_parameters?.step_type || "fixed"})...`);
         
         try {

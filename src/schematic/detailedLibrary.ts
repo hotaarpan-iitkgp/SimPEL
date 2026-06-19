@@ -451,13 +451,13 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     symbol: 'Fourier'
   },
 
-  // Continuous-Time Filters & Dynamics
+  // Continuous
   {
     type: 'INTEGRATOR',
     label: 'Integrator',
     desc: 'Integrate the input signal over time (1/s).',
     category: 'control',
-    subcategory: 'Continuous-Time Filters & Dynamics',
+    subcategory: 'Continuous',
     symbol: '1/s'
   },
   {
@@ -465,7 +465,7 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     label: 'Derivative',
     desc: 'Calculate the time derivative of the input signal (s).',
     category: 'control',
-    subcategory: 'Continuous-Time Filters & Dynamics',
+    subcategory: 'Continuous',
     symbol: 's'
   },
   {
@@ -473,7 +473,7 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     label: 'Transfer Function',
     desc: 'Implement a continuous-time linear transfer function G(s).',
     category: 'control',
-    subcategory: 'Continuous-Time Filters & Dynamics',
+    subcategory: 'Continuous',
     symbol: 'G(s)',
     defaultParameters: { num: '[1]', den: '[1 1]' }
   },
@@ -482,7 +482,7 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     label: 'State Space',
     desc: 'Implement continuous-time state-space equations (dx = Ax + Bu, y = Cx + Du).',
     category: 'control',
-    subcategory: 'Continuous-Time Filters & Dynamics',
+    subcategory: 'Continuous',
     symbol: 'x\'=Ax+Bu'
   },
   {
@@ -490,7 +490,7 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     label: 'Delay',
     desc: 'Delay the input signal by a continuous or variable time step.',
     category: 'control',
-    subcategory: 'Continuous-Time Filters & Dynamics',
+    subcategory: 'Delays',
     symbol: 'Delay',
     defaultParameters: { delay: '0.1' }
   },
@@ -499,9 +499,99 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     label: 'Transport Delay',
     desc: 'Delay an input signal by a specified, fixed amount of time.',
     category: 'control',
-    subcategory: 'Continuous-Time Filters & Dynamics',
+    subcategory: 'Delays',
     symbol: 'e^-sT',
     defaultParameters: { delay: '0.1' }
+  },
+  {
+    type: 'TURN_ON_DELAY',
+    label: 'Turn-on Delay',
+    desc: 'Delay the rising edge of a boolean control signal.',
+    category: 'control',
+    subcategory: 'Delays',
+    symbol: 'Ton',
+    defaultParameters: { delay: '0.05' }
+  },
+  {
+    type: 'MEMORY_BLOCK',
+    label: 'Memory',
+    desc: 'Outputs the input value from the previous solver integration step.',
+    category: 'control',
+    subcategory: 'Delays',
+    symbol: 'Mem',
+    defaultParameters: { initial_value: '0.0' }
+  },
+  {
+    type: 'CONT_PID',
+    label: 'Continuous PID Controller',
+    desc: 'Continuous-time Proportional-Integral-Derivative (PID) controller with derivative filtering.',
+    category: 'control',
+    subcategory: 'Continuous',
+    symbol: 'PID(s)',
+    defaultParameters: { Kp: '1.0', Ki: '0.0', Kd: '0.0', Tf: '0.01' }
+  },
+  {
+    type: 'PLL_1PH',
+    label: 'Single-Phase PLL',
+    desc: 'Single-phase phase-locked loop using Second-Order Generalized Integrator (SOGI-PLL) for grid synchronization.',
+    category: 'control',
+    subcategory: 'Continuous',
+    symbol: 'PLL 1Φ',
+    defaultParameters: { fn: '50.0', Kp: '20.0', Ki: '1000.0' }
+  },
+  {
+    type: 'PLL_3PH',
+    label: 'Three-Phase PLL',
+    desc: 'Three-phase Synchronous Reference Frame Phase-Locked Loop (SRF-PLL) for grid synchronization.',
+    category: 'control',
+    subcategory: 'Continuous',
+    symbol: 'PLL 3Φ',
+    defaultParameters: { fn: '50.0', Kp: '20.0', Ki: '1000.0' }
+  },
+  {
+    type: 'QUANTIZER',
+    label: 'Quantizer',
+    desc: 'Quantize input signal to a specified interval.',
+    category: 'control',
+    subcategory: 'Discontinuous',
+    symbol: 'Quantize',
+    defaultParameters: { step_size: '0.5', mode: 'round' }
+  },
+  {
+    type: 'SIGNAL_SWITCH',
+    label: 'Signal Switch',
+    desc: 'Switch between two input signals based on a control threshold.',
+    category: 'control',
+    subcategory: 'Discontinuous',
+    symbol: 'Switch',
+    defaultParameters: { threshold: '0.5', criteria: 'u2 >= threshold' }
+  },
+  {
+    type: 'MANUAL_SWITCH',
+    label: 'Manual Signal Switch',
+    desc: 'Manually select between two input signals (double click to toggle).',
+    category: 'control',
+    subcategory: 'Discontinuous',
+    symbol: 'Manual Sw',
+    defaultParameters: { state: 'Input 1' }
+  },
+  {
+    type: 'MULTIPORT_SWITCH',
+    label: 'Multiport Signal Switch',
+    desc: 'Route one of multiple inputs to the output based on control index.',
+    category: 'control',
+    subcategory: 'Discontinuous',
+    symbol: 'Multiport Sw',
+    defaultParameters: { inputs: '3', indexing: '1-based' }
+  },
+  {
+    type: 'HIT_CROSSING',
+    label: 'Hit Crossing',
+    desc: 'Detect when the input signal crosses a specified offset threshold.',
+    category: 'control',
+    subcategory: 'Discontinuous',
+    symbol: 'Hit Cross',
+    defaultParameters: { offset: '0.0', direction: 'either' }
   },
 
   // Discrete-Time Dynamics
@@ -548,6 +638,24 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     subcategory: 'Discrete-Time Dynamics',
     symbol: 'z^-1',
     defaultParameters: { ts: '100u' }
+  },
+  {
+    type: 'DISCRETE_MEAN',
+    label: 'Discrete Mean Value',
+    desc: 'Compute the running mean of an input signal over a specified period.',
+    category: 'control',
+    subcategory: 'Discrete-Time Dynamics',
+    symbol: 'Mean z',
+    defaultParameters: { ts: '100u', period: '0.02', initial_value: '0.0' }
+  },
+  {
+    type: 'DISCRETE_PID',
+    label: 'Discrete PID Controller',
+    desc: 'Discrete-time PID controller with configurable approximation methods and derivative filtering.',
+    category: 'control',
+    subcategory: 'Discrete-Time Dynamics',
+    symbol: 'PID z',
+    defaultParameters: { Kp: '1.0', Ki: '10.0', Kd: '0.0', Tf: '0.001', ts: '100u', method: 'Forward Euler' }
   },
 
   // Discontinuous
@@ -642,6 +750,51 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     defaultParameters: { duration: '0.1' }
   },
   {
+    type: 'MONOFLOP',
+    label: 'Monoflop',
+    desc: 'Output a pulse of fixed duration when triggered by a rising/falling edge.',
+    category: 'control',
+    subcategory: 'Logical & Bitwise',
+    symbol: 'Mono',
+    defaultParameters: { duration: '0.1', trigger_edge: 'rising', retriggerable: 'false' }
+  },
+  {
+    type: 'RELATIONAL_OPERATOR',
+    label: 'Relational Operator',
+    desc: 'Compare two input signals using a relational operator.',
+    category: 'control',
+    subcategory: 'Logical & Bitwise',
+    symbol: 'RelOp',
+    defaultParameters: { operator: '==' }
+  },
+  {
+    type: 'COMPARE_TO_CONSTANT',
+    label: 'Compare to Constant',
+    desc: 'Compare the input to a constant value using a relational operator.',
+    category: 'control',
+    subcategory: 'Logical & Bitwise',
+    symbol: 'CompConst',
+    defaultParameters: { operator: '==', constant: '0.0' }
+  },
+  {
+    type: 'D_FLIP_FLOP',
+    label: 'D Flip-Flop',
+    desc: 'D-type flip-flop with rising/falling edge clock trigger and optional initial state.',
+    category: 'control',
+    subcategory: 'Logical & Bitwise',
+    symbol: 'D-FF',
+    defaultParameters: { initial_state: '0.0', trigger_edge: 'rising' }
+  },
+  {
+    type: 'JK_FLIP_FLOP',
+    label: 'JK Flip-Flop',
+    desc: 'JK-type flip-flop with rising/falling edge clock trigger and optional initial state.',
+    category: 'control',
+    subcategory: 'Logical & Bitwise',
+    symbol: 'JK-FF',
+    defaultParameters: { initial_state: '0.0', trigger_edge: 'rising' }
+  },
+  {
     type: 'SHIFT_REG',
     label: 'Shift Register',
     desc: 'Shift bits or signals through a discrete delay chain.',
@@ -723,6 +876,24 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     defaultParameters: { period: '0.02' }
   },
   {
+    type: 'PERIODIC_IMP_AVG',
+    label: 'Periodic Impulse Average',
+    desc: 'Compute the average value of a signal over the interval between trigger impulses.',
+    category: 'control',
+    subcategory: 'Filters & Measurements',
+    symbol: 'Imp Avg',
+    defaultParameters: { initial_value: '0.0' }
+  },
+  {
+    type: 'FOURIER_TRANS',
+    label: 'Fourier Transform',
+    desc: 'Compute magnitude and phase of fundamental or harmonic component of a signal.',
+    category: 'control',
+    subcategory: 'Filters & Measurements',
+    symbol: 'Fourier',
+    defaultParameters: { f: '50.0', harmonic: '1', ts: '100u' }
+  },
+  {
     type: 'MOV_AVG',
     label: 'Moving Average',
     desc: 'Compute the running average of a signal over a sliding window.',
@@ -791,6 +962,79 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     category: 'control',
     subcategory: 'State Machines',
     symbol: 'State'
+  },
+
+  // Math
+  {
+    type: 'OFFSET',
+    label: 'Offset',
+    desc: 'Add a static offset to the input signal.',
+    category: 'control',
+    subcategory: 'Math',
+    symbol: 'OFFSET',
+    defaultParameters: { offset: '0.0' }
+  },
+  {
+    type: 'SUM_ROUND',
+    label: 'Sum (round)',
+    desc: 'Circular summing junction to sum two signals.',
+    category: 'control',
+    subcategory: 'Math',
+    symbol: 'SUM',
+    defaultParameters: { inputs: '2', signs: '++' }
+  },
+  {
+    type: 'SUM_RECT',
+    label: 'Sum (rectangular)',
+    desc: 'Rectangular summing junction to sum two signals.',
+    category: 'control',
+    subcategory: 'Math',
+    symbol: 'SUM',
+    defaultParameters: { inputs: '2', signs: '++' }
+  },
+  {
+    type: 'SUBTRACT',
+    label: 'Subtract',
+    desc: 'Subtract input B from input A.',
+    category: 'control',
+    subcategory: 'Math',
+    symbol: 'SUB',
+    defaultParameters: { signs: '+-' }
+  },
+  {
+    type: 'PRODUCT_RECT',
+    label: 'Product (rectangular)',
+    desc: 'Multiply or divide two input signals.',
+    category: 'control',
+    subcategory: 'Math',
+    symbol: 'PROD',
+    defaultParameters: { inputs: '2', operators: '**' }
+  },
+  {
+    type: 'SIGNUM',
+    label: 'Signum',
+    desc: 'Output the signum of the input signal.',
+    category: 'control',
+    subcategory: 'Math',
+    symbol: 'sgn'
+  },
+  {
+    type: 'DIVIDE',
+    label: 'Divide',
+    desc: 'Divide the numerator by the denominator.',
+    category: 'control',
+    subcategory: 'Math',
+    symbol: 'DIV',
+    defaultParameters: { operators: '*/' }
+  },
+  {
+    type: 'DATATYPE_CONV',
+    label: 'Data Type Conversion',
+    desc: 'Convert input signal to boolean, integer, single, or double.',
+    category: 'control',
+    subcategory: 'Math',
+    symbol: 'Cast',
+    defaultParameters: { datatype: 'boolean' }
   },
 
   // ==========================================
@@ -1250,6 +1494,70 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     category: 'electrical',
     subcategory: 'Custom Machine/Load Models',
     symbol: 'GEN_EBLOCK'
+  },
+  {
+    type: 'IC_555',
+    label: '555 Timer IC',
+    desc: 'Highly popular 8-pin integrated circuit used in a variety of timer, pulse generation, and oscillator applications.',
+    category: 'electrical',
+    subcategory: 'Integrated Circuits (ICs)',
+    symbol: 'NE555'
+  },
+  {
+    type: 'IC_LM7805',
+    label: 'LM7805 5V Regulator IC',
+    desc: 'Three-terminal positive linear voltage regulator IC with a fixed 5V output.',
+    category: 'electrical',
+    subcategory: 'Integrated Circuits (ICs)',
+    symbol: '7805'
+  },
+  {
+    type: 'IC_LM317',
+    label: 'LM317 Adjustable Regulator IC',
+    desc: 'Three-terminal adjustable positive linear voltage regulator IC capable of supplying 1.2V to 37V.',
+    category: 'electrical',
+    subcategory: 'Integrated Circuits (ICs)',
+    symbol: 'LM317'
+  },
+  {
+    type: 'IC_PC817',
+    label: 'PC817 Optocoupler IC',
+    desc: 'Photocoupler consisting of a GaAs light emitting diode optically coupled to a phototransistor in a 4-pin DIP package.',
+    category: 'electrical',
+    subcategory: 'Integrated Circuits (ICs)',
+    symbol: 'PC817'
+  },
+  {
+    type: 'IC_7400',
+    label: '7400 Quad NAND Gate IC',
+    desc: 'Standard TTL digital logic IC containing four independent 2-input NAND gates.',
+    category: 'electrical',
+    subcategory: 'Integrated Circuits (ICs)',
+    symbol: '7400'
+  },
+  {
+    type: 'IC_7408',
+    label: '7408 Quad AND Gate IC',
+    desc: 'Standard TTL digital logic IC containing four independent 2-input AND gates.',
+    category: 'electrical',
+    subcategory: 'Integrated Circuits (ICs)',
+    symbol: '7408'
+  },
+  {
+    type: 'IC_7432',
+    label: '7432 Quad OR Gate IC',
+    desc: 'Standard TTL digital logic IC containing four independent 2-input OR gates.',
+    category: 'electrical',
+    subcategory: 'Integrated Circuits (ICs)',
+    symbol: '7432'
+  },
+  {
+    type: 'IC_7404',
+    label: '7404 Hex Inverter IC',
+    desc: 'Standard TTL digital logic IC containing six independent inverter gates.',
+    category: 'electrical',
+    subcategory: 'Integrated Circuits (ICs)',
+    symbol: '7404'
   }
 ];
 
@@ -1258,10 +1566,143 @@ export function getDetailedComponentPins(type: string): Record<string, any> | nu
   if (!libComp) return null;
 
   // Keep basic ones as they are
-  const basicTypes = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM', 'CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'PROBE', 'SCOPE', 'GEN_EBLOCK'];
+  const basicTypes = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM', 'CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'PROBE', 'SCOPE', 'GEN_EBLOCK', 'GND', 'MULTIPORT_SWITCH'];
   if (basicTypes.includes(type)) return null;
 
   // Custom configurations for new blocks
+  if (type === 'OFFSET') {
+    return {
+      In: { x: -20, y: 0, dx: -1, dy: 0 },
+      Out: { x: 20, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'DISCRETE_MEAN' || type === 'DISCRETE_PID') {
+    return {
+      In: { x: -25, y: 0, dx: -1, dy: 0 },
+      Out: { x: 25, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'PERIODIC_IMP_AVG') {
+    return {
+      In: { x: -25, y: -10, dx: -1, dy: 0 },
+      Trig: { x: -25, y: 10, dx: -1, dy: 0 },
+      Out: { x: 25, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'FOURIER_TRANS') {
+    return {
+      In: { x: -25, y: 0, dx: -1, dy: 0 },
+      Mag: { x: 25, y: -10, dx: 1, dy: 0 },
+      Phase: { x: 25, y: 10, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'SIGNAL_SWITCH') {
+    return {
+      In1: { x: -25, y: -20, dx: -1, dy: 0 },
+      Ctrl: { x: -25, y: 0, dx: -1, dy: 0 },
+      In2: { x: -25, y: 20, dx: -1, dy: 0 },
+      Out: { x: 25, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'COMPARE_TO_CONSTANT' || type === 'MONOFLOP' || type === 'MONOSTABLE') {
+    return {
+      In: { x: -25, y: 0, dx: -1, dy: 0 },
+      Out: { x: 25, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'D_FLIP_FLOP') {
+    return {
+      D: { x: -25, y: -10, dx: -1, dy: 0 },
+      Clk: { x: -25, y: 10, dx: -1, dy: 0 },
+      Q: { x: 25, y: -10, dx: 1, dy: 0 },
+      Q_bar: { x: 25, y: 10, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'JK_FLIP_FLOP') {
+    return {
+      J: { x: -25, y: -12, dx: -1, dy: 0 },
+      Clk: { x: -25, y: 0, dx: -1, dy: 0 },
+      K: { x: -25, y: 12, dx: -1, dy: 0 },
+      Q: { x: 25, y: -10, dx: 1, dy: 0 },
+      Q_bar: { x: 25, y: 10, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'MANUAL_SWITCH') {
+    return {
+      In1: { x: -25, y: -20, dx: -1, dy: 0 },
+      In2: { x: -25, y: 20, dx: -1, dy: 0 },
+      Out: { x: 25, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'CONT_PID') {
+    return {
+      In: { x: -25, y: 0, dx: -1, dy: 0 },
+      Out: { x: 25, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'PLL_1PH') {
+    return {
+      In: { x: -30, y: 0, dx: -1, dy: 0 },
+      Theta: { x: 30, y: -15, dx: 1, dy: 0 },
+      Freq: { x: 30, y: -5, dx: 1, dy: 0 },
+      Cos: { x: 30, y: 5, dx: 1, dy: 0 },
+      Sin: { x: 30, y: 15, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'PLL_3PH') {
+    return {
+      Va: { x: -30, y: -10, dx: -1, dy: 0 },
+      Vb: { x: -30, y: 0, dx: -1, dy: 0 },
+      Vc: { x: -30, y: 10, dx: -1, dy: 0 },
+      Theta: { x: 30, y: -15, dx: 1, dy: 0 },
+      Freq: { x: 30, y: -5, dx: 1, dy: 0 },
+      Cos: { x: 30, y: 5, dx: 1, dy: 0 },
+      Sin: { x: 30, y: 15, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'SUM_ROUND' || type === 'SUM_RECT' || type === 'SUBTRACT') {
+    return {
+      A: { x: -20, y: -20, dx: -1, dy: 0 },
+      B: { x: -20, y: 20, dx: -1, dy: 0 },
+      Out: { x: 20, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'PRODUCT_RECT') {
+    return {
+      In1: { x: -20, y: -20, dx: -1, dy: 0 },
+      In2: { x: -20, y: 20, dx: -1, dy: 0 },
+      Out: { x: 20, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'SIGNUM' || type === 'DATATYPE_CONV') {
+    return {
+      In: { x: -20, y: 0, dx: -1, dy: 0 },
+      Out: { x: 20, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'DIVIDE') {
+    return {
+      Num: { x: -20, y: -20, dx: -1, dy: 0 },
+      Den: { x: -20, y: 20, dx: -1, dy: 0 },
+      Out: { x: 20, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
   if (type === 'OPAMP' || type === 'E_COMP') {
     return {
       Plus: { x: -25, y: -10, dx: -1, dy: 0 },
@@ -1395,6 +1836,82 @@ export function getDetailedComponentPins(type: string): Record<string, any> | nu
     };
   }
 
+  if (type === 'IC_555') {
+    return {
+      GND: { x: -25, y: -30, dx: -1, dy: 0 },
+      TRIG: { x: -25, y: -10, dx: -1, dy: 0 },
+      OUT: { x: -25, y: 10, dx: -1, dy: 0 },
+      RESET: { x: -25, y: 30, dx: -1, dy: 0 },
+      CTRL: { x: 25, y: 30, dx: 1, dy: 0 },
+      THR: { x: 25, y: 10, dx: 1, dy: 0 },
+      DIS: { x: 25, y: -10, dx: 1, dy: 0 },
+      VCC: { x: 25, y: -30, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'IC_LM7805') {
+    return {
+      IN: { x: -20, y: -20, dx: -1, dy: 0 },
+      GND: { x: 0, y: 20, dx: 0, dy: 1 },
+      OUT: { x: 20, y: -20, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'IC_LM317') {
+    return {
+      IN: { x: -20, y: -20, dx: -1, dy: 0 },
+      ADJ: { x: 0, y: 20, dx: 0, dy: 1 },
+      OUT: { x: 20, y: -20, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'IC_PC817') {
+    return {
+      Anode: { x: -25, y: -15, dx: -1, dy: 0 },
+      Cathode: { x: -25, y: 15, dx: -1, dy: 0 },
+      Emitter: { x: 25, y: 15, dx: 1, dy: 0 },
+      Collector: { x: 25, y: -15, dx: 1, dy: 0 }
+    };
+  }
+
+  if (['IC_7400', 'IC_7408', 'IC_7432'].includes(type)) {
+    return {
+      "1A": { x: -25, y: -45, dx: -1, dy: 0 },
+      "1B": { x: -25, y: -30, dx: -1, dy: 0 },
+      "1Y": { x: -25, y: -15, dx: -1, dy: 0 },
+      "2A": { x: -25, y: 0, dx: -1, dy: 0 },
+      "2B": { x: -25, y: 15, dx: -1, dy: 0 },
+      "2Y": { x: -25, y: 30, dx: -1, dy: 0 },
+      "GND": { x: -25, y: 45, dx: -1, dy: 0 },
+      "3Y": { x: 25, y: 45, dx: 1, dy: 0 },
+      "3A": { x: 25, y: 30, dx: 1, dy: 0 },
+      "3B": { x: 25, y: 15, dx: 1, dy: 0 },
+      "4Y": { x: 25, y: 0, dx: 1, dy: 0 },
+      "4A": { x: 25, y: -15, dx: 1, dy: 0 },
+      "4B": { x: 25, y: -30, dx: 1, dy: 0 },
+      "VCC": { x: 25, y: -45, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'IC_7404') {
+    return {
+      "1A": { x: -25, y: -45, dx: -1, dy: 0 },
+      "1Y": { x: -25, y: -30, dx: -1, dy: 0 },
+      "2A": { x: -25, y: -15, dx: -1, dy: 0 },
+      "2Y": { x: -25, y: 0, dx: -1, dy: 0 },
+      "3A": { x: -25, y: 15, dx: -1, dy: 0 },
+      "3Y": { x: -25, y: 30, dx: -1, dy: 0 },
+      "GND": { x: -25, y: 45, dx: -1, dy: 0 },
+      "4Y": { x: 25, y: 45, dx: 1, dy: 0 },
+      "4A": { x: 25, y: 30, dx: 1, dy: 0 },
+      "5Y": { x: 25, y: 15, dx: 1, dy: 0 },
+      "5A": { x: 25, y: 0, dx: 1, dy: 0 },
+      "6Y": { x: 25, y: -15, dx: 1, dy: 0 },
+      "6A": { x: 25, y: -30, dx: 1, dy: 0 },
+      "VCC": { x: 25, y: -45, dx: 1, dy: 0 }
+    };
+  }
+
   // Fallback categorization mapping
   if (libComp.category === 'electrical') {
     if (type.includes('MOSFET') || type.includes('IGBT') || type === 'GTO' || type === 'THYRISTOR' || type === 'BJT' || type === 'JFET' || type === 'IGCT') {
@@ -1431,7 +1948,7 @@ export function getDetailedComponentPins(type: string): Record<string, any> | nu
   const twoInputTypes = ['SUM', 'PROD', 'COMP', 'MIN_MAX', 'TRIG_FCN', 'MATH_FCN', 'LOGIC_OP', 'BITWISE_OP'];
   if (twoInputSubcategories.includes(libComp.subcategory) || twoInputTypes.includes(type)) {
     // Check for single input exceptions
-    if (['ABS', 'SIGN', 'ROUND', 'NOT'].includes(type)) {
+    if (['ABS', 'SIGN', 'ROUND', 'NOT', 'QUANTIZER', 'HIT_CROSSING'].includes(type)) {
       return {
         In: { x: -25, y: 0, dx: -1, dy: 0 },
         Out: { x: 25, y: 0, dx: 1, dy: 0 }
@@ -1460,8 +1977,89 @@ export function getDetailedComponentSVG(comp: any): string | null {
   if (!libComp) return null;
 
   // Basic components should use their existing custom SVGs
-  const basicTypes = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM', 'CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'PROBE', 'SCOPE', 'GEN_EBLOCK'];
+  const basicTypes = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM', 'CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'PROBE', 'SCOPE', 'GEN_EBLOCK', 'GND'];
   if (basicTypes.includes(type)) return null;
+
+  if (type === 'SUM_ROUND') {
+    const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
+    let borderColor = isLightMode ? '#059669' : '#10b981'; // emerald-600 vs emerald-500
+    let fillColor = isLightMode ? '#ffffff' : '#090d16'; // white vs deep slate
+    let symbolColor = isLightMode ? '#047857' : '#34d399'; // emerald-700 vs emerald-400
+
+    const numInputs = parseInt(comp.parameters && comp.parameters.inputs) || 2;
+    const radius = Math.max(16, (numInputs - 1) * 10 + 5);
+    const signs = comp.parameters && comp.parameters.signs ? comp.parameters.signs : '++';
+
+    let signsSVG = '';
+    for (let i = 0; i < numInputs; i++) {
+      const y = - (numInputs - 1) * 10 + i * 20;
+      const x = - Math.sqrt(Math.max(0, radius * radius - y * y));
+      const sign = signs[i] ?? '+';
+      signsSVG += `<text x="${x + 8}" y="${y + 3}" font-family="Inter, sans-serif" font-size="7" font-weight="900" fill="${symbolColor}" text-anchor="middle">${sign}</text>`;
+    }
+
+    return `
+      <rect class="comp-bounds" x="-${radius + 6}" y="-${radius + 6}" width="${radius * 2 + 12}" height="${radius * 2 + 12}" rx="${radius + 6}" />
+      <circle cx="0" cy="0" r="${radius}" fill="${fillColor}" fill-opacity="0.85" stroke="${borderColor}" stroke-width="2" />
+      ${signsSVG}
+      <!-- Center symbol -->
+      <text x="3" y="3.5" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="${symbolColor}" text-anchor="middle">Σ</text>
+      <g transform="translate(0, ${radius + 12}) rotate(${-rotation})">
+        <text class="comp-label" x="0" y="4" text-anchor="middle" fill="currentColor">${id}</text>
+      </g>
+    `;
+  }
+
+  if (type === 'SUM_RECT' || type === 'PRODUCT_RECT') {
+    const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
+    let borderColor = isLightMode ? '#059669' : '#10b981'; // emerald-600 vs emerald-500
+    let fillColor = isLightMode ? '#ffffff' : '#090d16'; // white vs deep slate
+    let symbolColor = isLightMode ? '#047857' : '#34d399'; // emerald-700 vs emerald-400
+
+    const numInputs = parseInt(comp.parameters && comp.parameters.inputs) || 2;
+    const width = 50;
+    const height = Math.max(40, numInputs * 20);
+    const halfW = width / 2;
+    const halfH = height / 2;
+
+    let signsSVG = '';
+    if (type === 'SUM_RECT') {
+      const signs = comp.parameters && comp.parameters.signs ? comp.parameters.signs : '++';
+      for (let i = 0; i < numInputs; i++) {
+        const y = - (numInputs - 1) * 10 + i * 20;
+        const sign = signs[i] ?? '+';
+        signsSVG += `<text x="-${halfW - 8}" y="${y + 3}" font-family="Inter, sans-serif" font-size="7" font-weight="900" fill="${symbolColor}" text-anchor="middle">${sign}</text>`;
+      }
+    } else {
+      const operators = comp.parameters && comp.parameters.operators ? comp.parameters.operators : '**';
+      for (let i = 0; i < numInputs; i++) {
+        const y = - (numInputs - 1) * 10 + i * 20;
+        const op = operators[i] ?? '*';
+        const displayOp = op === '/' ? '÷' : '×';
+        signsSVG += `<text x="-${halfW - 8}" y="${y + 3.5}" font-family="Inter, sans-serif" font-size="8" font-weight="900" fill="${symbolColor}" text-anchor="middle">${displayOp}</text>`;
+      }
+    }
+
+    const centerSymbol = type === 'SUM_RECT'
+      ? `<text x="2" y="3.5" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="${symbolColor}" text-anchor="middle">Σ</text>`
+      : `<text x="2" y="5" font-family="Inter, sans-serif" font-size="14" font-weight="700" fill="${symbolColor}" text-anchor="middle">×</text>`;
+
+    return `
+      <rect class="comp-bounds" x="-${halfW + 2}" y="-${halfH + 2}" width="${width + 4}" height="${height + 4}" rx="6" />
+      <rect x="-${halfW}" y="-${halfH}" width="${width}" height="${height}" rx="5" fill="${fillColor}" fill-opacity="0.85" stroke="${borderColor}" stroke-width="2" />
+      <!-- Top category line strip -->
+      <line x1="-${halfW - 5}" y1="-${halfH}" x2="${halfW - 5}" y2="-${halfH}" stroke="${symbolColor}" stroke-width="2" stroke-linecap="round" />
+      <!-- Badge category indicator -->
+      <text x="-${halfW - 6}" y="-${halfH - 5}" font-family="Inter, sans-serif" font-size="6" font-weight="900" fill="${symbolColor}" opacity="0.6" stroke="none">CTRL</text>
+      <!-- CTRL pin label near the handle -->
+      <text x="-${halfW - 3}" y="-${halfH - 8}" font-family="Inter, sans-serif" font-size="5.5" font-weight="800" fill="${symbolColor}" opacity="0.8" text-anchor="start">CTRL</text>
+      ${signsSVG}
+      ${centerSymbol}
+      <g transform="translate(0, ${halfH + 12}) rotate(${-rotation})">
+        <text class="comp-label" x="0" y="4" text-anchor="middle" fill="currentColor">${id}</text>
+      </g>
+    `;
+  }
 
   // Check for electrical schematic custom symbol override
   if (libComp.category === 'electrical') {
@@ -1738,6 +2336,93 @@ export function getDetailedComponentSVG(comp: any): string | null {
           <path class="comp-path" d="M -20,0 L -9,0" />
         `;
         break;
+      case 'IC_555':
+        boundsX = -25; boundsW = 50; boundsY = -40; boundsH = 80; labelY = 52;
+        shape = `
+          <rect x="-18" y="-35" width="36" height="70" rx="2" class="comp-path" fill="#1e293b" stroke="currentColor" stroke-width="2" />
+          <path d="M -6 -35 A 6 6 0 0 0 6 -35" class="comp-path" fill="none" stroke="currentColor" stroke-width="2" />
+          <!-- Pin lines -->
+          <line x1="-25" y1="-30" x2="-18" y2="-30" class="comp-path" stroke-width="1.5" />
+          <line x1="-25" y1="-10" x2="-18" y2="-10" class="comp-path" stroke-width="1.5" />
+          <line x1="-25" y1="10" x2="-18" y2="10" class="comp-path" stroke-width="1.5" />
+          <line x1="-25" y1="30" x2="-18" y2="30" class="comp-path" stroke-width="1.5" />
+          <line x1="18" y1="-30" x2="25" y2="-30" class="comp-path" stroke-width="1.5" />
+          <line x1="18" y1="-10" x2="25" y2="-10" class="comp-path" stroke-width="1.5" />
+          <line x1="18" y1="10" x2="25" y2="10" class="comp-path" stroke-width="1.5" />
+          <line x1="18" y1="30" x2="25" y2="30" class="comp-path" stroke-width="1.5" />
+          <!-- Label -->
+          <text x="0" y="4" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#e2e8f0" text-anchor="middle">555</text>
+        `;
+        break;
+      case 'IC_LM7805':
+      case 'IC_LM317': {
+        const isAdj = type === 'IC_LM317';
+        boundsX = -22; boundsW = 44; boundsY = -28; boundsH = 56; labelY = 38;
+        shape = `
+          <!-- Heat sink tab -->
+          <rect x="-14" y="-22" width="28" height="10" rx="1" fill="#64748b" stroke="currentColor" stroke-width="1.5" />
+          <circle cx="0" cy="-17" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2" />
+          <!-- Chip body -->
+          <rect x="-16" y="-12" width="32" height="30" rx="1" fill="#1e293b" stroke="currentColor" stroke-width="2" />
+          <!-- Pin lines -->
+          <line x1="-20" y1="-20" x2="-16" y2="-12" class="comp-path" stroke-width="1.5" />
+          <line x1="20" y1="-20" x2="16" y2="-12" class="comp-path" stroke-width="1.5" />
+          <line x1="0" y1="18" x2="0" y2="20" class="comp-path" stroke-width="1.5" />
+          <text x="0" y="4" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="#e2e8f0" text-anchor="middle">${isAdj ? 'LM317' : '7805'}</text>
+        `;
+        break;
+      }
+      case 'IC_PC817':
+        boundsX = -25; boundsW = 50; boundsY = -25; boundsH = 50; labelY = 32;
+        shape = `
+          <rect x="-16" y="-20" width="32" height="40" rx="1.5" fill="#1e293b" stroke="currentColor" stroke-width="2" />
+          <circle cx="-12" cy="-15" r="1.5" fill="currentColor" /> <!-- Dot for Pin 1 -->
+          <!-- Pin lines -->
+          <line x1="-25" y1="-15" x2="-16" y2="-15" class="comp-path" stroke-width="1.5" />
+          <line x1="-25" y1="15" x2="-16" y2="15" class="comp-path" stroke-width="1.5" />
+          <line x1="16" y1="-15" x2="25" y2="-15" class="comp-path" stroke-width="1.5" />
+          <line x1="16" y1="15" x2="25" y2="15" class="comp-path" stroke-width="1.5" />
+          <!-- Opto symbol internally -->
+          <path d="M -8,-5 L -4,-5 M -6,-7 L -6,-3" stroke="currentColor" stroke-width="1" />
+          <path d="M -8,5 L -4,5" stroke="currentColor" stroke-width="1" />
+          <path d="M -6,-5 L -6,5" stroke="currentColor" stroke-width="1" />
+          <!-- Diagonal light rays -->
+          <line x1="-3" y1="-2" x2="1" y2="1" stroke="currentColor" stroke-width="1" />
+          <polygon points="1,1 0,0 1,-1" fill="currentColor" />
+          <line x1="-3" y1="2" x2="1" y2="5" stroke="currentColor" stroke-width="1" />
+          <polygon points="1,5 0,4 1,3" fill="currentColor" />
+          <text x="0" y="4" font-family="Inter, sans-serif" font-size="7" font-weight="700" fill="#e2e8f0" text-anchor="middle">PC817</text>
+        `;
+        break;
+      case 'IC_7400':
+      case 'IC_7408':
+      case 'IC_7432':
+      case 'IC_7404': {
+        const label = type.split('_')[1];
+        boundsX = -25; boundsW = 50; boundsY = -55; boundsH = 110; labelY = 65;
+        shape = `
+          <rect x="-18" y="-50" width="36" height="100" rx="2" class="comp-path" fill="#1e293b" stroke="currentColor" stroke-width="2" />
+          <path d="M -6 -50 A 6 6 0 0 0 6 -50" class="comp-path" fill="none" stroke="currentColor" stroke-width="2" />
+          <!-- Pin lines -->
+          <line x1="-25" y1="-45" x2="-18" y2="-45" class="comp-path" stroke-width="1.5" />
+          <line x1="-25" y1="-30" x2="-18" y2="-30" class="comp-path" stroke-width="1.5" />
+          <line x1="-25" y1="-15" x2="-18" y2="-15" class="comp-path" stroke-width="1.5" />
+          <line x1="-25" y1="0" x2="-18" y2="0" class="comp-path" stroke-width="1.5" />
+          <line x1="-25" y1="15" x2="-18" y2="15" class="comp-path" stroke-width="1.5" />
+          <line x1="-25" y1="30" x2="-18" y2="30" class="comp-path" stroke-width="1.5" />
+          <line x1="-25" y1="45" x2="-18" y2="45" class="comp-path" stroke-width="1.5" />
+          <line x1="18" y1="-45" x2="25" y2="-45" class="comp-path" stroke-width="1.5" />
+          <line x1="18" y1="-30" x2="25" y2="-30" class="comp-path" stroke-width="1.5" />
+          <line x1="18" y1="-15" x2="25" y2="-15" class="comp-path" stroke-width="1.5" />
+          <line x1="18" y1="0" x2="25" y2="0" class="comp-path" stroke-width="1.5" />
+          <line x1="18" y1="15" x2="25" y2="15" class="comp-path" stroke-width="1.5" />
+          <line x1="18" y1="30" x2="25" y2="30" class="comp-path" stroke-width="1.5" />
+          <line x1="18" y1="45" x2="25" y2="45" class="comp-path" stroke-width="1.5" />
+          <!-- Label -->
+          <text x="0" y="4" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#e2e8f0" text-anchor="middle">${label}</text>
+        `;
+        break;
+      }
       case 'SR_SWITCH':
         shape = `
           <rect x="-15" y="-15" width="30" height="30" rx="3" class="comp-path" />
@@ -1869,7 +2554,7 @@ export function getDetailedComponentSVG(comp: any): string | null {
     borderColor = isLightMode ? '#059669' : '#10b981'; // emerald-600 vs emerald-500
     symbolColor = isLightMode ? '#047857' : '#34d399'; // emerald-700 vs emerald-400
     badgeText = 'CTRL';
-  } else if (libComp.category === 'electrical') {
+  } else if ((libComp.category as string) === 'electrical') {
     borderColor = isLightMode ? '#d97706' : '#f59e0b'; // amber-600 vs amber-500
     symbolColor = isLightMode ? '#b45309' : '#fbbf24'; // amber-700 vs amber-400
     badgeText = 'ELEC';
@@ -1928,6 +2613,183 @@ export function getDetailedComponentSVG(comp: any): string | null {
   } else if (type === 'INTEGRATOR') {
     innerGraphic = `
       <text x="0" y="3.5" font-family="Times New Roman, Georgia, serif" font-size="16" font-style="italic" font-weight="700" fill="${symbolColor}" text-anchor="middle" stroke="none">∫</text>
+    `;
+  } else if (type === 'OFFSET') {
+    innerGraphic = `
+      <path d="M -12,4 L -2,4 M -2,-4 L 10,-4 M -2,4 L -2,-4" fill="none" stroke="${symbolColor}" stroke-width="1.2" stroke-dasharray="2,2" />
+      <path d="M -12,4 L -4,4 M -4,-2 L 8,-2" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" />
+      <text x="0" y="7" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="middle">OFFSET</text>
+    `;
+  } else if (type === 'SUM_RECT') {
+    innerGraphic = `
+      <text x="-12" y="-6" font-family="Inter, sans-serif" font-size="9" font-weight="900" fill="${symbolColor}">+</text>
+      <text x="-12" y="12" font-family="Inter, sans-serif" font-size="9" font-weight="900" fill="${symbolColor}">+</text>
+      <text x="2" y="3.5" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="${symbolColor}" text-anchor="middle">Σ</text>
+    `;
+  } else if (type === 'SUBTRACT') {
+    innerGraphic = `
+      <text x="-12" y="-6" font-family="Inter, sans-serif" font-size="9" font-weight="900" fill="${symbolColor}">+</text>
+      <text x="-12" y="12" font-family="Inter, sans-serif" font-size="9" font-weight="900" fill="${symbolColor}">-</text>
+      <text x="2" y="3.5" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="${symbolColor}" text-anchor="middle">Σ</text>
+    `;
+  } else if (type === 'PRODUCT_RECT') {
+    innerGraphic = `
+      <text x="0" y="5" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="${symbolColor}" text-anchor="middle">×</text>
+    `;
+  } else if (type === 'SIGNUM') {
+    innerGraphic = `
+      <path d="M -12,6 L -3,6 L -3,0 L 3,0 L 3,-6 L 12,-6" fill="none" stroke="${symbolColor}" stroke-width="1.2" stroke-dasharray="2,2" />
+      <path d="M -12,5 L -3,5 M 3,-5 L 12,-5" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" />
+      <circle cx="0" cy="0" r="1.5" fill="${symbolColor}" />
+      <text x="0" y="-7" font-family="Inter, sans-serif" font-size="5" font-weight="700" fill="${symbolColor}" text-anchor="middle">sgn</text>
+    `;
+  } else if (type === 'DIVIDE') {
+    innerGraphic = `
+      <text x="0" y="5.5" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="${symbolColor}" text-anchor="middle">÷</text>
+    `;
+  } else if (type === 'DATATYPE_CONV') {
+    innerGraphic = `
+      <rect x="-12" y="-8" width="24" height="16" rx="2" fill="none" stroke="${symbolColor}" stroke-width="1.2" />
+      <text x="0" y="3" font-family="Inter, sans-serif" font-size="7" font-weight="800" fill="${symbolColor}" text-anchor="middle">CAST</text>
+    `;
+  } else if (type === 'PLL_1PH') {
+    width = 60;
+    height = 50;
+    innerGraphic = `
+      <rect x="-22" y="-18" width="44" height="36" fill="none" stroke="${symbolColor}" stroke-width="1.2" stroke-dasharray="2 2" />
+      <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">PLL 1Φ</text>
+      <text x="-21" y="2.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="start">In</text>
+      <text x="21" y="-12.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="end">θ</text>
+      <text x="21" y="-2.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="end">f</text>
+      <text x="21" y="7.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="end">cos</text>
+      <text x="21" y="17.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="end">sin</text>
+    `;
+  } else if (type === 'PLL_3PH') {
+    width = 60;
+    height = 50;
+    innerGraphic = `
+      <rect x="-22" y="-18" width="44" height="36" fill="none" stroke="${symbolColor}" stroke-width="1.2" stroke-dasharray="2 2" />
+      <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">PLL 3Φ</text>
+      <text x="-21" y="-7.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="start">a</text>
+      <text x="-21" y="2.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="start">b</text>
+      <text x="-21" y="12.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="start">c</text>
+      <text x="21" y="-12.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="end">θ</text>
+      <text x="21" y="-2.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="end">f</text>
+      <text x="21" y="7.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="end">cos</text>
+      <text x="21" y="17.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="end">sin</text>
+    `;
+  } else if (type === 'QUANTIZER') {
+    innerGraphic = `
+      <path d="M -12,6 L -6,6 L -6,0 L 2,0 L 2,-6 L 10,-6" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    `;
+  } else if (type === 'SIGNAL_SWITCH') {
+    innerGraphic = `
+      <text x="-14" y="-14" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}">In1</text>
+      <text x="-14" y="3" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}">Ctrl</text>
+      <text x="-14" y="20" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}">In2</text>
+      <path d="M -15,-17 L -2,-17 M -15,17 L -2,17 M 15,0 L 2,0" fill="none" stroke="${symbolColor}" stroke-width="1.2" />
+      <circle cx="-2" cy="-17" r="1.5" fill="${symbolColor}" />
+      <circle cx="-2" cy="17" r="1.5" fill="${symbolColor}" />
+      <circle cx="2" cy="0" r="1.5" fill="${symbolColor}" />
+      <path d="M 1,0 L -2,-11" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" />
+    `;
+  } else if (type === 'MANUAL_SWITCH') {
+    const isInput1 = (comp.parameters && comp.parameters.state) !== 'Input 2';
+    const lineToY = isInput1 ? -17 : 17;
+    innerGraphic = `
+      <text x="-14" y="-14" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}">In1</text>
+      <text x="-14" y="20" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}">In2</text>
+      <path d="M -15,-17 L -2,-17 M -15,17 L -2,17 M 15,0 L 2,0" fill="none" stroke="${symbolColor}" stroke-width="1.2" />
+      <circle cx="-2" cy="-17" r="1.5" fill="${symbolColor}" />
+      <circle cx="-2" cy="17" r="1.5" fill="${symbolColor}" />
+      <circle cx="2" cy="0" r="1.5" fill="${symbolColor}" />
+      <path d="M 1,0 L -2,${lineToY}" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" />
+      <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="800" fill="${symbolColor}" text-anchor="middle">MANUAL</text>
+    `;
+  } else if (type === 'MULTIPORT_SWITCH') {
+    const numInputs = parseInt(comp.parameters && comp.parameters.inputs) || 3;
+    width = 50;
+    height = Math.max(40, numInputs * 20);
+    const halfH = height / 2;
+    let inputsLabels = '';
+    for (let i = 1; i <= numInputs; i++) {
+      const y = - (numInputs - 1) * 10 + (i - 1) * 20;
+      inputsLabels += `<text x="-21" y="${y + 2.5}" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}">In${i}</text>`;
+    }
+    innerGraphic = `
+      <text x="0" y="-${halfH - 12}" font-family="Inter, sans-serif" font-size="5.5" font-weight="800" fill="${symbolColor}" text-anchor="middle">Idx</text>
+      ${inputsLabels}
+      <circle cx="2" cy="0" r="1.5" fill="${symbolColor}" />
+      <path d="M 2,0 L -10,0" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2 1" />
+    `;
+  } else if (type === 'HIT_CROSSING') {
+    innerGraphic = `
+      <line x1="-12" y1="0" x2="12" y2="0" stroke="${symbolColor}" stroke-width="1" stroke-dasharray="2,2" />
+      <path d="M -12,8 Q -6,-8 0,0 Q 6,8 12,-8" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" />
+      <circle cx="0" cy="0" r="2.5" fill="#f43f5e" stroke="none" />
+    `;
+  } else if (type === 'DISCRETE_MEAN') {
+    innerGraphic = `
+      <text x="0" y="-4" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">Mean</text>
+      <text x="0" y="6" font-family="Inter, sans-serif" font-size="6.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="middle">z^-N</text>
+    `;
+  } else if (type === 'DISCRETE_PID') {
+    innerGraphic = `
+      <text x="0" y="-4" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">PID</text>
+      <text x="0" y="6" font-family="Inter, sans-serif" font-size="7" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="middle">z-domain</text>
+    `;
+  } else if (type === 'PERIODIC_IMP_AVG') {
+    innerGraphic = `
+      <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="7.5" font-weight="800" fill="${symbolColor}" text-anchor="middle">Imp Avg</text>
+      <text x="-21" y="-7.5" font-family="Inter, sans-serif" font-size="5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="start">In</text>
+      <text x="-21" y="12.5" font-family="Inter, sans-serif" font-size="5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="start">Trig</text>
+    `;
+  } else if (type === 'FOURIER_TRANS') {
+    innerGraphic = `
+      <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">Fourier</text>
+      <text x="-21" y="2.5" font-family="Inter, sans-serif" font-size="5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="start">In</text>
+      <text x="21" y="-7.5" font-family="Inter, sans-serif" font-size="5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="end">Mag</text>
+      <text x="21" y="12.5" font-family="Inter, sans-serif" font-size="5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="end">Phase</text>
+    `;
+  } else if (type === 'RELATIONAL_OPERATOR') {
+    const op = comp.parameters?.operator ?? '==';
+    innerGraphic = `
+      <text x="0" y="-4" font-family="Inter, sans-serif" font-size="7" font-weight="850" fill="${symbolColor}" text-anchor="middle">Relational</text>
+      <text x="0" y="7" font-family="Inter, sans-serif" font-size="11" font-weight="900" fill="${symbolColor}" text-anchor="middle">${op}</text>
+    `;
+  } else if (type === 'COMPARE_TO_CONSTANT') {
+    const op = comp.parameters?.operator ?? '==';
+    const cVal = comp.parameters?.constant ?? '0.0';
+    innerGraphic = `
+      <text x="0" y="-5" font-family="Inter, sans-serif" font-size="7" font-weight="850" fill="${symbolColor}" text-anchor="middle">Compare</text>
+      <text x="0" y="5" font-family="Inter, sans-serif" font-size="9" font-weight="900" fill="${symbolColor}" text-anchor="middle">${op} ${cVal}</text>
+    `;
+  } else if (type === 'D_FLIP_FLOP') {
+    width = 50;
+    height = 40;
+    innerGraphic = `
+      <text x="0" y="3" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">D-FF</text>
+      <text x="-21" y="-8" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="start">D</text>
+      <text x="-21" y="12" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="start">></text>
+      <text x="21" y="-8" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="end">Q</text>
+      <text x="21" y="12" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="end">Q̅</text>
+    `;
+  } else if (type === 'JK_FLIP_FLOP') {
+    width = 50;
+    height = 40;
+    innerGraphic = `
+      <text x="0" y="3" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">JK-FF</text>
+      <text x="-21" y="-10" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="start">J</text>
+      <text x="-21" y="2" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="start">></text>
+      <text x="-21" y="14" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="start">K</text>
+      <text x="21" y="-8" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="end">Q</text>
+      <text x="21" y="12" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="end">Q̅</text>
+    `;
+  } else if (type === 'MONOFLOP' || type === 'MONOSTABLE') {
+    const dur = comp.parameters?.duration ?? '0.1';
+    innerGraphic = `
+      <text x="0" y="-3" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">Monoflop</text>
+      <text x="0" y="7" font-family="Inter, sans-serif" font-size="6.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="middle">T = ${dur}</text>
     `;
   }
 

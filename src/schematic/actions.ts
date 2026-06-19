@@ -12,7 +12,7 @@ import {
 } from './routing';
 import { parseTurnsList, discoverPortsJS, DEFAULT_PARAMETERS, EXPORT_TYPE_NAMES, getComponentPins, discoverParamsFromCode } from './config';
 import { updatePropertiesPanel } from './properties';
-import { DETAILED_COMPONENTS } from './detailedLibrary';
+import { DETAILED_COMPONENTS, getDetailedComponentPins } from './detailedLibrary';
 
 export function getControlOutputPins(comp: any): string[] {
   if (!comp) return [];
@@ -676,6 +676,11 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       uf.find(pinKey); // Initializes node
     });
   });
+
+  // 1.5. Map all GND component pins to unique strings in Union-Find
+  state.components.filter((c: any) => c.type === 'GND').forEach((comp: any) => {
+    uf.find(`${comp.id}.Gnd`);
+  });
   
   // Union all E_LABEL pins with matching tag names
   const eLabels = state.components.filter((c: any) => c.type === 'E_LABEL');
@@ -826,16 +831,27 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
     }
   });
   
-  // 4. Default ground discovery: Ground defaults to VM negative terminal, AM terminal, or a common low node
-  let groundRoot: string | null = null;
+  // 4. Default ground discovery: Ground defaults to GND components, VM negative terminal, AM terminal, or a common low node
+  const groundRoots = new Set<string>();
   
-  // Search if a voltage source is present to lock node_0 onto its negative terminal
-  const vsources = state.components.filter((c: any) => ['V', 'AC_V'].includes(c.type));
-  if (vsources.length > 0) {
-    const firstV = vsources[0];
-    const negPinKey = `${firstV.id}.B`;
-    if (uf.parent[negPinKey]) {
-      groundRoot = uf.find(negPinKey);
+  // Search if ground (GND) components are present to lock node_0 onto the ground node
+  const gnds = state.components.filter((c: any) => c.type === 'GND');
+  gnds.forEach((comp: any) => {
+    const pinKey = `${comp.id}.Gnd`;
+    if (uf.parent[pinKey]) {
+      groundRoots.add(uf.find(pinKey));
+    }
+  });
+
+  // Fallback to negative terminal of first voltage source if no GND component exists
+  if (groundRoots.size === 0) {
+    const vsources = state.components.filter((c: any) => ['V', 'AC_V'].includes(c.type));
+    if (vsources.length > 0) {
+      const firstV = vsources[0];
+      const negPinKey = `${firstV.id}.B`;
+      if (uf.parent[negPinKey]) {
+        groundRoots.add(uf.find(negPinKey));
+      }
     }
   }
   
@@ -844,15 +860,16 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
   let nodeCount = 1;
   
   Object.keys(partitions).forEach(root => {
-    if (root === groundRoot) {
+    if (groundRoots.has(root)) {
       rootToNodeIndex[root] = "node_0";
     } else {
       rootToNodeIndex[root] = `node_${nodeCount++}`;
     }
   });
   
-  // Ensure "node_0" is allocated even if no voltage source exists
-  if (groundRoot === null || !rootToNodeIndex[groundRoot]) {
+  // Ensure "node_0" is allocated even if no groundRoot exists
+  const hasNode0 = Object.values(rootToNodeIndex).includes("node_0");
+  if (!hasNode0) {
     const roots = Object.keys(partitions);
     if (roots.length > 0) {
       rootToNodeIndex[roots[0]] = "node_0";
@@ -898,6 +915,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
     constants: [],
     gains: [],
     pi_controllers: [],
+    pid_controllers: [],
     summing_junctions: [],
     pwm_generators: [],
     triangle_carriers: [],
@@ -906,7 +924,8 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
     product_blocks: [],
     custom_functions: [],
     custom_scripts: [],
-    signals_routing: []
+    signals_routing: [],
+    plls: []
   };
   
   // Parse parameters fields cleanly
@@ -1359,6 +1378,54 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           src_type: comp.type.toLowerCase()
         });
         break;
+      case 'IC_LM7805':
+        physical_stage.voltage_sources.push({
+          id: comp.id,
+          nodes: [pinToNodeMap[`${comp.id}.OUT`] || "node_0", pinToNodeMap[`${comp.id}.GND`] || "node_0"],
+          value: 5.0,
+          src_type: 'dc'
+        });
+        break;
+      case 'IC_LM317':
+        physical_stage.voltage_sources.push({
+          id: comp.id,
+          nodes: [pinToNodeMap[`${comp.id}.OUT`] || "node_0", pinToNodeMap[`${comp.id}.ADJ`] || "node_0"],
+          value: 1.25,
+          src_type: 'dc'
+        });
+        break;
+      case 'IC_PC817':
+        physical_stage.diodes.push({
+          id: `${comp.id}_LED`,
+          nodes: [pinToNodeMap[`${comp.id}.Anode`] || "node_0", pinToNodeMap[`${comp.id}.Cathode`] || "node_0"],
+          Vd: 1.2,
+          Ron: 1.0,
+          Roff: 1e6
+        });
+        physical_stage.resistors.push({
+          id: `${comp.id}_TR`,
+          nodes: [pinToNodeMap[`${comp.id}.Collector`] || "node_0", pinToNodeMap[`${comp.id}.Emitter`] || "node_0"],
+          value: 100.0,
+          esr: 0.0
+        });
+        break;
+      case 'IC_555':
+      case 'IC_7400':
+      case 'IC_7408':
+      case 'IC_7432':
+      case 'IC_7404': {
+        const pinNames = getDetailedComponentPins(comp.type);
+        const keys = Object.keys(pinNames || {});
+        const node1 = pinToNodeMap[`${comp.id}.${keys[0]}`] || "node_0";
+        const node2 = pinToNodeMap[`${comp.id}.${keys[1]}`] || "node_0";
+        physical_stage.resistors.push({
+          id: comp.id,
+          nodes: [node1, node2],
+          value: 1e3,
+          esr: 0.0
+        });
+        break;
+      }
       case 'GEN_EBLOCK': {
         const n = parseInt(comp.parameters && comp.parameters.terminals) || 3;
         const terminalLabels = Array.from({ length: n }, (_, i) => `T${i + 1}`);
@@ -1439,14 +1506,17 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'RANDOM_NUM':
       case 'WHITE_NOISE':
         control_loops.constants.push({
+          ...p,
           id: comp.id,
           output: `${comp.id}.Out`,
           value: p.value || 1.0,
-          original_type: comp.type,
-          ...p
+          original_type: comp.type
         });
         break;
       case 'GAIN':
+      case 'OFFSET':
+      case 'SIGNUM':
+      case 'DATATYPE_CONV':
       case 'INIT_COND':
       case 'SATURATION':
       case 'DEAD_ZONE':
@@ -1464,20 +1534,109 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'STATE_SPACE':
       case 'DELAY':
       case 'TRANSPORT_DELAY':
+      case 'TURN_ON_DELAY':
+      case 'MEMORY_BLOCK':
+      case 'QUANTIZER':
+      case 'HIT_CROSSING':
       case 'DISCRETE_INT':
       case 'DISCRETE_TF':
       case 'DISCRETE_SS':
       case 'ZOH':
       case 'UNIT_DELAY':
+      case 'DISCRETE_MEAN':
+      case 'DISCRETE_PID':
+      case 'COMPARE_TO_CONSTANT':
+      case 'MONOFLOP':
+      case 'MONOSTABLE':
         control_loops.gains.push({
+          ...p,
           id: comp.id,
           input: getIncomingControlTerminal(comp.id, 'In'),
           output: `${comp.id}.Out`,
           K: p.K || 1.0,
-          original_type: comp.type,
-          ...p
+          original_type: comp.type
         });
         break;
+      case 'PERIODIC_IMP_AVG':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          control_signal: getIncomingControlTerminal(comp.id, 'Trig'),
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
+      case 'FOURIER_TRANS':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          output_mag: `${comp.id}.Mag`,
+          output_phase: `${comp.id}.Phase`,
+          original_type: comp.type
+        });
+        break;
+      case 'D_FLIP_FLOP':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input_d: getIncomingControlTerminal(comp.id, 'D'),
+          control_signal: getIncomingControlTerminal(comp.id, 'Clk'),
+          output_q: `${comp.id}.Q`,
+          output_qbar: `${comp.id}.Q_bar`,
+          original_type: comp.type
+        });
+        break;
+      case 'JK_FLIP_FLOP':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input_j: getIncomingControlTerminal(comp.id, 'J'),
+          input_k: getIncomingControlTerminal(comp.id, 'K'),
+          control_signal: getIncomingControlTerminal(comp.id, 'Clk'),
+          output_q: `${comp.id}.Q`,
+          output_qbar: `${comp.id}.Q_bar`,
+          original_type: comp.type
+        });
+        break;
+      case 'SIGNAL_SWITCH':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input1: getIncomingControlTerminal(comp.id, 'In1'),
+          control_signal: getIncomingControlTerminal(comp.id, 'Ctrl'),
+          input2: getIncomingControlTerminal(comp.id, 'In2'),
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
+      case 'MANUAL_SWITCH':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input1: getIncomingControlTerminal(comp.id, 'In1'),
+          input2: getIncomingControlTerminal(comp.id, 'In2'),
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
+      case 'MULTIPORT_SWITCH': {
+        const numInputs = parseInt(p.inputs) || 3;
+        const inputsArray: (string | null)[] = [];
+        for (let i = 1; i <= numInputs; i++) {
+          inputsArray.push(getIncomingControlTerminal(comp.id, `In${i}`));
+        }
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          control_signal: getIncomingControlTerminal(comp.id, 'Ctrl'),
+          inputs: inputsArray,
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
+      }
       case 'PID':
         control_loops.pi_controllers.push({
           id: comp.id,
@@ -1488,17 +1647,77 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           Kd: p.Kd || 0.0
         });
         break;
+      case 'CONT_PID':
+        control_loops.pid_controllers.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
+      case 'PLL_1PH':
+        control_loops.plls.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          output_theta: `${comp.id}.Theta`,
+          output_freq: `${comp.id}.Freq`,
+          output_cos: `${comp.id}.Cos`,
+          output_sin: `${comp.id}.Sin`,
+          original_type: comp.type
+        });
+        break;
+      case 'PLL_3PH':
+        control_loops.plls.push({
+          ...p,
+          id: comp.id,
+          inputs: [
+            getIncomingControlTerminal(comp.id, 'Va'),
+            getIncomingControlTerminal(comp.id, 'Vb'),
+            getIncomingControlTerminal(comp.id, 'Vc')
+          ],
+          output_theta: `${comp.id}.Theta`,
+          output_freq: `${comp.id}.Freq`,
+          output_cos: `${comp.id}.Cos`,
+          output_sin: `${comp.id}.Sin`,
+          original_type: comp.type
+        });
+        break;
       case 'SUM':
+      case 'SUBTRACT':
         control_loops.summing_junctions.push({
           id: comp.id,
           inputs: [
             getIncomingControlTerminal(comp.id, 'A'),
             getIncomingControlTerminal(comp.id, 'B')
           ],
-          signs: comp.parameters?.signs ? comp.parameters.signs : '++',
+          signs: comp.parameters?.signs ? comp.parameters.signs : (comp.type === 'SUBTRACT' ? '+-' : '++'),
           output: `${comp.id}.Out`
         });
         break;
+      case 'SUM_ROUND':
+      case 'SUM_RECT': {
+        const numInputs = parseInt(comp.parameters?.inputs) || 2;
+        const inputs: string[] = [];
+        for (let i = 1; i <= numInputs; i++) {
+          inputs.push(getIncomingControlTerminal(comp.id, `In${i}`));
+        }
+        const hasCtrlWire = comp.type === 'SUM_RECT' && state.wires.some((w: any) => 
+          getWireDomain(w) === 'control' && (
+            (w.from.type === 'pin' && w.from.compId === comp.id && w.from.terminal === 'Ctrl') ||
+            (w.to && w.to.type === 'pin' && w.to.compId === comp.id && w.to.terminal === 'Ctrl')
+          )
+        );
+        control_loops.summing_junctions.push({
+          id: comp.id,
+          inputs: inputs,
+          signs: comp.parameters?.signs ? comp.parameters.signs : '+'.repeat(numInputs),
+          output: `${comp.id}.Out`,
+          control_signal: hasCtrlWire ? getIncomingControlTerminal(comp.id, 'Ctrl') : undefined
+        });
+        break;
+      }
       case 'PWM':
         control_loops.pwm_generators.push({
           id: comp.id,
@@ -1551,15 +1770,50 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'MIN_MAX':
       case 'LOGIC_OP':
       case 'LUT_2D':
+      case 'RELATIONAL_OPERATOR':
         control_loops.product_blocks.push({
+          ...p,
           id: comp.id,
           inputs: [
             getIncomingControlTerminal(comp.id, 'In1'),
             getIncomingControlTerminal(comp.id, 'In2')
           ],
           output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
+      case 'PRODUCT_RECT': {
+        const numInputs = parseInt(comp.parameters?.inputs) || 2;
+        const inputs: string[] = [];
+        for (let i = 1; i <= numInputs; i++) {
+          inputs.push(getIncomingControlTerminal(comp.id, `In${i}`));
+        }
+        const hasCtrlWire = state.wires.some((w: any) => 
+          getWireDomain(w) === 'control' && (
+            (w.from.type === 'pin' && w.from.compId === comp.id && w.from.terminal === 'Ctrl') ||
+            (w.to && w.to.type === 'pin' && w.to.compId === comp.id && w.to.terminal === 'Ctrl')
+          )
+        );
+        control_loops.product_blocks.push({
+          ...p,
+          id: comp.id,
+          inputs: inputs,
+          output: `${comp.id}.Out`,
           original_type: comp.type,
-          ...p
+          control_signal: hasCtrlWire ? getIncomingControlTerminal(comp.id, 'Ctrl') : undefined
+        });
+        break;
+      }
+      case 'DIVIDE':
+        control_loops.product_blocks.push({
+          ...p,
+          id: comp.id,
+          inputs: [
+            getIncomingControlTerminal(comp.id, 'Num'),
+            getIncomingControlTerminal(comp.id, 'Den')
+          ],
+          output: `${comp.id}.Out`,
+          original_type: comp.type
         });
         break;
       case 'CSCRIPT': {

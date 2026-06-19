@@ -4,6 +4,7 @@ import { showToast } from './utils';
 import { getComponentPins, discoverPortsJS, senseTerminalsFromCode, discoverParamsFromCode, updateParamInCode } from './config';
 import { getAvailableVariables } from './plotConfig';
 import { DETAILED_COMPONENTS } from './detailedLibrary';
+import { rotateSelected, deleteSelected } from './actions';
 
 // Update properties panel dynamically based on select items
 export function updatePropertiesPanel(): void {
@@ -24,6 +25,14 @@ export function updatePropertiesPanel(): void {
       <div class="prop-group">
         <label class="prop-label">Label / Identifier</label>
         <input type="text" id="prop-id" class="prop-input" value="${comp.id}" />
+      </div>
+      <div style="display: flex; gap: 8px; margin-top: 12px; margin-bottom: 8px;">
+        <button id="btn-rotate-comp" class="prop-input" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #075985; border: 1px solid #0369a1; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Rotate Component 90°">
+          Rotate
+        </button>
+        <button id="btn-delete-comp" class="prop-input" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #b91c1c; border: 1px solid #991b1b; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Delete Component">
+          Delete
+        </button>
       </div>
     `;
     
@@ -73,16 +82,40 @@ export function updatePropertiesPanel(): void {
         
         inputField.addEventListener('change', (e: any) => {
           saveState();
-          comp.parameters[key] = e.target.value;
+          const val = e.target.value;
+          comp.parameters[key] = val;
           
           // Re-route wires for dynamic pins counts or custom XFMR winders
           if (comp.type === 'XFMR' && ['primary_turns', 'secondary_turns'].includes(key)) {
             cleanDanglingWires(comp.id);
-          } else if (['SCOPE', 'MUX', 'DEMUX', 'CSCRIPT', 'GEN_EBLOCK'].includes(comp.type)) {
+          } else if (['SCOPE', 'MUX', 'DEMUX', 'CSCRIPT', 'GEN_EBLOCK', 'SUM_ROUND', 'SUM_RECT', 'PRODUCT_RECT', 'MULTIPORT_SWITCH'].includes(comp.type)) {
             cleanDanglingWires(comp.id);
           }
           if (comp.type === 'GEN_EBLOCK' && key === 'terminals') {
             syncScriptPlotConfig(comp);
+          }
+          
+          // Auto-sync signs / operators when inputs change
+          if (key === 'inputs' && ['SUM_ROUND', 'SUM_RECT', 'PRODUCT_RECT'].includes(comp.type)) {
+            const numPins = parseInt(val) || 2;
+            if (comp.type === 'PRODUCT_RECT') {
+              const currentOps = comp.parameters.operators || '';
+              if (currentOps.length < numPins) {
+                comp.parameters.operators = currentOps + '*'.repeat(numPins - currentOps.length);
+              } else if (currentOps.length > numPins) {
+                comp.parameters.operators = currentOps.substring(0, numPins);
+              }
+            } else {
+              const currentSigns = comp.parameters.signs || '';
+              if (currentSigns.length < numPins) {
+                comp.parameters.signs = currentSigns + '+'.repeat(numPins - currentSigns.length);
+              } else if (currentSigns.length > numPins) {
+                comp.parameters.signs = currentSigns.substring(0, numPins);
+              }
+            }
+            setTimeout(() => {
+              updatePropertiesPanel();
+            }, 0);
           }
           
           draw();
@@ -336,6 +369,67 @@ export function updatePropertiesPanel(): void {
         updatePropertiesPanel();
       });
     }
+
+    // Bind Rotate & Delete buttons
+    setTimeout(() => {
+      const btnRotate = document.getElementById('btn-rotate-comp');
+      if (btnRotate) {
+        btnRotate.addEventListener('click', () => {
+          rotateSelected();
+        });
+      }
+      const btnDelete = document.getElementById('btn-delete-comp');
+      if (btnDelete) {
+        btnDelete.addEventListener('click', () => {
+          deleteSelected();
+        });
+      }
+    }, 0);
+  } else if (state.selectedComponentIds.length > 0 || state.selectedWireIds.length > 0) {
+    const card = document.createElement('div');
+    card.className = 'panel-card';
+    
+    let buttonsHtml = '';
+    if (state.selectedComponentIds.length > 0) {
+      buttonsHtml += `
+        <button id="btn-rotate-comp" class="prop-input" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #075985; border: 1px solid #0369a1; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Rotate Selection 90°">
+          Rotate
+        </button>
+      `;
+    }
+    buttonsHtml += `
+      <button id="btn-delete-comp" class="prop-input" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #b91c1c; border: 1px solid #991b1b; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Delete Selection">
+        Delete
+      </button>
+    `;
+    
+    card.innerHTML = `
+      <h3 class="panel-card-title">Selection Operations</h3>
+      <p style="font-size: 10px; color: #64748b; margin-bottom: 12px;">
+        Selected: ${state.selectedComponentIds.length} component(s), ${state.selectedWireIds.length} wire(s)
+      </p>
+      <div style="display: flex; gap: 8px;">
+        ${buttonsHtml}
+      </div>
+    `;
+    
+    panel.appendChild(card);
+    
+    // Bind buttons
+    setTimeout(() => {
+      const btnRotate = document.getElementById('btn-rotate-comp');
+      if (btnRotate) {
+        btnRotate.addEventListener('click', () => {
+          rotateSelected();
+        });
+      }
+      const btnDelete = document.getElementById('btn-delete-comp');
+      if (btnDelete) {
+        btnDelete.addEventListener('click', () => {
+          deleteSelected();
+        });
+      }
+    }, 0);
     
   } else {
     // Standard workspace keyboard bindings instruction panel
@@ -353,7 +447,7 @@ export function updatePropertiesPanel(): void {
           <kbd class="keybind-kbd">Del</kbd>
         </div>
         <div class="keybind-row">
-          <span class="keybind-label">Copy Selected</span>
+          <span class="keybind-label">Copy selection</span>
           <kbd class="keybind-kbd">Ctrl+C</kbd>
         </div>
         <div class="keybind-row">
@@ -365,8 +459,20 @@ export function updatePropertiesPanel(): void {
           <kbd class="keybind-kbd">Ctrl+Z</kbd>
         </div>
         <div class="keybind-row">
-          <span class="keybind-label">Clear workspace</span>
+          <span class="keybind-label">Clear Workspace</span>
           <kbd class="keybind-kbd">Ctrl+Q</kbd>
+        </div>
+        <div class="keybind-row">
+          <span class="keybind-label">Sim settings</span>
+          <kbd class="keybind-kbd">S</kbd>
+        </div>
+        <div class="keybind-row">
+          <span class="keybind-label">Plot configs</span>
+          <kbd class="keybind-kbd">E</kbd>
+        </div>
+        <div class="keybind-row">
+          <span class="keybind-label">Hold for Pan</span>
+          <kbd class="keybind-kbd">Space</kbd>
         </div>
       </div>
     `;

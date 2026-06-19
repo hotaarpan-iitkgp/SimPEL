@@ -36,31 +36,40 @@ export function initInteractions(svg: SVGSVGElement): () => void {
   // Sync the DOM transform with the current zoom/pan state immediately
   updateViewportTransform();
   
+  const handleContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+  };
+
   // Clean up any stale listeners first to avoid double-binding on tab switches
   const cleanup = () => {
     svg.removeEventListener('pointerdown', handlePointerDown);
     svg.removeEventListener('pointermove', handlePointerMove);
     svg.removeEventListener('pointerup', handlePointerUp);
     svg.removeEventListener('wheel', handleWheel);
+    svg.removeEventListener('contextmenu', handleContextMenu);
     window.removeEventListener('keydown', handleKeyDown);
     window.removeEventListener('keyup', handleKeyUp);
   };
   
   // 1. Pointer Down event
   const handlePointerDown = (e: PointerEvent) => {
-    if ((e.target as HTMLElement).closest('.terminal-handle') || (e.target as HTMLElement).closest('.wire-segment-drag-handle') || (e.target as HTMLElement).closest('.wire-midpoint-handle')) {
-      return; // Handled by terminal overlay and handle listeners directly
+    // Only skip canvas logic for left clicks on handles; right/middle clicks should trigger panning
+    if (e.button === 0 && ((e.target as HTMLElement).closest('.terminal-handle') || (e.target as HTMLElement).closest('.wire-segment-drag-handle') || (e.target as HTMLElement).closest('.wire-midpoint-handle'))) {
+      return; // Handled by terminal overlay and handle listeners directly for left-click
     }
     
     e.preventDefault();
     const mousePos = screenToCanvas(e.clientX, e.clientY);
     state.lastMousePos = mousePos;
     
-    // Middle click OR spacebar press triggers workspace panning
-    if (e.button === 1 || isSpacePressed || e.shiftKey && e.button === 0) {
+    // Right click (2) OR Middle click (1) OR Spacebar press OR Shift + Left-click triggers workspace panning
+    if (e.button === 2 || e.button === 1 || isSpacePressed || (e.shiftKey && e.button === 0)) {
       state.isPanning = true;
       state.panStart = { x: e.clientX, y: e.clientY };
       svg.style.cursor = 'grabbing';
+      try {
+        svg.setPointerCapture(e.pointerId);
+      } catch (err) {}
       return;
     }
     
@@ -265,6 +274,9 @@ export function initInteractions(svg: SVGSVGElement): () => void {
     if (state.isPanning) {
       state.isPanning = false;
       svg.style.cursor = 'default';
+      try {
+        svg.releasePointerCapture(e.pointerId);
+      } catch (err) {}
       return;
     }
     
@@ -366,32 +378,25 @@ export function initInteractions(svg: SVGSVGElement): () => void {
   const handleWheel = (e: WheelEvent) => {
     e.preventDefault();
     
-    if (e.ctrlKey || e.shiftKey) {
-      const zoomIntensity = 0.12;
-      
-      // Read cursor position in screen space
-      const svgRect = svg.getBoundingClientRect();
-      const mouseX = e.clientX - svgRect.left;
-      const mouseY = e.clientY - svgRect.top;
-      
-      // Backtrace canvas coordinate before scaling
-      const canvasX = (mouseX - state.panX) / state.zoom;
-      const canvasY = (mouseY - state.panY) / state.zoom;
-      
-      // Scale zoom factors with clamps (0.15x min to 4.0x max)
-      const factor = e.deltaY < 0 ? 1 + zoomIntensity : 1 - zoomIntensity;
-      const newZoom = Math.min(4.0, Math.max(0.15, state.zoom * factor));
-      
-      // Shift panning offsets to align pointer cursor after zooming (intuitive centering)
-      state.panX = mouseX - canvasX * newZoom;
-      state.panY = mouseY - canvasY * newZoom;
-      state.zoom = newZoom;
-    } else {
-      // Panning/scrolling when no modifier key is pressed
-      const panSpeed = 0.85;
-      state.panX -= e.deltaX * panSpeed;
-      state.panY -= e.deltaY * panSpeed;
-    }
+    const zoomIntensity = 0.08;
+    
+    // Read cursor position in screen space
+    const svgRect = svg.getBoundingClientRect();
+    const mouseX = e.clientX - svgRect.left;
+    const mouseY = e.clientY - svgRect.top;
+    
+    // Backtrace canvas coordinate before scaling
+    const canvasX = (mouseX - state.panX) / state.zoom;
+    const canvasY = (mouseY - state.panY) / state.zoom;
+    
+    // Scale zoom factors with clamps (0.15x min to 4.0x max)
+    const factor = e.deltaY < 0 ? 1 + zoomIntensity : 1 - zoomIntensity;
+    const newZoom = Math.min(4.0, Math.max(0.15, state.zoom * factor));
+    
+    // Shift panning offsets to align pointer cursor after zooming (intuitive centering)
+    state.panX = mouseX - canvasX * newZoom;
+    state.panY = mouseY - canvasY * newZoom;
+    state.zoom = newZoom;
     
     updateViewportTransform();
   };
@@ -472,6 +477,7 @@ export function initInteractions(svg: SVGSVGElement): () => void {
   svg.addEventListener('pointermove', handlePointerMove);
   svg.addEventListener('pointerup', handlePointerUp);
   svg.addEventListener('wheel', handleWheel);
+  svg.addEventListener('contextmenu', handleContextMenu);
   
   // Bind global shortcut keys
   window.addEventListener('keydown', handleKeyDown);

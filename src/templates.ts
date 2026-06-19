@@ -8,6 +8,17 @@ export interface Template {
 }
 
 export const CIRCUITS_TEMPLATES: Record<string, Template> = {
+  empty: {
+    name: "Empty Workspace",
+    description: "Start building your circuit from scratch.",
+    solverConfig: {
+      stop_time: "0.01",
+      step_size: "10u",
+      solver: "euler",
+      step_type: "fixed"
+    },
+    components: []
+  },
   buck_converter: {
     name: "Closed-Loop Buck DC-DC Converter",
     description: "Closed-loop regulated Buck converter. SummingJunction compares 12.0V reference with Voltmeter output, driving a PI Controller & PWM Generator to cycle the MOSFET, keeping output constant under input/load modifications.",

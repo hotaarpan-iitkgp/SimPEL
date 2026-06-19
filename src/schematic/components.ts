@@ -70,6 +70,14 @@ export function getComponentSVG(comp: any): string {
         <text x="0" y="5.5" font-family="Inter, sans-serif" font-size="15" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">A</text>
       `;
       break;
+    case 'GND': // Ground Reference
+      shape = `
+        <line x1="0" y1="-20" x2="0" y2="0" class="comp-path" stroke="currentColor" stroke-width="2" />
+        <line x1="-12" y1="0" x2="12" y2="0" class="comp-path" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <line x1="-8" y1="6" x2="8" y2="6" class="comp-path" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <line x1="-4" y1="12" x2="4" y2="12" class="comp-path" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      `;
+      break;
     case 'MOSFET': // MOSFET switch with antiparallel body diode
       shape = `
         <path class="comp-path" d="M 0,-40 L 0,-15 M 0,15 L 0,40" fill="none" stroke="currentColor" stroke-width="2" />

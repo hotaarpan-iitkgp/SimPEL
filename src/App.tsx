@@ -11,6 +11,7 @@ import SchematicEditor from './components/SchematicEditor';
 import SimulationPlayer from './components/SimulationPlayer';
 import { state } from './schematic/state';
 import { getWireDomain } from './schematic/routing';
+import { triggerImport } from './schematic/actions';
 
 export default function App() {
   const resolveInputPinToSource = (trace: string): string => {
@@ -198,7 +199,7 @@ export default function App() {
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [loadedFileName, setLoadedFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>("buck_converter");
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>("empty");
   const [isVisualFlowOpen, setIsVisualFlowOpen] = useState<boolean>(false);
 
   // Reconfigurable Plotting States
@@ -254,7 +255,7 @@ export default function App() {
 
   // Load default template on first boot
   useEffect(() => {
-    loadTemplate("buck_converter");
+    loadTemplate("empty");
   }, []);
 
   // Listen to interactive plot configuration changes designed in schematic editor modal
@@ -423,6 +424,135 @@ export default function App() {
       
       // Setup beautiful initial subplots specifically customized for each template
       setupDefaultSubplots(key);
+
+      // Map components and generate wires for Schematic Editor
+      const templateTypeToVisualType: Record<string, string> = {
+        "VoltageSource": "V",
+        "ACVoltageSource": "AC_V",
+        "CurrentSource": "I",
+        "Resistor": "R",
+        "Inductor": "L",
+        "Capacitor": "C",
+        "Diode": "D",
+        "Switch": "S",
+        "MOSFET": "MOSFET",
+        "Transformer": "XFMR",
+        "Voltmeter": "VM",
+        "Ammeter": "AM",
+        "Constant": "CONST",
+        "Gain": "GAIN",
+        "PI_Controller": "PID",
+        "SummingJunction": "SUM",
+        "Triangle_Carrier": "TRI",
+        "Comparator": "COMP",
+        "NOT_Gate": "NOT",
+        "NOT": "NOT"
+      };
+
+      const layoutComponents = template.components.map(c => {
+        const visualType = templateTypeToVisualType[c.type] || c.type;
+        return {
+          id: c.id,
+          type: visualType,
+          x: c.x || 150,
+          y: c.y || 100,
+          rotation: c.rotation || 0,
+          parameters: c.parameters || {},
+          label: c.label || `${c.type} (${c.id})`
+        };
+      });
+
+      // Local helper to generate wires from template component connections
+      const wires: any[] = [];
+      let wireIdCounter = 1;
+      const getNextWireId = () => `W_temp_${wireIdCounter++}`;
+
+      // 1. Group electrical terminals by node name
+      const electricalNodes: Record<string, { compId: string; terminal: string }[]> = {};
+
+      template.components.forEach((comp) => {
+        const visualType = templateTypeToVisualType[comp.type] || comp.type;
+        
+        let pinNames: string[] = [];
+        if (['R', 'L', 'C', 'S', 'D', 'V', 'I', 'VM', 'AM', 'AC_V'].includes(visualType)) {
+          pinNames = ['A', 'B'];
+        } else if (visualType === 'MOSFET') {
+          pinNames = ['D', 'S'];
+        }
+        
+        if (comp.nodes && comp.nodes.length > 0) {
+          comp.nodes.forEach((nodeName: string, idx: number) => {
+            if (!nodeName) return;
+            const terminalName = pinNames[idx];
+            if (terminalName) {
+              if (!electricalNodes[nodeName]) {
+                electricalNodes[nodeName] = [];
+              }
+              electricalNodes[nodeName].push({ compId: comp.id, terminal: terminalName });
+            }
+          });
+        }
+      });
+
+      // Connect electrical pins sharing same node name
+      Object.keys(electricalNodes).forEach((nodeName) => {
+        const pins = electricalNodes[nodeName];
+        if (pins.length > 1) {
+          for (let i = 0; i < pins.length - 1; i++) {
+            wires.push({
+              id: getNextWireId(),
+              from: { type: 'pin', compId: pins[i].compId, terminal: pins[i].terminal },
+              to: { type: 'pin', compId: pins[i + 1].compId, terminal: pins[i + 1].terminal },
+              manualPath: null
+            });
+          }
+        }
+      });
+
+      // 2. Group control terminals by channel name
+      const controlChannels: Record<string, { compId: string; terminal: string }[]> = {};
+
+      template.components.forEach((comp) => {
+        if (comp.channels) {
+          Object.keys(comp.channels).forEach((terminalName) => {
+            const channelName = comp.channels[terminalName];
+            if (!channelName) return;
+            if (!controlChannels[channelName]) {
+              controlChannels[channelName] = [];
+            }
+            controlChannels[channelName].push({ compId: comp.id, terminal: terminalName });
+          });
+        }
+      });
+
+      // Connect control pins sharing same channel name
+      Object.keys(controlChannels).forEach((channelName) => {
+        const pins = controlChannels[channelName];
+        if (pins.length > 1) {
+          for (let i = 0; i < pins.length - 1; i++) {
+            wires.push({
+              id: getNextWireId(),
+              from: { type: 'pin', compId: pins[i].compId, terminal: pins[i].terminal },
+              to: { type: 'pin', compId: pins[i + 1].compId, terminal: pins[i + 1].terminal },
+              manualPath: null
+            });
+          }
+        }
+      });
+
+      const layoutObj = {
+        components: layoutComponents,
+        wires: wires,
+        simulationSettings: {
+          stopTime: String(template.solverConfig.stop_time ?? "0.01"),
+          stepSize: String(template.solverConfig.step_size ?? "10u"),
+          solver: template.solverConfig.solver ?? "euler",
+          stepType: template.solverConfig.step_type ?? "fixed"
+        }
+      };
+
+      // Load layout into visual canvas and center/redraw
+      triggerImport(JSON.stringify(layoutObj));
     }
   };
 
@@ -2424,6 +2554,7 @@ export default function App() {
               onChange={(e) => loadTemplate(e.target.value)}
               value={loadedFileName ? "uploaded" : selectedTemplateKey}
             >
+              <option value="empty">-- Empty Workspace --</option>
               <option value="buck_converter">Template: Closed-Loop Buck Converter</option>
               <option value="lc_resonance">Template: LC Resonance Shock ringing</option>
               <option value="ac_rectifier">Template: AC to DC Rectifier & Filter</option>

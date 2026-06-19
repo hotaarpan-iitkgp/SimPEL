@@ -1,0 +1,6 @@
+{
+  "name": "Voltaic++",
+  "description": "High-speed modular circuit CAD designer and transient simulator with a high-performance C++ solver engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

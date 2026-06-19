@@ -703,6 +703,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
 
   // Helper code to initialize or update dragging of scope elements
   const handleScopePointerDown = (scopeId: string, e: React.PointerEvent) => {
+    if (e.button !== 0) return; // Only drag scopes with left-click
     e.stopPropagation();
     draggedScopeIdRef.current = scopeId;
     const currentScope = activeScopes[scopeId];
@@ -1263,16 +1264,20 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
 
   // Viewport Drag-drop navigation controls
   const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (e.button !== 0) return;
+    // Left-click (0), Middle-click (1), or Right-click (2) can trigger panning
+    if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;
     
-    // If the click is on active scopes or components or wires or close/interactive elements, skip panning
-    const target = e.target as SVGElement | null;
-    if (target) {
-      const closestElement = target.closest('.cursor-pointer, .cursor-grab, .cursor-grabbing, .gate-pulse-visualizer');
-      if (closestElement && e.currentTarget.contains(closestElement) && closestElement !== e.currentTarget) {
-        // Log clicking interactive element, permit local component/wire event handlers
-        lastPointerDownRef.current = { x: e.clientX, y: e.clientY };
-        return;
+    // If the click is on active scopes or components or wires or close/interactive elements, skip panning for left clicks
+    // But for right-click (2) or middle-click (1), we ALWAYS pan
+    if (e.button === 0) {
+      const target = e.target as SVGElement | null;
+      if (target) {
+        const closestElement = target.closest('.cursor-pointer, .cursor-grab, .cursor-grabbing, .gate-pulse-visualizer');
+        if (closestElement && e.currentTarget.contains(closestElement) && closestElement !== e.currentTarget) {
+          // Log clicking interactive element, permit local component/wire event handlers
+          lastPointerDownRef.current = { x: e.clientX, y: e.clientY };
+          return;
+        }
       }
     }
 
@@ -1299,6 +1304,42 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
           isCustomMoved: true
         }
       }));
+
+      // Detect if pointer is over the sidebar plots panel for drag-and-drop preview
+      const sidebar = document.getElementById('sidebar-plots-panel');
+      let isOverSidebar = false;
+      if (sidebar) {
+        const rect = sidebar.getBoundingClientRect();
+        isOverSidebar = (
+          e.clientX >= rect.left &&
+          e.clientX <= rect.right &&
+          e.clientY >= rect.top &&
+          e.clientY <= rect.bottom
+        );
+      }
+
+      if (isOverSidebar) {
+        const currentScope = activeScopes[scopeId];
+        if (currentScope && !previewPlotId) {
+          const name = currentScope.traceName;
+          const label = currentScope.label || scopeId;
+          const alreadyExists = localSubplots.some(sp => sp.traces.includes(name));
+          if (!alreadyExists) {
+            const newId = `plot_preview_${Date.now()}`;
+            setPreviewPlotId(newId);
+            setLocalSubplots(prev => [
+              ...prev,
+              { id: newId, title: label, traces: [name] }
+            ]);
+          }
+        }
+      } else {
+        if (previewPlotId) {
+          setLocalSubplots(prev => prev.filter(sp => sp.id !== previewPlotId));
+          setPreviewPlotId(null);
+        }
+      }
+
       return; // prevent canvas panning when dragging a scope
     }
 
@@ -1309,7 +1350,40 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
 
   const handlePointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
     if (draggedScopeIdRef.current) {
+      const scopeId = draggedScopeIdRef.current;
       draggedScopeIdRef.current = null;
+
+      // Detect if dropped over the sidebar plots panel
+      const sidebar = document.getElementById('sidebar-plots-panel');
+      let isOverSidebar = false;
+      if (sidebar) {
+        const rect = sidebar.getBoundingClientRect();
+        isOverSidebar = (
+          e.clientX >= rect.left &&
+          e.clientX <= rect.right &&
+          e.clientY >= rect.top &&
+          e.clientY <= rect.bottom
+        );
+      }
+
+      if (isOverSidebar && previewPlotId) {
+        // Drop success: convert preview plot to a permanent plot lane
+        const finalId = `sp_${Math.floor(Date.now() + Math.random() * 1000)}`;
+        setLocalSubplots(prev => prev.map(sp => sp.id === previewPlotId ? { ...sp, id: finalId } : sp));
+        
+        // Remove the mini scope popup from the canvas
+        setActiveScopes(prev => {
+          const next = { ...prev };
+          delete next[scopeId];
+          return next;
+        });
+      } else {
+        // Cancel: remove the preview plot lane if one was created
+        if (previewPlotId) {
+          setLocalSubplots(prev => prev.filter(sp => sp.id !== previewPlotId));
+        }
+      }
+      setPreviewPlotId(null);
     }
     setIsPanning(false);
     e.currentTarget.releasePointerCapture(e.pointerId);
@@ -2125,6 +2199,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onWheel={handleWheel}
+              onContextMenu={(e) => e.preventDefault()}
               onDragOver={(e) => {
                 e.preventDefault();
               }}
@@ -2775,9 +2850,14 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
             }}
             onDrop={(e) => {
               e.preventDefault();
+              if (previewPlotId) {
+                const finalId = `sp_${Math.floor(Date.now() + Math.random() * 1000)}`;
+                setLocalSubplots(prev => prev.map(sp => sp.id === previewPlotId ? { ...sp, id: finalId } : sp));
+              }
               setPreviewPlotId(null);
               draggedTraceRef.current = null;
             }}
+            id="sidebar-plots-panel"
             className={`lg:col-span-4 flex flex-col gap-3 overflow-y-auto max-h-[500px] border p-3 rounded-2xl shadow-inner ${isLight ? 'bg-slate-100/40 border-slate-200' : 'bg-slate-950/45 border-slate-900'}`}
           >
             <div className={`flex items-center justify-between px-1.5 select-none shrink-0 border-b pb-1.5 ${isLight ? 'border-slate-200' : 'border-slate-900/60'}`}>

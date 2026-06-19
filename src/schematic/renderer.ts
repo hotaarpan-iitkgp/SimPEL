@@ -125,6 +125,7 @@ export function updateHandlesInDOM(wire: any, pathPoints: Array<{ x: number; y: 
     line.setAttribute('cursor', isHorizontal ? 'ns-resize' : 'ew-resize');
     
     line.addEventListener('pointerdown', (e: any) => {
+      if (e.button !== 0) return; // Ignore right/middle click so it bubbles up to SVG for panning
       e.stopPropagation();
       try {
         if (svg) svg.setPointerCapture(e.pointerId);
@@ -175,6 +176,7 @@ export function updateHandlesInDOM(wire: any, pathPoints: Array<{ x: number; y: 
     g.appendChild(cross);
     
     g.addEventListener('pointerdown', (e: any) => {
+      if (e.button !== 0) return; // Ignore right/middle click so it bubbles up to SVG for panning
       e.stopPropagation();
       try {
         if (svg) svg.setPointerCapture(e.pointerId);
@@ -262,6 +264,7 @@ export function draw(): void {
     
     // Wire select / Click-to-connect-wire event listener
     pathEl.addEventListener('pointerdown', (e: any) => {
+      if (e.button !== 0) return; // Ignore right/middle click so it bubbles up to SVG for panning
       if (state.activeWire) {
         return; // Let it bubble up to canvas-svg
       }
@@ -349,6 +352,7 @@ export function draw(): void {
     
     // Dragging & Selecting component handler
     g.addEventListener('pointerdown', (e: any) => {
+      if (e.button !== 0) return; // Ignore right/middle click so it bubbles up to SVG for panning
       if (e.target.classList.contains('terminal-visual') || e.target.parentElement.classList.contains('terminal-handle')) return;
       if (state.activeWire) {
         return; // Bubble event up to canvas-svg for snap/corner point placement
@@ -488,6 +492,18 @@ export function draw(): void {
         if ((window as any).onScopeDoubleClick) {
           (window as any).onScopeDoubleClick(comp.id);
         }
+        return;
+      }
+      if (comp.type === 'MANUAL_SWITCH' && comp.lastClickTime && (now - comp.lastClickTime < 300)) {
+        e.stopPropagation();
+        e.preventDefault();
+        comp.lastClickTime = 0;
+        const currentState = comp.parameters.state || 'Input 1';
+        comp.parameters.state = (currentState === 'Input 1') ? 'Input 2' : 'Input 1';
+        saveState();
+        draw();
+        updatePropertiesPanel();
+        showToast(`Toggled switch ${comp.id} to ${comp.parameters.state}`);
         return;
       }
       comp.lastClickTime = now;
