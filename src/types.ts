@@ -8,6 +8,18 @@ export interface Component {
   nodes: string[];  // For electrical components e.g. ["node_1", "node_0"]
   parameters: Record<string, any>;
   channels: Record<string, any>;
+  sub_schematic?: {
+    components: Component[];
+    wires: Wire[];
+  };
+  mask?: {
+    title: string;
+    parameters: Array<{
+      name: string;
+      label: string;
+      value: string;
+    }>;
+  };
 }
 
 export interface Wire {

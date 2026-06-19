@@ -1973,6 +1973,79 @@ export function getDetailedComponentSVG(comp: any): string | null {
   const id = comp.id;
   const rotation = comp.rotation;
 
+  if (type === 'SUBSYSTEM') {
+    const subschematic = comp.sub_schematic || { components: [] };
+    const inports = (subschematic.components || [])
+      .filter((c: any) => c.type === 'INPORT')
+      .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
+    const outports = (subschematic.components || [])
+      .filter((c: any) => c.type === 'OUTPORT')
+      .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
+    const eports = (subschematic.components || [])
+      .filter((c: any) => c.type === 'E_PORT')
+      .sort((a: any, b: any) => (a.x ?? 0) - (b.x ?? 0));
+
+    const numLeft = inports.length;
+    const numRight = outports.length;
+    const numBottom = eports.length;
+
+    const width = Math.max(60, numBottom * 20 + 20);
+    const height = Math.max(50, Math.max(numLeft, numRight) * 20 + 20);
+
+    const halfW = width / 2;
+    const halfH = height / 2;
+
+    const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
+    let borderColor = isLightMode ? '#0284c7' : '#0ea5e9'; // sky border
+    let fillColor = isLightMode ? '#f8fafc' : '#0f172a'; // slate light/dark fill
+    let symbolColor = isLightMode ? '#0369a1' : '#38bdf8'; // sky symbol
+
+    let pinsSVG = '';
+    
+    // Left signal ports (triangles pointing in)
+    inports.forEach((ip: any, idx: number) => {
+      const yOffset = - (numLeft - 1) * 10 + idx * 20;
+      pinsSVG += `
+        <polygon points="-${halfW},${yOffset-4} -${halfW+6},${yOffset} -${halfW},${yOffset+4}" fill="${symbolColor}" />
+        <text x="-${halfW-8}" y="${yOffset+3}" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="${symbolColor}" text-anchor="start">${ip.id.split('.').pop()}</text>
+      `;
+    });
+
+    // Right signal ports (triangles pointing out)
+    outports.forEach((op: any, idx: number) => {
+      const yOffset = - (numRight - 1) * 10 + idx * 20;
+      pinsSVG += `
+        <polygon points="${halfW-6},${yOffset-4} ${halfW},${yOffset} ${halfW-6},${yOffset+4}" fill="${symbolColor}" />
+        <text x="${halfW-8}" y="${yOffset+3}" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="${symbolColor}" text-anchor="end">${op.id.split('.').pop()}</text>
+      `;
+    });
+
+    // Bottom electrical ports (circles)
+    eports.forEach((ep: any, idx: number) => {
+      const xOffset = - (numBottom - 1) * 10 + idx * 20;
+      pinsSVG += `
+        <circle cx="${xOffset}" cy="${halfH}" r="4" fill="none" stroke="${symbolColor}" stroke-width="2" />
+        <text x="${xOffset}" y="${halfH-8}" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="${symbolColor}" text-anchor="middle">${ep.id.split('.').pop()}</text>
+      `;
+    });
+
+    const iconSVG = `
+      <g opacity="0.3" transform="translate(0, -2)">
+        <rect x="-12" y="-12" width="16" height="16" rx="2" fill="none" stroke="${symbolColor}" stroke-width="2" />
+        <rect x="-4" y="-4" width="16" height="16" rx="2" fill="${fillColor}" stroke="${symbolColor}" stroke-width="2" />
+      </g>
+    `;
+
+    return `
+      <rect x="-${halfW}" y="-${halfH}" width="${width}" height="${height}" rx="6" fill="${fillColor}" stroke="${borderColor}" stroke-width="2.5" />
+      ${iconSVG}
+      ${pinsSVG}
+      <g transform="translate(0, ${halfH + 12}) rotate(${-rotation})">
+        <text class="comp-label" x="0" y="4" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="bold" fill="currentColor">${id}</text>
+      </g>
+    `;
+  }
+
   const libComp = DETAILED_COMPONENTS.find(c => c.type === type);
   if (!libComp) return null;
 

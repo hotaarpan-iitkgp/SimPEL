@@ -48,6 +48,49 @@ export function parseTurnsList(str: string): number[] {
 // Return pins map dynamically based on component type and customized parameter options
 export function getComponentPins(comp: any): Record<string, any> {
   if (!comp) return {};
+  if (comp.type === 'SUBSYSTEM') {
+    const pins: Record<string, any> = {};
+    const subschematic = comp.sub_schematic || { components: [] };
+    const inports = (subschematic.components || [])
+      .filter((c: any) => c.type === 'INPORT')
+      .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
+    const outports = (subschematic.components || [])
+      .filter((c: any) => c.type === 'OUTPORT')
+      .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
+    const eports = (subschematic.components || [])
+      .filter((c: any) => c.type === 'E_PORT')
+      .sort((a: any, b: any) => (a.x ?? 0) - (b.x ?? 0));
+
+    const numLeft = inports.length;
+    const numRight = outports.length;
+    const numBottom = eports.length;
+
+    const width = Math.max(60, numBottom * 20 + 20);
+    const height = Math.max(50, Math.max(numLeft, numRight) * 20 + 20);
+
+    const halfW = width / 2;
+    const halfH = height / 2;
+
+    // Arrange inports on the left edge (-halfW, yOffset)
+    inports.forEach((ip: any, idx: number) => {
+      const yOffset = - (numLeft - 1) * 10 + idx * 20;
+      pins[ip.id] = { x: -halfW, y: Math.round(yOffset), dx: -1, dy: 0 };
+    });
+
+    // Arrange outports on the right edge (halfW, yOffset)
+    outports.forEach((op: any, idx: number) => {
+      const yOffset = - (numRight - 1) * 10 + idx * 20;
+      pins[op.id] = { x: halfW, y: Math.round(yOffset), dx: 1, dy: 0 };
+    });
+
+    // Arrange eports on the bottom edge (xOffset, halfH)
+    eports.forEach((ep: any, idx: number) => {
+      const xOffset = - (numBottom - 1) * 10 + idx * 20;
+      pins[ep.id] = { x: Math.round(xOffset), y: halfH, dx: 0, dy: 1 };
+    });
+
+    return pins;
+  }
   if (comp.type === 'SUM_ROUND') {
     const numInputs = parseInt(comp.parameters && comp.parameters.inputs) || 2;
     const pins: Record<string, any> = {};

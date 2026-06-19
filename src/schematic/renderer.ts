@@ -14,8 +14,8 @@ import {
 } from './routing';
 import { getComponentSVG, createTerminalOverlay } from './components';
 import { pathToString, screenToCanvas, showToast, generateNextId } from './utils';
-import { updatePropertiesPanel, openCodeEditorModal } from './properties';
-import { completeWire, isControlInputPin, normalizeControlWires, getControlOutputPins } from './actions';
+import { updatePropertiesPanel, openCodeEditorModal, openMaskValuesModal } from './properties';
+import { completeWire, isControlInputPin, normalizeControlWires, getControlOutputPins, enterSubsystem } from './actions';
 import { getComponentPins } from './config';
 
 // Keep manual paths connected to moved elements and preserve orthogonality
@@ -348,6 +348,20 @@ export function draw(): void {
       );
       const termOverlay = createTerminalOverlay(comp.id, terminalName, pin.x, pin.y, isConnected);
       g.appendChild(termOverlay);
+    });
+    
+    // Double click to look inside subsystem, or open mask parameters values modal if masked
+    g.addEventListener('dblclick', (e: any) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (comp.type === 'SUBSYSTEM') {
+        const hasMask = comp.mask && comp.mask.parameters && comp.mask.parameters.length > 0;
+        if (hasMask) {
+          openMaskValuesModal(comp);
+        } else {
+          enterSubsystem(comp.id);
+        }
+      }
     });
     
     // Dragging & Selecting component handler

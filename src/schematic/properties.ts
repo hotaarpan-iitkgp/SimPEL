@@ -4,7 +4,7 @@ import { showToast } from './utils';
 import { getComponentPins, discoverPortsJS, senseTerminalsFromCode, discoverParamsFromCode, updateParamInCode } from './config';
 import { getAvailableVariables } from './plotConfig';
 import { DETAILED_COMPONENTS } from './detailedLibrary';
-import { rotateSelected, deleteSelected } from './actions';
+import { rotateSelected, deleteSelected, enterSubsystem } from './actions';
 
 // Update properties panel dynamically based on select items
 export function updatePropertiesPanel(): void {
@@ -20,6 +20,20 @@ export function updatePropertiesPanel(): void {
     // Header
     const card = document.createElement('div');
     card.className = 'panel-card';
+    
+    let extraButtonsHTML = '';
+    if (comp.type === 'SUBSYSTEM') {
+      const hasMask = comp.mask && comp.mask.parameters && comp.mask.parameters.length > 0;
+      extraButtonsHTML = `
+        <button id="btn-look-inside" class="prop-input" style="width: 100%; margin-top: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #0ea5e9; border: 1px solid #0284c7; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;">
+          Look Inside Subsystem
+        </button>
+        <button id="btn-edit-mask" class="prop-input" style="width: 100%; margin-top: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: ${hasMask ? '#475569' : '#10b981'}; border: 1px solid ${hasMask ? '#334155' : '#059669'}; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;">
+          ${hasMask ? 'Edit Mask Structure' : 'Create Mask'}
+        </button>
+      `;
+    }
+
     card.innerHTML = `
       <h3 class="panel-card-title">${comp.id} properties</h3>
       <div class="prop-group">
@@ -34,6 +48,7 @@ export function updatePropertiesPanel(): void {
           Delete
         </button>
       </div>
+      ${extraButtonsHTML}
     `;
     
     const propGroup = document.createElement('div');
@@ -41,7 +56,36 @@ export function updatePropertiesPanel(): void {
     propGroup.innerHTML = '<h4 class="category-title">Parameters</h4>';
     
     // Create params forms
-    if (comp.parameters) {
+    const isMaskedSubsystem = comp.type === 'SUBSYSTEM' && comp.mask && comp.mask.parameters && comp.mask.parameters.length > 0;
+    if (isMaskedSubsystem) {
+      comp.mask.parameters.forEach((param: any) => {
+        const key = param.name;
+        const row = document.createElement('div');
+        row.className = 'prop-row';
+        row.style.display = 'flex';
+        row.style.flexDirection = 'column';
+        row.style.marginBottom = '12px';
+        
+        const label = document.createElement('label');
+        label.className = 'prop-label';
+        label.textContent = param.label || key;
+        
+        const inputField = document.createElement('input');
+        inputField.type = 'text';
+        inputField.className = 'prop-input';
+        inputField.value = comp.parameters[key] !== undefined ? String(comp.parameters[key]) : param.value;
+        
+        inputField.addEventListener('change', (e: any) => {
+          saveState();
+          comp.parameters[key] = e.target.value;
+          draw();
+        });
+        
+        row.appendChild(label);
+        row.appendChild(inputField);
+        propGroup.appendChild(row);
+      });
+    } else if (comp.parameters) {
       Object.keys(comp.parameters).forEach(key => {
         if (key === 'code') return; // Handled by Python Modal editor
         if (comp.type === 'GEN_EBLOCK' && !['terminals', 'timestep', 'plot_disabled_pins', 'plot_custom_vars'].includes(key)) return;
@@ -382,6 +426,18 @@ export function updatePropertiesPanel(): void {
       if (btnDelete) {
         btnDelete.addEventListener('click', () => {
           deleteSelected();
+        });
+      }
+      const btnLookInside = document.getElementById('btn-look-inside');
+      if (btnLookInside) {
+        btnLookInside.addEventListener('click', () => {
+          enterSubsystem(comp.id);
+        });
+      }
+      const btnEditMask = document.getElementById('btn-edit-mask');
+      if (btnEditMask) {
+        btnEditMask.addEventListener('click', () => {
+          openMaskEditorModal(comp);
         });
       }
     }, 0);
@@ -945,3 +1001,166 @@ function getComponentNodes(compId: string): string[] {
   
   return Array.from(new Set(res));
 }
+
+export function openMaskEditorModal(comp: any): void {
+  const modal = document.getElementById('mask-editor-modal');
+  const container = document.getElementById('mask-params-container');
+  const addBtn = document.getElementById('btn-add-mask-param');
+  const saveBtn = document.getElementById('mask-editor-save');
+  const cancelBtn = document.getElementById('mask-editor-cancel');
+
+  if (!modal || !container || !saveBtn || !cancelBtn) return;
+
+  let params = comp.mask && comp.mask.parameters ? JSON.parse(JSON.stringify(comp.mask.parameters)) : [];
+
+  const renderParams = () => {
+    container.innerHTML = '';
+    if (params.length === 0) {
+      container.innerHTML = `<div style="font-size: 11px; color: #64748b; font-style: italic; padding: 8px;">No parameters defined yet. Click "Add Parameter" below.</div>`;
+      return;
+    }
+
+    params.forEach((p: any, idx: number) => {
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.gap = '8px';
+      row.style.marginBottom = '8px';
+      row.style.alignItems = 'center';
+
+      row.innerHTML = `
+        <input type="text" placeholder="Variable Name" class="prop-input name-input" value="${p.name}" style="flex: 1; font-family: monospace; background: #020617; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 4px 8px; font-size: 11px;" />
+        <input type="text" placeholder="Label" class="prop-input label-input" value="${p.label}" style="flex: 1.5; background: #020617; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 4px 8px; font-size: 11px;" />
+        <input type="text" placeholder="Default Value" class="prop-input val-input" value="${p.value}" style="flex: 1; font-family: monospace; background: #020617; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 4px 8px; font-size: 11px;" />
+        <button class="btn-delete-param" style="background: #b91c1c; border: none; color: white; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 11px;">×</button>
+      `;
+
+      const nameInput = row.querySelector('.name-input') as HTMLInputElement;
+      const labelInput = row.querySelector('.label-input') as HTMLInputElement;
+      const valInput = row.querySelector('.val-input') as HTMLInputElement;
+      const deleteBtn = row.querySelector('.btn-delete-param') as HTMLButtonElement;
+
+      nameInput.addEventListener('input', (e: any) => { p.name = e.target.value.trim(); });
+      labelInput.addEventListener('input', (e: any) => { p.label = e.target.value.trim(); });
+      valInput.addEventListener('input', (e: any) => { p.value = e.target.value.trim(); });
+      deleteBtn.addEventListener('click', () => {
+        params.splice(idx, 1);
+        renderParams();
+      });
+
+      container.appendChild(row);
+    });
+  };
+
+  renderParams();
+
+  const handleAdd = () => {
+    params.push({ name: `param_${params.length + 1}`, label: `Parameter ${params.length + 1}`, value: '1.0' });
+    renderParams();
+  };
+  addBtn?.replaceWith(addBtn.cloneNode(true));
+  const newAddBtn = document.getElementById('btn-add-mask-param');
+  newAddBtn?.addEventListener('click', handleAdd);
+
+  const handleSave = () => {
+    saveState();
+    const validParams = params.filter((p: any) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(p.name));
+    
+    comp.mask = {
+      title: comp.id + " Mask",
+      parameters: validParams
+    };
+
+    if (!comp.parameters) comp.parameters = {};
+    validParams.forEach((p: any) => {
+      if (comp.parameters[p.name] === undefined) {
+        comp.parameters[p.name] = p.value;
+      }
+    });
+
+    const validNames = new Set(validParams.map((p: any) => p.name));
+    Object.keys(comp.parameters).forEach(k => {
+      if (!validNames.has(k)) {
+        delete comp.parameters[k];
+      }
+    });
+
+    modal.classList.remove('show');
+    updatePropertiesPanel();
+    draw();
+  };
+  saveBtn.replaceWith(saveBtn.cloneNode(true));
+  const newSaveBtn = document.getElementById('mask-editor-save');
+  newSaveBtn?.addEventListener('click', handleSave);
+
+  const handleCancel = () => {
+    modal.classList.remove('show');
+  };
+  cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+  const newCancelBtn = document.getElementById('mask-editor-cancel');
+  newCancelBtn?.addEventListener('click', handleCancel);
+
+  modal.classList.add('show');
+}
+
+export function openMaskValuesModal(comp: any): void {
+  const modal = document.getElementById('mask-values-modal');
+  const title = document.getElementById('mask-values-title');
+  const container = document.getElementById('mask-values-container');
+  const saveBtn = document.getElementById('mask-values-save');
+  const cancelBtn = document.getElementById('mask-values-cancel');
+
+  if (!modal || !container || !saveBtn || !cancelBtn) return;
+
+  if (title) title.textContent = comp.id + " Parameters";
+
+  container.innerHTML = '';
+  const params = comp.mask && comp.mask.parameters ? comp.mask.parameters : [];
+
+  const inputs: Record<string, HTMLInputElement> = {};
+
+  params.forEach((param: any) => {
+    const row = document.createElement('div');
+    row.className = 'prop-row';
+    row.style.display = 'flex';
+    row.style.flexDirection = 'column';
+    row.style.marginBottom = '12px';
+
+    const label = document.createElement('label');
+    label.className = 'prop-label';
+    label.textContent = param.label || param.name;
+
+    const inputField = document.createElement('input');
+    inputField.type = 'text';
+    inputField.className = 'prop-input';
+    inputField.value = comp.parameters[param.name] !== undefined ? String(comp.parameters[param.name]) : param.value;
+
+    row.appendChild(label);
+    row.appendChild(inputField);
+    container.appendChild(row);
+
+    inputs[param.name] = inputField;
+  });
+
+  const handleSave = () => {
+    saveState();
+    params.forEach((param: any) => {
+      comp.parameters[param.name] = inputs[param.name].value;
+    });
+    modal.classList.remove('show');
+    updatePropertiesPanel();
+    draw();
+  };
+
+  saveBtn.replaceWith(saveBtn.cloneNode(true));
+  const newSaveBtn = document.getElementById('mask-values-save');
+  newSaveBtn?.addEventListener('click', handleSave);
+
+  cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+  const newCancelBtn = document.getElementById('mask-values-cancel');
+  newCancelBtn?.addEventListener('click', () => {
+    modal.classList.remove('show');
+  });
+
+  modal.classList.add('show');
+}
+
