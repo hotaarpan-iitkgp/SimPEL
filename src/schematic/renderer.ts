@@ -402,14 +402,14 @@ export function draw(): void {
         // Target control inputs
         const targetControlInputs = targetAllPins.filter(pinName => isControlInputPin(comp.id, pinName));
         // Target electrical pins
-        const targetElectricalPins = targetAllPins.filter(pinName => getPinDomain(comp.type, pinName) === 'electrical');
+        const targetElectricalPins = targetAllPins.filter(pinName => getPinDomain(comp.type, pinName, comp) === 'electrical');
 
         const locallyConnectedPins = new Set<string>();
 
         selectedComps.forEach((c: any) => {
           const cPinsMap = getComponentPins(c);
           const cAllPins = Object.keys(cPinsMap);
-          const cElectricalPins = cAllPins.filter(pinName => getPinDomain(c.type, pinName) === 'electrical');
+          const cElectricalPins = cAllPins.filter(pinName => getPinDomain(c.type, pinName, c) === 'electrical');
 
           // Decide domain: if both c and target have electrical pins, route electrical wire
           if (cElectricalPins.length > 0 && targetElectricalPins.length > 0) {

@@ -43,7 +43,7 @@ export function getControlOutputPins(comp: any): string[] {
 export function isControlOutputPin(compId: string, pinName: string): boolean {
   const comp = state.components.find((c: any) => c.id === compId);
   if (!comp) return false;
-  if (getPinDomain(comp.type, pinName) !== 'control') return false;
+  if (getPinDomain(comp.type, pinName, comp) !== 'control') return false;
   
   const outputs = getControlOutputPins(comp);
   return outputs.includes(pinName);
@@ -52,7 +52,7 @@ export function isControlOutputPin(compId: string, pinName: string): boolean {
 export function isControlInputPin(compId: string, pinName: string): boolean {
   const comp = state.components.find((c: any) => c.id === compId);
   if (!comp) return false;
-  if (getPinDomain(comp.type, pinName) !== 'control') return false;
+  if (getPinDomain(comp.type, pinName, comp) !== 'control') return false;
   
   const outputs = getControlOutputPins(comp);
   return !outputs.includes(pinName);
@@ -686,7 +686,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
     const pinMap = getComponentPins(comp);
     Object.keys(pinMap).forEach(term => {
       // Check if this terminal is control-loop domain
-      if (getPinDomain(comp.type, term) === 'control') return;
+      if (getPinDomain(comp.type, term, comp) === 'control') return;
       
       const pinKey = `${comp.id}.${term}`;
       uf.find(pinKey); // Initializes node
