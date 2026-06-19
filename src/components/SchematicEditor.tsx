@@ -742,7 +742,7 @@ export default function SchematicEditor({
 
         {/* Center workbench - canvas viewer */}
         <div className="flex-1 min-h-[300px] md:min-h-none flex flex-col relative bg-slate-950/10">
-          <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 pointer-events-none select-none">
+          <div className="absolute bottom-3 left-3 z-10 flex flex-col gap-1 pointer-events-none select-none">
             <div id="zoom-display" className="px-2 py-1 border border-slate-800 bg-slate-950/80 backdrop-blur text-[9.5px] font-mono rounded text-slate-400 font-bold">
               Zoom: 100%
             </div>
