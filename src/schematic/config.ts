@@ -65,7 +65,7 @@ export function getComponentPins(comp: any): Record<string, any> {
     const numRight = outports.length;
     const numBottom = eports.length;
 
-    const width = Math.max(60, numBottom * 20 + 20);
+    const width = Math.max(60, numBottom * 40 + 20);
     const height = Math.max(50, Math.max(numLeft, numRight) * 20 + 20);
 
     const halfW = width / 2;
@@ -85,7 +85,7 @@ export function getComponentPins(comp: any): Record<string, any> {
 
     // Arrange eports on the bottom edge (xOffset, halfH)
     eports.forEach((ep: any, idx: number) => {
-      const xOffset = - (numBottom - 1) * 10 + idx * 20;
+      const xOffset = - (numBottom - 1) * 20 + idx * 40;
       pins[ep.id] = { x: Math.round(xOffset), y: halfH, dx: 0, dy: 1 };
     });
 

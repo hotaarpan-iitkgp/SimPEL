@@ -1989,7 +1989,7 @@ export function getDetailedComponentSVG(comp: any): string | null {
     const numRight = outports.length;
     const numBottom = eports.length;
 
-    const width = Math.max(60, numBottom * 20 + 20);
+    const width = Math.max(60, numBottom * 40 + 20);
     const height = Math.max(50, Math.max(numLeft, numRight) * 20 + 20);
 
     const halfW = width / 2;
@@ -2020,12 +2020,12 @@ export function getDetailedComponentSVG(comp: any): string | null {
       `;
     });
 
-    // Bottom electrical ports (circles)
+    // Bottom electrical ports (circles with vertical text labels to prevent horizontal overlap)
     eports.forEach((ep: any, idx: number) => {
-      const xOffset = - (numBottom - 1) * 10 + idx * 20;
+      const xOffset = - (numBottom - 1) * 20 + idx * 40;
       pinsSVG += `
         <circle cx="${xOffset}" cy="${halfH}" r="4" fill="none" stroke="${symbolColor}" stroke-width="2" />
-        <text x="${xOffset}" y="${halfH-8}" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="${symbolColor}" text-anchor="middle">${ep.id.split('.').pop()}</text>
+        <text x="${xOffset + 3}" y="${halfH - 8}" transform="rotate(-90, ${xOffset + 3}, ${halfH - 8})" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="${symbolColor}" text-anchor="start">${ep.id.split('.').pop()}</text>
       `;
     });
 
@@ -2040,7 +2040,7 @@ export function getDetailedComponentSVG(comp: any): string | null {
       <rect x="-${halfW}" y="-${halfH}" width="${width}" height="${height}" rx="6" fill="${fillColor}" stroke="${borderColor}" stroke-width="2.5" />
       ${iconSVG}
       ${pinsSVG}
-      <g transform="translate(0, ${halfH + 12}) rotate(${-rotation})">
+      <g transform="translate(0, -${halfH + 14}) rotate(${-rotation})">
         <text class="comp-label" x="0" y="4" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="bold" fill="currentColor">${id}</text>
       </g>
     `;
