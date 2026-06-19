@@ -25,10 +25,10 @@ export function updatePropertiesPanel(): void {
     if (comp.type === 'SUBSYSTEM') {
       const hasMask = comp.mask && comp.mask.parameters && comp.mask.parameters.length > 0;
       extraButtonsHTML = `
-        <button id="btn-look-inside" class="prop-input" style="width: 100%; margin-top: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #0ea5e9; border: 1px solid #0284c7; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;">
+        <button id="btn-look-inside" style="width: 100%; margin-top: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #0ea5e9; border: 1px solid #0284c7; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;">
           Look Inside Subsystem
         </button>
-        <button id="btn-edit-mask" class="prop-input" style="width: 100%; margin-top: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: ${hasMask ? '#475569' : '#10b981'}; border: 1px solid ${hasMask ? '#334155' : '#059669'}; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;">
+        <button id="btn-edit-mask" style="width: 100%; margin-top: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: ${hasMask ? '#475569' : '#10b981'}; border: 1px solid ${hasMask ? '#334155' : '#059669'}; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;">
           ${hasMask ? 'Edit Mask Structure' : 'Create Mask'}
         </button>
       `;
@@ -41,10 +41,10 @@ export function updatePropertiesPanel(): void {
         <input type="text" id="prop-id" class="prop-input" value="${comp.id}" />
       </div>
       <div style="display: flex; gap: 8px; margin-top: 12px; margin-bottom: 8px;">
-        <button id="btn-rotate-comp" class="prop-input" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #075985; border: 1px solid #0369a1; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Rotate Component 90°">
+        <button id="btn-rotate-comp" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #075985; border: 1px solid #0369a1; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Rotate Component 90°">
           Rotate
         </button>
-        <button id="btn-delete-comp" class="prop-input" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #b91c1c; border: 1px solid #991b1b; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Delete Component">
+        <button id="btn-delete-comp" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #b91c1c; border: 1px solid #991b1b; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Delete Component">
           Delete
         </button>
       </div>
@@ -448,13 +448,13 @@ export function updatePropertiesPanel(): void {
     let buttonsHtml = '';
     if (state.selectedComponentIds.length > 0) {
       buttonsHtml += `
-        <button id="btn-rotate-comp" class="prop-input" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #075985; border: 1px solid #0369a1; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Rotate Selection 90°">
+        <button id="btn-rotate-comp" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #075985; border: 1px solid #0369a1; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Rotate Selection 90°">
           Rotate
         </button>
       `;
     }
     buttonsHtml += `
-      <button id="btn-delete-comp" class="prop-input" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #b91c1c; border: 1px solid #991b1b; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Delete Selection">
+      <button id="btn-delete-comp" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #b91c1c; border: 1px solid #991b1b; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Delete Selection">
         Delete
       </button>
     `;
