@@ -845,3 +845,24 @@
 .light-mode footer .text-sky-500 {
   color: var(--canvas-wire-power) !important;
 }
+
+/* Force properties panel action buttons to maintain their colors and text in Light Mode */
+.light-mode #properties-panel button {
+  color: white !important;
+}
+.light-mode #btn-look-inside {
+  background-color: #0ea5e9 !important;
+  border-color: #0284c7 !important;
+}
+.light-mode #btn-rotate-comp {
+  background-color: #075985 !important;
+  border-color: #0369a1 !important;
+}
+.light-mode #btn-delete-comp {
+  background-color: #b91c1c !important;
+  border-color: #991b1b !important;
+}
+.light-mode #btn-edit-mask {
+  /* Prevent style overrides on the dynamic background color */
+  background-color: unset !important;
+}
