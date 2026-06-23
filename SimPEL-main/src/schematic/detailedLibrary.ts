@@ -1588,6 +1588,18 @@ export function getDetailedComponentPins(type: string): Record<string, any> | nu
     };
   }
 
+  if (type === 'INPORT') {
+    return {
+      Out: { x: 16, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'OUTPORT') {
+    return {
+      In: { x: -16, y: 0, dx: -1, dy: 0 }
+    };
+  }
+
   if (type === 'OFFSET') {
     return {
       In: { x: -20, y: 0, dx: -1, dy: 0 },
@@ -2098,6 +2110,42 @@ export function getDetailedComponentSVG(comp: any): string | null {
       <polygon points="-5,-10 15,0 -5,10" class="comp-path" fill="${fillColor}" />
       <g transform="translate(-10, 0) rotate(${-rotation})">
         <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="currentColor" text-anchor="end">${tag}</text>
+      </g>
+    `;
+  }
+
+  if (type === 'INPORT') {
+    const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
+    let fillColor = isLightMode ? '#ffffff' : '#090d16'; // white vs deep slate
+    const leafId = id.split('.').pop() || '';
+    const portNumMatch = leafId.match(/\d+/);
+    const portNumber = portNumMatch ? portNumMatch[0] : '1';
+    const displayName = leafId;
+
+    return `
+      <rect class="comp-bounds" x="-18" y="-9" width="36" height="18" rx="4" />
+      <rect x="-16" y="-7" width="32" height="14" rx="7" class="comp-path" fill="${fillColor}" />
+      <text x="0" y="3" font-family="Inter, sans-serif" font-size="8.5" font-weight="700" fill="currentColor" text-anchor="middle">${portNumber}</text>
+      <g transform="translate(0, 19) rotate(${-rotation})">
+        <text class="comp-label" x="0" y="4" text-anchor="middle" fill="currentColor">${displayName}</text>
+      </g>
+    `;
+  }
+
+  if (type === 'OUTPORT') {
+    const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
+    let fillColor = isLightMode ? '#ffffff' : '#090d16'; // white vs deep slate
+    const leafId = id.split('.').pop() || '';
+    const portNumMatch = leafId.match(/\d+/);
+    const portNumber = portNumMatch ? portNumMatch[0] : '1';
+    const displayName = leafId;
+
+    return `
+      <rect class="comp-bounds" x="-18" y="-9" width="36" height="18" rx="4" />
+      <rect x="-16" y="-7" width="32" height="14" rx="7" class="comp-path" fill="${fillColor}" />
+      <text x="0" y="3" font-family="Inter, sans-serif" font-size="8.5" font-weight="700" fill="currentColor" text-anchor="middle">${portNumber}</text>
+      <g transform="translate(0, 19) rotate(${-rotation})">
+        <text class="comp-label" x="0" y="4" text-anchor="middle" fill="currentColor">${displayName}</text>
       </g>
     `;
   }
