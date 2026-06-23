@@ -1028,6 +1028,52 @@ export default function SchematicEditor({
           </div>
         </div>
       </div>
+
+      {/* Modal 6: PLECS Probe Editor Dialog */}
+      <div id="probe-editor-modal" className="modal-overlay animate-fade-in">
+        <div id="probe-editor-drop-zone" className="modal-content text-slate-200 text-sm max-w-[650px] w-11/12 overflow-hidden flex flex-col transition-all duration-200" style={{ maxHeight: "80vh" }}>
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+            <h3 id="probe-editor-title" className="font-bold flex items-center gap-2">Probe Editor</h3>
+            <button id="probe-editor-close-btn" className="text-slate-400 hover:text-slate-200 cursor-pointer text-xl font-bold">×</button>
+          </div>
+          
+          <div className="p-4 flex gap-4 overflow-hidden" style={{ flex: 1, minHeight: "350px" }}>
+            {/* Left Column: Probed Components */}
+            <div className="w-1/2 flex flex-col border border-slate-800 rounded bg-slate-950/40 overflow-hidden">
+              <div className="p-2 border-b border-slate-800 bg-slate-900/30 flex justify-between items-center">
+                <span className="font-bold text-xs text-slate-400">Probed components</span>
+                <div className="flex gap-1">
+                  <button id="probe-comp-remove" title="Remove selected component" className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs cursor-pointer text-slate-200">-</button>
+                  <button id="probe-comp-up" title="Move Up" className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs cursor-pointer text-slate-200">▲</button>
+                  <button id="probe-comp-down" title="Move Down" className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs cursor-pointer text-slate-200">▼</button>
+                  <button id="probe-comp-locate" title="Highlight in schematic" className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs cursor-pointer text-slate-200">👁</button>
+                </div>
+              </div>
+              <div id="probe-components-list" className="p-2 flex-1 overflow-y-auto flex flex-col gap-1 select-none">
+                {/* List items will be rendered here dynamically */}
+              </div>
+              <div className="p-2 text-[10px] text-slate-500 border-t border-slate-800 bg-slate-900/10 text-center">
+                Drag & drop components from canvas here to add
+              </div>
+            </div>
+            
+            {/* Right Column: Component Signals */}
+            <div className="w-1/2 flex flex-col border border-slate-800 rounded bg-slate-950/40 overflow-hidden">
+              <div className="p-2 border-b border-slate-800 bg-slate-900/30">
+                <span className="font-bold text-xs text-slate-400">Component signals</span>
+              </div>
+              <div id="probe-signals-list" className="p-3 flex-1 overflow-y-auto flex flex-col gap-2">
+                {/* Checkboxes will be rendered here dynamically */}
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 border-t border-slate-800 flex justify-between bg-slate-900/10">
+            <button id="probe-editor-help" className="px-3 py-1.5 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer text-slate-400">Help</button>
+            <button id="probe-editor-close" className="px-4 py-2 bg-sky-500 hover:bg-sky-600 font-bold rounded text-xs cursor-pointer text-white">Close</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

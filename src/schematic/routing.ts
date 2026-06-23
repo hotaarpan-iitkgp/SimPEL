@@ -266,6 +266,11 @@ export function getComponentBounds(comp: any): { xMin: number; xMax: number; yMi
     const halfHeight = Math.max(40, Math.round(Math.max(Ni, No) * spacing / 2) + 20);
     w = halfWidth * 2;
     h = halfHeight * 2;
+  } else if (comp.type === 'PROBE') {
+    const selected = (comp.parameters && comp.parameters.selected_signals || "").split(",").filter(Boolean);
+    const numPins = selected.length;
+    w = 60;
+    h = Math.max(40, numPins * 30);
   }
   const rot = (comp.rotation || 0) % 360;
   if (rot === 90 || rot === 270 || rot === -90 || rot === -270) {

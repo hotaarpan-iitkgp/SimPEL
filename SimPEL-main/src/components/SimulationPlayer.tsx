@@ -590,7 +590,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
   const toggleComponentScope = (comp: any) => {
     const scopeId = comp.id;
     setActiveScopes(prev => {
-      const isControlComp = getPinDomain(comp.type, "") === 'control';
+      const isControlComp = getPinDomain(comp.type, "", comp) === 'control';
       const next = { ...prev };
 
       if (isControlComp) {
@@ -912,7 +912,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
         const v = pinToNode[`${comp.id}.S`] || uf.find(`${comp.id}.S`);
         return { u, v };
       }
-      const electTerms = pinLabels.filter(term => getPinDomain(comp.type, term) !== 'control');
+      const electTerms = pinLabels.filter(term => getPinDomain(comp.type, term, comp) !== 'control');
       if (electTerms.length >= 2) {
         const u = pinToNode[`${comp.id}.${electTerms[0]}`] || uf.find(`${comp.id}.${electTerms[0]}`);
         const v = pinToNode[`${comp.id}.${electTerms[1]}`] || uf.find(`${comp.id}.${electTerms[1]}`);
@@ -1502,7 +1502,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
   const isTraversedPositive = (compId: string, fromNode: string, toNode: string): boolean => {
     const comp = state.components.find((c: any) => c.id === compId);
     if (!comp) return true;
-    const pinLabels = Object.keys(getComponentPins(comp)).filter(t => getPinDomain(comp.type, t) !== 'control');
+    const pinLabels = Object.keys(getComponentPins(comp)).filter(t => getPinDomain(comp.type, t, comp) !== 'control');
     if (pinLabels.length < 2) return true;
     const p1 = pinLabels[0];
     const n1 = pinToNode[`${compId}.${p1}`];

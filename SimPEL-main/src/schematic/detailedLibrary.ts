@@ -750,6 +750,51 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     defaultParameters: { duration: '0.1' }
   },
   {
+    type: 'MONOFLOP',
+    label: 'Monoflop',
+    desc: 'Output a pulse of fixed duration when triggered by a rising/falling edge.',
+    category: 'control',
+    subcategory: 'Logical & Bitwise',
+    symbol: 'Mono',
+    defaultParameters: { duration: '0.1', trigger_edge: 'rising', retriggerable: 'false' }
+  },
+  {
+    type: 'RELATIONAL_OPERATOR',
+    label: 'Relational Operator',
+    desc: 'Compare two input signals using a relational operator.',
+    category: 'control',
+    subcategory: 'Logical & Bitwise',
+    symbol: 'RelOp',
+    defaultParameters: { operator: '==' }
+  },
+  {
+    type: 'COMPARE_TO_CONSTANT',
+    label: 'Compare to Constant',
+    desc: 'Compare the input to a constant value using a relational operator.',
+    category: 'control',
+    subcategory: 'Logical & Bitwise',
+    symbol: 'CompConst',
+    defaultParameters: { operator: '==', constant: '0.0' }
+  },
+  {
+    type: 'D_FLIP_FLOP',
+    label: 'D Flip-Flop',
+    desc: 'D-type flip-flop with rising/falling edge clock trigger and optional initial state.',
+    category: 'control',
+    subcategory: 'Logical & Bitwise',
+    symbol: 'D-FF',
+    defaultParameters: { initial_state: '0.0', trigger_edge: 'rising' }
+  },
+  {
+    type: 'JK_FLIP_FLOP',
+    label: 'JK Flip-Flop',
+    desc: 'JK-type flip-flop with rising/falling edge clock trigger and optional initial state.',
+    category: 'control',
+    subcategory: 'Logical & Bitwise',
+    symbol: 'JK-FF',
+    defaultParameters: { initial_state: '0.0', trigger_edge: 'rising' }
+  },
+  {
     type: 'SHIFT_REG',
     label: 'Shift Register',
     desc: 'Shift bits or signals through a discrete delay chain.',
@@ -829,6 +874,24 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     subcategory: 'Filters & Measurements',
     symbol: 'Avg T',
     defaultParameters: { period: '0.02' }
+  },
+  {
+    type: 'PERIODIC_IMP_AVG',
+    label: 'Periodic Impulse Average',
+    desc: 'Compute the average value of a signal over the interval between trigger impulses.',
+    category: 'control',
+    subcategory: 'Filters & Measurements',
+    symbol: 'Imp Avg',
+    defaultParameters: { initial_value: '0.0' }
+  },
+  {
+    type: 'FOURIER_TRANS',
+    label: 'Fourier Transform',
+    desc: 'Compute magnitude and phase of fundamental or harmonic component of a signal.',
+    category: 'control',
+    subcategory: 'Filters & Measurements',
+    symbol: 'Fourier',
+    defaultParameters: { f: '50.0', harmonic: '1', ts: '100u' }
   },
   {
     type: 'MOV_AVG',
@@ -1507,6 +1570,24 @@ export function getDetailedComponentPins(type: string): Record<string, any> | nu
   if (basicTypes.includes(type)) return null;
 
   // Custom configurations for new blocks
+  if (type === 'E_PORT' || type === 'E_LABEL') {
+    return {
+      A: { x: 0, y: -30, dx: 0, dy: -1 }
+    };
+  }
+
+  if (type === 'GOTO_SIG') {
+    return {
+      In: { x: -15, y: 0, dx: -1, dy: 0 }
+    };
+  }
+
+  if (type === 'FROM_SIG') {
+    return {
+      Out: { x: 15, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
   if (type === 'OFFSET') {
     return {
       In: { x: -20, y: 0, dx: -1, dy: 0 },
@@ -1521,12 +1602,54 @@ export function getDetailedComponentPins(type: string): Record<string, any> | nu
     };
   }
 
+  if (type === 'PERIODIC_IMP_AVG') {
+    return {
+      In: { x: -25, y: -10, dx: -1, dy: 0 },
+      Trig: { x: -25, y: 10, dx: -1, dy: 0 },
+      Out: { x: 25, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'FOURIER_TRANS') {
+    return {
+      In: { x: -25, y: 0, dx: -1, dy: 0 },
+      Mag: { x: 25, y: -10, dx: 1, dy: 0 },
+      Phase: { x: 25, y: 10, dx: 1, dy: 0 }
+    };
+  }
+
   if (type === 'SIGNAL_SWITCH') {
     return {
       In1: { x: -25, y: -20, dx: -1, dy: 0 },
       Ctrl: { x: -25, y: 0, dx: -1, dy: 0 },
       In2: { x: -25, y: 20, dx: -1, dy: 0 },
       Out: { x: 25, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'COMPARE_TO_CONSTANT' || type === 'MONOFLOP' || type === 'MONOSTABLE') {
+    return {
+      In: { x: -25, y: 0, dx: -1, dy: 0 },
+      Out: { x: 25, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'D_FLIP_FLOP') {
+    return {
+      D: { x: -25, y: -10, dx: -1, dy: 0 },
+      Clk: { x: -25, y: 10, dx: -1, dy: 0 },
+      Q: { x: 25, y: -10, dx: 1, dy: 0 },
+      Q_bar: { x: 25, y: 10, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'JK_FLIP_FLOP') {
+    return {
+      J: { x: -25, y: -12, dx: -1, dy: 0 },
+      Clk: { x: -25, y: 0, dx: -1, dy: 0 },
+      K: { x: -25, y: 12, dx: -1, dy: 0 },
+      Q: { x: 25, y: -10, dx: 1, dy: 0 },
+      Q_bar: { x: 25, y: 10, dx: 1, dy: 0 }
     };
   }
 
@@ -1868,12 +1991,116 @@ export function getDetailedComponentSVG(comp: any): string | null {
   const id = comp.id;
   const rotation = comp.rotation;
 
+  if (type === 'SUBSYSTEM') {
+    const subschematic = comp.sub_schematic || { components: [] };
+    const inports = (subschematic.components || [])
+      .filter((c: any) => c.type === 'INPORT')
+      .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
+    const outports = (subschematic.components || [])
+      .filter((c: any) => c.type === 'OUTPORT')
+      .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
+    const eports = (subschematic.components || [])
+      .filter((c: any) => c.type === 'E_PORT')
+      .sort((a: any, b: any) => (a.x ?? 0) - (b.x ?? 0));
+
+    const numLeft = inports.length;
+    const numRight = outports.length;
+    const numBottom = eports.length;
+
+    const width = Math.max(60, numBottom * 40 + 20);
+    const height = Math.max(50, Math.max(numLeft, numRight) * 20 + 20);
+
+    const halfW = width / 2;
+    const halfH = height / 2;
+
+    const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
+    let borderColor = isLightMode ? '#0284c7' : '#0ea5e9'; // sky border
+    let fillColor = isLightMode ? '#f8fafc' : '#0f172a'; // slate light/dark fill
+    let symbolColor = isLightMode ? '#0369a1' : '#38bdf8'; // sky symbol
+
+    let pinsSVG = '';
+    
+    // Left signal ports (triangles pointing in)
+    inports.forEach((ip: any, idx: number) => {
+      const yOffset = - (numLeft - 1) * 10 + idx * 20;
+      pinsSVG += `
+        <polygon points="-${halfW},${yOffset-4} -${halfW+6},${yOffset} -${halfW},${yOffset+4}" fill="${symbolColor}" />
+        <text x="-${halfW-8}" y="${yOffset+3}" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="${symbolColor}" text-anchor="start">${ip.id.split('.').pop()}</text>
+      `;
+    });
+
+    // Right signal ports (triangles pointing out)
+    outports.forEach((op: any, idx: number) => {
+      const yOffset = - (numRight - 1) * 10 + idx * 20;
+      pinsSVG += `
+        <polygon points="${halfW-6},${yOffset-4} ${halfW},${yOffset} ${halfW-6},${yOffset+4}" fill="${symbolColor}" />
+        <text x="${halfW-8}" y="${yOffset+3}" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="${symbolColor}" text-anchor="end">${op.id.split('.').pop()}</text>
+      `;
+    });
+
+    // Bottom electrical ports (circles with vertical text labels to prevent horizontal overlap)
+    eports.forEach((ep: any, idx: number) => {
+      const xOffset = - (numBottom - 1) * 20 + idx * 40;
+      pinsSVG += `
+        <circle cx="${xOffset}" cy="${halfH}" r="4" fill="none" stroke="${symbolColor}" stroke-width="2" />
+        <text x="${xOffset + 3}" y="${halfH - 8}" transform="rotate(-90, ${xOffset + 3}, ${halfH - 8})" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="${symbolColor}" text-anchor="start">${ep.id.split('.').pop()}</text>
+      `;
+    });
+
+    const iconSVG = `
+      <g opacity="0.3" transform="translate(0, -2)">
+        <rect x="-12" y="-12" width="16" height="16" rx="2" fill="none" stroke="${symbolColor}" stroke-width="2" />
+        <rect x="-4" y="-4" width="16" height="16" rx="2" fill="${fillColor}" stroke="${symbolColor}" stroke-width="2" />
+      </g>
+    `;
+
+    return `
+      <rect x="-${halfW}" y="-${halfH}" width="${width}" height="${height}" rx="6" fill="${fillColor}" stroke="${borderColor}" stroke-width="2.5" />
+      ${iconSVG}
+      ${pinsSVG}
+      <g transform="translate(0, -${halfH + 14}) rotate(${-rotation})">
+        <text class="comp-label" x="0" y="4" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="bold" fill="currentColor">${id}</text>
+      </g>
+    `;
+  }
+
   const libComp = DETAILED_COMPONENTS.find(c => c.type === type);
   if (!libComp) return null;
 
   // Basic components should use their existing custom SVGs
   const basicTypes = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM', 'CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'PROBE', 'SCOPE', 'GEN_EBLOCK', 'GND'];
   if (basicTypes.includes(type)) return null;
+
+  if (type === 'GOTO_SIG') {
+    const tag = comp.parameters?.tag ?? 'A';
+    const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
+    let fillColor = isLightMode ? '#ffffff' : '#090d16'; // white vs deep slate
+    const textWidth = Math.max(15, tag.length * 6);
+    const boundsW = 25 + textWidth;
+    return `
+      <rect class="comp-bounds" x="-18" y="-15" width="${boundsW}" height="30" rx="4" />
+      <polygon points="-15,-10 5,0 -15,10" class="comp-path" fill="${fillColor}" />
+      <g transform="translate(10, 0) rotate(${-rotation})">
+        <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="currentColor" text-anchor="start">${tag}</text>
+      </g>
+    `;
+  }
+
+  if (type === 'FROM_SIG') {
+    const tag = comp.parameters?.tag ?? 'A';
+    const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
+    let fillColor = isLightMode ? '#ffffff' : '#090d16'; // white vs deep slate
+    const textWidth = Math.max(15, tag.length * 6);
+    const boundsW = 25 + textWidth;
+    const boundsX = -boundsW + 18;
+    return `
+      <rect class="comp-bounds" x="${boundsX}" y="-15" width="${boundsW}" height="30" rx="4" />
+      <polygon points="-5,-10 15,0 -5,10" class="comp-path" fill="${fillColor}" />
+      <g transform="translate(-10, 0) rotate(${-rotation})">
+        <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="currentColor" text-anchor="end">${tag}</text>
+      </g>
+    `;
+  }
 
   if (type === 'SUM_ROUND') {
     const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
@@ -1968,14 +2195,14 @@ export function getDetailedComponentSVG(comp: any): string | null {
     switch (type) {
       case 'E_PORT':
         shape = `
-          <path class="comp-path" d="M 0,-30 L 0,-10 M 0,10 L 0,30" />
+          <path class="comp-path" d="M 0,-30 L 0,-10" />
           <circle cx="0" cy="0" r="10" class="comp-path" />
           <text x="0" y="3" font-family="Inter, sans-serif" font-size="8" font-weight="700" fill="currentColor" text-anchor="middle">P</text>
         `;
         break;
       case 'E_LABEL':
         shape = `
-          <path class="comp-path" d="M 0,-30 L 0,-8 M 0,8 L 0,30" />
+          <path class="comp-path" d="M 0,-30 L 0,-8" />
           <polygon points="-16,-8 10,-8 16,0 10,8 -16,8" class="comp-path" />
           <text x="-2" y="2.5" font-family="Inter, sans-serif" font-size="7" font-weight="700" fill="currentColor" text-anchor="middle">TAG</text>
         `;
@@ -2633,6 +2860,60 @@ export function getDetailedComponentSVG(comp: any): string | null {
       <text x="0" y="-4" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">PID</text>
       <text x="0" y="6" font-family="Inter, sans-serif" font-size="7" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="middle">z-domain</text>
     `;
+  } else if (type === 'PERIODIC_IMP_AVG') {
+    innerGraphic = `
+      <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="7.5" font-weight="800" fill="${symbolColor}" text-anchor="middle">Imp Avg</text>
+      <text x="-21" y="-7.5" font-family="Inter, sans-serif" font-size="5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="start">In</text>
+      <text x="-21" y="12.5" font-family="Inter, sans-serif" font-size="5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="start">Trig</text>
+    `;
+  } else if (type === 'FOURIER_TRANS') {
+    innerGraphic = `
+      <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">Fourier</text>
+      <text x="-21" y="2.5" font-family="Inter, sans-serif" font-size="5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="start">In</text>
+      <text x="21" y="-7.5" font-family="Inter, sans-serif" font-size="5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="end">Mag</text>
+      <text x="21" y="12.5" font-family="Inter, sans-serif" font-size="5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="end">Phase</text>
+    `;
+  } else if (type === 'RELATIONAL_OPERATOR') {
+    const op = comp.parameters?.operator ?? '==';
+    innerGraphic = `
+      <text x="0" y="-4" font-family="Inter, sans-serif" font-size="7" font-weight="850" fill="${symbolColor}" text-anchor="middle">Relational</text>
+      <text x="0" y="7" font-family="Inter, sans-serif" font-size="11" font-weight="900" fill="${symbolColor}" text-anchor="middle">${op}</text>
+    `;
+  } else if (type === 'COMPARE_TO_CONSTANT') {
+    const op = comp.parameters?.operator ?? '==';
+    const cVal = comp.parameters?.constant ?? '0.0';
+    innerGraphic = `
+      <text x="0" y="-5" font-family="Inter, sans-serif" font-size="7" font-weight="850" fill="${symbolColor}" text-anchor="middle">Compare</text>
+      <text x="0" y="5" font-family="Inter, sans-serif" font-size="9" font-weight="900" fill="${symbolColor}" text-anchor="middle">${op} ${cVal}</text>
+    `;
+  } else if (type === 'D_FLIP_FLOP') {
+    width = 50;
+    height = 40;
+    innerGraphic = `
+      <text x="0" y="3" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">D-FF</text>
+      <text x="-21" y="-8" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="start">D</text>
+      <text x="-21" y="12" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="start">></text>
+      <text x="21" y="-8" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="end">Q</text>
+      <text x="21" y="12" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="end">Q̅</text>
+    `;
+  } else if (type === 'JK_FLIP_FLOP') {
+    width = 50;
+    height = 40;
+    innerGraphic = `
+      <text x="0" y="3" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">JK-FF</text>
+      <text x="-21" y="-10" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="start">J</text>
+      <text x="-21" y="2" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="start">></text>
+      <text x="-21" y="14" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="start">K</text>
+      <text x="21" y="-8" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="end">Q</text>
+      <text x="21" y="12" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="end">Q̅</text>
+    `;
+  } else if (type === 'MONOFLOP' || type === 'MONOSTABLE') {
+    const dur = comp.parameters?.duration ?? '0.1';
+    innerGraphic = `
+      <text x="0" y="-3" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">Monoflop</text>
+      <text x="0" y="7" font-family="Inter, sans-serif" font-size="6.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="middle">T = ${dur}</text>
+    `;
+
   }
 
   // Premium design container with top glow strip and center symbol

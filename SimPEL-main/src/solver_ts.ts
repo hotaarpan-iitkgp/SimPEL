@@ -671,7 +671,8 @@ export class CircuitSimulator {
                 { key: "custom_functions", type: "CustomFunction" },
                 { key: "custom_scripts", type: "CustomScript" },
                 { key: "signals_routing", type: "routing" },
-                { key: "plls", type: "PLL" }
+                { key: "plls", type: "PLL" },
+                { key: "probes", type: "PROBE" }
             ];
 
             for (const cat of categories) {
@@ -697,9 +698,17 @@ export class CircuitSimulator {
 
                         if (cat.type === "Constant" && item.output) {
                             comp.channels = { Out: item.output };
-                        } else if (cat.type === "Gain" && item.output) {
-                            const chs: Record<string, string> = { Out: item.output };
+                        } else if (cat.type === "Gain" && (item.output || item.output_mag || item.output_q)) {
+                            const chs: Record<string, string> = {};
+                            if (item.output) chs.Out = item.output;
+                            if (item.output_mag) chs.Mag = item.output_mag;
+                            if (item.output_phase) chs.Phase = item.output_phase;
+                            if (item.output_q) chs.Q = item.output_q;
+                            if (item.output_qbar) chs.Q_bar = item.output_qbar;
                             if (item.input) chs.In = item.input;
+                            if (item.input_d) chs.D = item.input_d;
+                            if (item.input_j) chs.J = item.input_j;
+                            if (item.input_k) chs.K = item.input_k;
                             if (item.input1) chs.In1 = item.input1;
                             if (item.input2) chs.In2 = item.input2;
                             if (item.control_signal) chs.Ctrl = item.control_signal;
@@ -1269,6 +1278,54 @@ export class CircuitSimulator {
                         if (integrate && iter === 2) {
                             cs[b.id].state = st;
                         }
+                    } else if (orig === "COMPARE_TO_CONSTANT") {
+                        const op = b.parameters.operator ?? "==";
+                        const cVal = parseScientific(b.parameters.constant ?? "0.0");
+                        if (op === "==" || op === "=") signals[out] = (val === cVal) ? 1.0 : 0.0;
+                        else if (op === "~=" || op === "!=") signals[out] = (val !== cVal) ? 1.0 : 0.0;
+                        else if (op === "<") signals[out] = (val < cVal) ? 1.0 : 0.0;
+                        else if (op === "<=") signals[out] = (val <= cVal) ? 1.0 : 0.0;
+                        else if (op === ">") signals[out] = (val > cVal) ? 1.0 : 0.0;
+                        else if (op === ">=") signals[out] = (val >= cVal) ? 1.0 : 0.0;
+                        else signals[out] = 0.0;
+                    } else if (orig === "MONOFLOP" || orig === "MONOSTABLE") {
+                        const duration = parseScientific(b.parameters.duration ?? "0.1");
+                        const edge = b.parameters.trigger_edge ?? "rising";
+                        const retriggerable = (b.parameters.retriggerable === "true" || b.parameters.retriggerable === true);
+                        if (!cs[b.id]) {
+                            cs[b.id] = {
+                                triggered: false,
+                                trigger_time: -1.0,
+                                prev_input: val
+                            };
+                        }
+                        const st = cs[b.id];
+                        let active = st.triggered;
+                        let trigTime = st.trigger_time;
+                        let triggerDetected = false;
+                        const prevVal = st.prev_input;
+                        if (edge === "rising") {
+                            if (prevVal <= 0.5 && val > 0.5) triggerDetected = true;
+                        } else if (edge === "falling") {
+                            if (prevVal > 0.5 && val <= 0.5) triggerDetected = true;
+                        } else {
+                            if ((prevVal <= 0.5 && val > 0.5) || (prevVal > 0.5 && val <= 0.5)) triggerDetected = true;
+                        }
+                        if (triggerDetected) {
+                            if (!active || retriggerable) {
+                                active = true;
+                                trigTime = time;
+                            }
+                        }
+                        if (active && trigTime >= 0.0 && (time - trigTime) >= duration - 1e-11) {
+                            active = false;
+                        }
+                        if (integrate && iter === 2) {
+                            st.triggered = active;
+                            st.trigger_time = trigTime;
+                            st.prev_input = val;
+                        }
+                        signals[out] = active ? 1.0 : 0.0;
                     } else if (orig === "ABS") {
                         signals[out] = Math.abs(val);
                     } else if (orig === "SIGN") {
@@ -1891,9 +1948,142 @@ export class CircuitSimulator {
                             }
                         }
                         signals[out] = y_temp;
+                    } else if (orig === "PERIODIC_IMP_AVG") {
+                        const trig = signals[b.channels.Ctrl] ?? 0.0;
+                        const initialVal = parseScientific(b.parameters.initial_value ?? "0.0");
+                        if (!cs[b.id]) {
+                            cs[b.id] = { prev_trig: 0.0, integral: 0.0, period_time: 0.0, held_out: initialVal, prev_u: val, last_t: time };
+                        }
+                        const st = cs[b.id];
+                        let y_temp = st.held_out;
+                        if (is_logging) {
+                            y_temp = st.held_out;
+                        } else {
+                            const is_rising = (st.prev_trig < 0.5 && trig >= 0.5);
+                            if (is_rising && st.period_time > 0.0) {
+                                // Complete one period: output = integral / period_time
+                                y_temp = st.integral / st.period_time;
+                            } else {
+                                y_temp = st.held_out;
+                            }
+                            if (integrate && iter === 2) {
+                                const dt_step = (dt > 0.0) ? dt : 0.0;
+                                if (is_rising && st.period_time > 0.0) {
+                                    st.integral = 0.0;
+                                    st.period_time = 0.0;
+                                    st.held_out = y_temp;
+                                } else {
+                                    // Trapezoidal integration
+                                    st.integral += 0.5 * (val + st.prev_u) * dt_step;
+                                    st.period_time += dt_step;
+                                }
+                                st.prev_trig = trig;
+                                st.prev_u = val;
+                                st.last_t = time;
+                            }
+                        }
+                        signals[out] = y_temp;
                     } else {
                         signals[out] = parseScientific(b.parameters.K ?? "1") * val;
                     }
+                } else if (b.type === "Gain" && !out && b.parameters.original_type === "FOURIER_TRANS") {
+                    // FOURIER_TRANS: multi-output Gain with Mag and Phase channels
+                    const outMag = b.channels.Mag;
+                    const outPhase = b.channels.Phase;
+                    const uVal = signals[b.channels.In] ?? 0.0;
+                    const f = parseScientific(b.parameters.f ?? "50.0");
+                    const harmonic = parseInt(b.parameters.harmonic ?? "1") || 1;
+                    const ts = parseScientific(b.parameters.ts ?? "100u");
+                    const k = Math.floor((time + 1e-11) / ts);
+                    let N = Math.round(1.0 / (f * ts));
+                    if (N < 2) N = 2;
+                    if (!cs[b.id]) {
+                        cs[b.id] = {
+                            history: new Array(N).fill(0.0),
+                            idx: 0,
+                            last_sample_k: k,
+                            held_mag: 0.0,
+                            held_phase: 0.0
+                        };
+                    }
+                    const st = cs[b.id];
+                    let mag_temp = st.held_mag;
+                    let phase_temp = st.held_phase;
+                    if (is_logging) {
+                        mag_temp = st.held_mag;
+                        phase_temp = st.held_phase;
+                    } else {
+                        if (k > st.last_sample_k) {
+                            // Update circular buffer
+                            st.history[st.idx] = uVal;
+                            st.idx = (st.idx + 1) % N;
+                            // Running DFT at harmonic frequency
+                            const omega = 2.0 * Math.PI * harmonic / N;
+                            let Re = 0.0, Im = 0.0;
+                            for (let i = 0; i < N; i++) {
+                                const sample = st.history[i];
+                                Re += sample * Math.cos(omega * i);
+                                Im += sample * Math.sin(omega * i);
+                            }
+                            Re = (2.0 / N) * Re;
+                            Im = (2.0 / N) * Im;
+                            mag_temp = Math.sqrt(Re * Re + Im * Im);
+                            phase_temp = Math.atan2(-Im, Re) * (180.0 / Math.PI);
+                        }
+                        if (integrate && iter === 2) {
+                            if (k > st.last_sample_k) {
+                                st.held_mag = mag_temp;
+                                st.held_phase = phase_temp;
+                                st.last_sample_k = k;
+                            }
+                        }
+                    }
+                    if (outMag) signals[outMag] = mag_temp;
+                    if (outPhase) signals[outPhase] = phase_temp;
+                } else if (b.type === "Gain" && !out && (b.parameters.original_type === "D_FLIP_FLOP" || b.parameters.original_type === "JK_FLIP_FLOP")) {
+                    const orig = b.parameters.original_type;
+                    const clkVal = signals[b.channels.Ctrl] ?? 0.0;
+                    if (!cs[b.id]) {
+                        const initVal = parseScientific(b.parameters.initial_state ?? "0.0") > 0.5 ? 1.0 : 0.0;
+                        cs[b.id] = {
+                            q_state: initVal,
+                            prev_clk: clkVal
+                        };
+                    }
+                    const st = cs[b.id];
+                    let q = st.q_state;
+                    const prevClk = st.prev_clk;
+                    const edge = b.parameters.trigger_edge ?? "rising";
+                    let edgeDetected = false;
+                    if (edge === "rising") {
+                        if (prevClk <= 0.5 && clkVal > 0.5) edgeDetected = true;
+                    } else {
+                        if (prevClk > 0.5 && clkVal <= 0.5) edgeDetected = true;
+                    }
+                    if (edgeDetected) {
+                        if (orig === "D_FLIP_FLOP") {
+                            const dVal = signals[b.channels.D] ?? 0.0;
+                            q = dVal > 0.5 ? 1.0 : 0.0;
+                        } else if (orig === "JK_FLIP_FLOP") {
+                            const jVal = signals[b.channels.J] ?? 0.0;
+                            const kVal = signals[b.channels.K] ?? 0.0;
+                            const J = jVal > 0.5;
+                            const K = kVal > 0.5;
+                            if (J && K) {
+                                q = q > 0.5 ? 0.0 : 1.0;
+                            } else if (J) {
+                                q = 1.0;
+                            } else if (K) {
+                                q = 0.0;
+                            }
+                        }
+                    }
+                    if (integrate && iter === 2) {
+                        st.q_state = q;
+                        st.prev_clk = clkVal;
+                    }
+                    if (b.channels.Q) signals[b.channels.Q] = q;
+                    if (b.channels.Q_bar) signals[b.channels.Q_bar] = q > 0.5 ? 0.0 : 1.0;
                 } else if (b.type === "SummingJunction" && out) {
                     const ctrlSig = b.channels.Ctrl;
                     if (ctrlSig && (signals[ctrlSig] ?? 0.0) <= 0.5) {
@@ -2022,6 +2212,15 @@ export class CircuitSimulator {
                             if (op === "AND") signals[out] = (val1 > 0.5 && val2 > 0.5) ? 1.0 : 0.0;
                             else if (op === "OR") signals[out] = (val1 > 0.5 || val2 > 0.5) ? 1.0 : 0.0;
                             else if (op === "XOR") signals[out] = ((val1 > 0.5) !== (val2 > 0.5)) ? 1.0 : 0.0;
+                            else signals[out] = 0.0;
+                        } else if (orig === "RELATIONAL_OPERATOR") {
+                            const op = b.parameters.operator ?? "==";
+                            if (op === "==" || op === "=") signals[out] = (val1 === val2) ? 1.0 : 0.0;
+                            else if (op === "~=" || op === "!=") signals[out] = (val1 !== val2) ? 1.0 : 0.0;
+                            else if (op === "<") signals[out] = (val1 < val2) ? 1.0 : 0.0;
+                            else if (op === "<=") signals[out] = (val1 <= val2) ? 1.0 : 0.0;
+                            else if (op === ">") signals[out] = (val1 > val2) ? 1.0 : 0.0;
+                            else if (op === ">=") signals[out] = (val1 >= val2) ? 1.0 : 0.0;
                             else signals[out] = 0.0;
                         } else if (orig === "LUT_2D") {
                             const xStr = b.parameters.x ?? "[0, 1]";
@@ -2160,6 +2359,89 @@ export class CircuitSimulator {
                         }
                         cs[b.id] = stateObj;
                     }
+                } else if (b.type === "PROBE" || b.type === "UnifiedProbe") {
+                    const target = b.parameters.target;
+                    const selected = (b.parameters.selected_signals || "").split(",").filter(Boolean);
+                    selected.forEach((sig: string) => {
+                        let val = 0.0;
+                        if (sig.startsWith("V_") || sig.startsWith("I_") || sig.startsWith("Ctrl_") || sig.startsWith("Power_") || sig.startsWith("Conducting_")) {
+                            // Physical component lookup
+                            const parts = sig.split("_");
+                            const prefix = parts[0];
+                            const compId = parts.slice(1).join("_");
+                            const tc = this.physical_stage.find(x => x.id === compId);
+                            if (tc) {
+                                const n1 = tc.nodes[0] ?? "node_0", n2 = tc.nodes[1] ?? "node_0";
+                                const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1;
+                                const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
+                                const v = ((i1 >= 0) ? w_curr[i1] : 0.0) - ((i2 >= 0) ? w_curr[i2] : 0.0);
+                                
+                                // Calculate current i
+                                let i = 0.0;
+                                if (tc.type === "Resistor" || tc.type === "R") {
+                                    let rv = parseScientific(tc.parameters.value ?? "10");
+                                    if (rv < 1e-6) rv = 1e-6;
+                                    i = v / rv;
+                                } else if (tc.type === "VariableResistor") {
+                                    const ctrlSig = tc.channels.Ctrl;
+                                    const baseVal = parseScientific(tc.parameters.value ?? "10");
+                                    const ctrlVal = (ctrlSig && signals[ctrlSig] !== undefined) ? signals[ctrlSig] : baseVal;
+                                    let r_val = ctrlVal;
+                                    if (r_val < 1e-6) r_val = 1e-6;
+                                    i = v / r_val;
+                                } else if (tc.type === "Inductor" || tc.type === "L") {
+                                    const idxL = this.L_to_idx[tc.id];
+                                    i = (idxL !== undefined) ? w_curr[idxL] : 0.0;
+                                } else if (tc.type === "Capacitor" || tc.type === "C") {
+                                    const cv = parseScientific(tc.parameters.C ?? "100u");
+                                    if (!first && this.cap_history[tc.id]) {
+                                        i = cv / this.cap_history[tc.id].dt_prev * (v - this.cap_history[tc.id].v_prev);
+                                    }
+                                } else if (["VoltageSource", "ACVoltageSource", "Ammeter", "V", "AC_V", "AM", "ControlledVoltageSource", "OPAMP", "E_COMP"].includes(tc.type)) {
+                                    const idxV = this.V_to_idx[tc.id];
+                                    i = (idxV !== undefined) ? w_curr[idxV] : 0.0;
+                                } else if (["Switch", "Diode", "MOSFET", "S", "D", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"].some(t => tc.type.includes(t))) {
+                                    const ron = parseScientific(tc.parameters.Ron ?? "1e-3");
+                                    const roff = parseScientific(tc.parameters.Roff ?? "1e6");
+                                    i = v / ((ss[tc.id] ?? "OFF") === "ON" ? ron : roff);
+                                } else if (tc.type === "CurrentSource" || tc.type === "I" || tc.type === "ControlledCurrentSource" || tc.type === "ACCurrentSource") {
+                                    const srcType = tc.parameters.src_type;
+                                    if (tc.type === "ControlledCurrentSource" || srcType === "controlled") {
+                                        const gain = parseScientific(tc.parameters.value ?? "1.0");
+                                        const ctrlSig = tc.channels.Ctrl;
+                                        const ctrlVal = (ctrlSig && signals[ctrlSig] !== undefined) ? signals[ctrlSig] : 0.0;
+                                        i = ctrlVal * gain;
+                                    } else if (tc.type === "ACCurrentSource" || srcType === "ac") {
+                                        const amp = parseScientific(tc.parameters.amplitude ?? "1.0");
+                                        const freq = parseScientific(tc.parameters.frequency ?? "50.0");
+                                        const phase = parseScientific(tc.parameters.phase ?? "0.0");
+                                        i = amp * Math.sin(2.0 * Math.PI * freq * time + phase * Math.PI / 180.0);
+                                    } else {
+                                        i = parseScientific(tc.parameters.value ?? "1.0");
+                                    }
+                                }
+
+                                if (prefix === "V") {
+                                    val = v;
+                                } else if (prefix === "I") {
+                                    val = i;
+                                } else if (prefix === "Ctrl") {
+                                    const ctrlChan = tc.channels.Ctrl || tc.channels.Switch || tc.channels.G;
+                                    if (ctrlChan !== undefined) {
+                                        val = signals[ctrlChan] !== undefined ? signals[ctrlChan] : 0.0;
+                                    }
+                                } else if (prefix === "Power") {
+                                    val = v * i;
+                                } else if (prefix === "Conducting") {
+                                    val = (ss[tc.id] ?? "OFF") === "ON" ? 1.0 : 0.0;
+                                }
+                            }
+                        } else {
+                            // Control signal lookup
+                            val = signals[sig] ?? 0.0;
+                        }
+                        signals[`${b.id}.${sig}`] = val;
+                    });
                 }
             }
         }

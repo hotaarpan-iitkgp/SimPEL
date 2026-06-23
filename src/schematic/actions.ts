@@ -718,12 +718,12 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
   });
   
   // Union terminal A and B for label/port feedthrough transparency
-  eLabels.forEach((comp: any) => {
-    uf.union(`${comp.id}.A`, `${comp.id}.B`);
-  });
+  // (no longer needed as labels have only one terminal A)
+  // eLabels.forEach((comp: any) => {
+  //   uf.union(`${comp.id}.A`, `${comp.id}.B`);
+  // });
   
   state.components.filter((c: any) => c.type === 'E_PORT').forEach((comp: any) => {
-    uf.union(`${comp.id}.A`, `${comp.id}.B`);
     const parts = comp.id.split('.');
     if (parts.length > 1) {
       const portName = parts.pop()!;
@@ -947,7 +947,8 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
     custom_functions: [],
     custom_scripts: [],
     signals_routing: [],
-    plls: []
+    plls: [],
+    probes: []
   };
   
   // Parse parameters fields cleanly
@@ -1474,7 +1475,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       }
       default: {
         const isDetailedElect = DETAILED_COMPONENTS.some(dc => dc.type === comp.type && dc.category === 'electrical');
-        if (isDetailedElect) {
+        if (isDetailedElect && comp.type !== 'E_PORT' && comp.type !== 'E_LABEL') {
           physical_stage.resistors.push({
             id: comp.id,
             nodes: resolveNodes(comp.id, 2, ['A', 'B']),
@@ -1886,6 +1887,13 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
         });
         break;
       }
+      case 'PROBE':
+        control_loops.probes.push({
+          id: comp.id,
+          target: comp.parameters?.target || "",
+          selected_signals: comp.parameters?.selected_signals || ""
+        });
+        break;
       default:
         // Untouched control blocks are explicitly identified but kept untouched / ignored by the transient solver
         break;
@@ -1987,6 +1995,19 @@ function getIncomingControlTerminal(compId: string, destTerminalName: string): s
       
       // Port boundary bypass: if we hit an INPORT, jump to the external subsystem boundary pin
       const comp = state.components.find((c: any) => c.id === curr.compId);
+      
+      // Wireless signal routing: if we hit a FROM_SIG, jump to the matching GOTO_SIG's input terminal
+      if (comp && comp.type === 'FROM_SIG') {
+        const fromTag = (comp.parameters?.tag || 'A').trim();
+        const matchingGoto = state.components.find((c: any) => 
+          c.type === 'GOTO_SIG' && (c.parameters?.tag || 'A').trim() === fromTag
+        );
+        if (matchingGoto) {
+          queue.push({ type: 'pin', compId: matchingGoto.id, terminal: 'In' });
+          continue;
+        }
+      }
+      
       if (comp && comp.type === 'INPORT') {
         const parts = curr.compId.split('.');
         if (parts.length > 1) {

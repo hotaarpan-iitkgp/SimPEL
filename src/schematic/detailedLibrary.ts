@@ -1570,6 +1570,24 @@ export function getDetailedComponentPins(type: string): Record<string, any> | nu
   if (basicTypes.includes(type)) return null;
 
   // Custom configurations for new blocks
+  if (type === 'E_PORT' || type === 'E_LABEL') {
+    return {
+      A: { x: 0, y: -30, dx: 0, dy: -1 }
+    };
+  }
+
+  if (type === 'GOTO_SIG') {
+    return {
+      In: { x: -15, y: 0, dx: -1, dy: 0 }
+    };
+  }
+
+  if (type === 'FROM_SIG') {
+    return {
+      Out: { x: 15, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
   if (type === 'OFFSET') {
     return {
       In: { x: -20, y: 0, dx: -1, dy: 0 },
@@ -2053,6 +2071,37 @@ export function getDetailedComponentSVG(comp: any): string | null {
   const basicTypes = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM', 'CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'PROBE', 'SCOPE', 'GEN_EBLOCK', 'GND'];
   if (basicTypes.includes(type)) return null;
 
+  if (type === 'GOTO_SIG') {
+    const tag = comp.parameters?.tag ?? 'A';
+    const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
+    let fillColor = isLightMode ? '#ffffff' : '#090d16'; // white vs deep slate
+    const textWidth = Math.max(15, tag.length * 6);
+    const boundsW = 25 + textWidth;
+    return `
+      <rect class="comp-bounds" x="-18" y="-15" width="${boundsW}" height="30" rx="4" />
+      <polygon points="-15,-10 5,0 -15,10" class="comp-path" fill="${fillColor}" />
+      <g transform="translate(10, 0) rotate(${-rotation})">
+        <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="currentColor" text-anchor="start">${tag}</text>
+      </g>
+    `;
+  }
+
+  if (type === 'FROM_SIG') {
+    const tag = comp.parameters?.tag ?? 'A';
+    const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
+    let fillColor = isLightMode ? '#ffffff' : '#090d16'; // white vs deep slate
+    const textWidth = Math.max(15, tag.length * 6);
+    const boundsW = 25 + textWidth;
+    const boundsX = -boundsW + 18;
+    return `
+      <rect class="comp-bounds" x="${boundsX}" y="-15" width="${boundsW}" height="30" rx="4" />
+      <polygon points="-5,-10 15,0 -5,10" class="comp-path" fill="${fillColor}" />
+      <g transform="translate(-10, 0) rotate(${-rotation})">
+        <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="currentColor" text-anchor="end">${tag}</text>
+      </g>
+    `;
+  }
+
   if (type === 'SUM_ROUND') {
     const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
     let borderColor = isLightMode ? '#059669' : '#10b981'; // emerald-600 vs emerald-500
@@ -2146,14 +2195,14 @@ export function getDetailedComponentSVG(comp: any): string | null {
     switch (type) {
       case 'E_PORT':
         shape = `
-          <path class="comp-path" d="M 0,-30 L 0,-10 M 0,10 L 0,30" />
+          <path class="comp-path" d="M 0,-30 L 0,-10" />
           <circle cx="0" cy="0" r="10" class="comp-path" />
           <text x="0" y="3" font-family="Inter, sans-serif" font-size="8" font-weight="700" fill="currentColor" text-anchor="middle">P</text>
         `;
         break;
       case 'E_LABEL':
         shape = `
-          <path class="comp-path" d="M 0,-30 L 0,-8 M 0,8 L 0,30" />
+          <path class="comp-path" d="M 0,-30 L 0,-8" />
           <polygon points="-16,-8 10,-8 16,0 10,8 -16,8" class="comp-path" />
           <text x="-2" y="2.5" font-family="Inter, sans-serif" font-size="7" font-weight="700" fill="currentColor" text-anchor="middle">TAG</text>
         `;
@@ -2864,6 +2913,7 @@ export function getDetailedComponentSVG(comp: any): string | null {
       <text x="0" y="-3" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="${symbolColor}" text-anchor="middle">Monoflop</text>
       <text x="0" y="7" font-family="Inter, sans-serif" font-size="6.5" font-weight="700" fill="${symbolColor}" opacity="0.8" text-anchor="middle">T = ${dur}</text>
     `;
+
   }
 
   // Premium design container with top glow strip and center symbol

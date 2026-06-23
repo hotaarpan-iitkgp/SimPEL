@@ -48,6 +48,23 @@ export function parseTurnsList(str: string): number[] {
 // Return pins map dynamically based on component type and customized parameter options
 export function getComponentPins(comp: any): Record<string, any> {
   if (!comp) return {};
+  if (comp.type === 'PROBE') {
+    const selected = (comp.parameters && comp.parameters.selected_signals || "").split(",").filter(Boolean);
+    const pins: Record<string, any> = {};
+    const numPins = selected.length;
+    if (numPins === 0) {
+      pins['Out'] = { x: 20, y: 0, dx: 1, dy: 0 };
+    } else {
+      for (let i = 0; i < numPins; i++) {
+        let yOffset = 0;
+        if (numPins > 1) {
+          yOffset = -15 * (numPins - 1) + 30 * i;
+        }
+        pins[selected[i]] = { x: 20, y: Math.round(yOffset), dx: 1, dy: 0 };
+      }
+    }
+    return pins;
+  }
   if (comp.type === 'SUBSYSTEM') {
     const pins: Record<string, any> = {};
     const subschematic = comp.sub_schematic || { components: [] };
@@ -318,7 +335,7 @@ export const DEFAULT_PARAMETERS: Record<string, any> = {
   VM:     {},
   AM:     {},
   GND:    {},
-  PROBE:  { target: "" },
+  PROBE:  { target: "", selected_signals: "" },
   SCOPE:  { channels: "2" },
   MUX:    { inputs: "2" },
   DEMUX:  { outputs: "2" },

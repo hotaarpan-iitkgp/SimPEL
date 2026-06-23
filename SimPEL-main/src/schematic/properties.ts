@@ -4,7 +4,7 @@ import { showToast } from './utils';
 import { getComponentPins, discoverPortsJS, senseTerminalsFromCode, discoverParamsFromCode, updateParamInCode } from './config';
 import { getAvailableVariables } from './plotConfig';
 import { DETAILED_COMPONENTS } from './detailedLibrary';
-import { rotateSelected, deleteSelected } from './actions';
+import { rotateSelected, deleteSelected, enterSubsystem } from './actions';
 
 // Update properties panel dynamically based on select items
 export function updatePropertiesPanel(): void {
@@ -20,6 +20,20 @@ export function updatePropertiesPanel(): void {
     // Header
     const card = document.createElement('div');
     card.className = 'panel-card';
+    
+    let extraButtonsHTML = '';
+    if (comp.type === 'SUBSYSTEM') {
+      const hasMask = comp.mask && comp.mask.parameters && comp.mask.parameters.length > 0;
+      extraButtonsHTML = `
+        <button id="btn-look-inside" style="width: 100%; margin-top: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #0ea5e9; border: 1px solid #0284c7; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;">
+          Look Inside Subsystem
+        </button>
+        <button id="btn-edit-mask" style="width: 100%; margin-top: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: ${hasMask ? '#475569' : '#10b981'}; border: 1px solid ${hasMask ? '#334155' : '#059669'}; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;">
+          ${hasMask ? 'Edit Mask Structure' : 'Create Mask'}
+        </button>
+      `;
+    }
+
     card.innerHTML = `
       <h3 class="panel-card-title">${comp.id} properties</h3>
       <div class="prop-group">
@@ -27,13 +41,14 @@ export function updatePropertiesPanel(): void {
         <input type="text" id="prop-id" class="prop-input" value="${comp.id}" />
       </div>
       <div style="display: flex; gap: 8px; margin-top: 12px; margin-bottom: 8px;">
-        <button id="btn-rotate-comp" class="prop-input" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #075985; border: 1px solid #0369a1; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Rotate Component 90°">
+        <button id="btn-rotate-comp" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #075985; border: 1px solid #0369a1; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Rotate Component 90°">
           Rotate
         </button>
-        <button id="btn-delete-comp" class="prop-input" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #b91c1c; border: 1px solid #991b1b; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Delete Component">
+        <button id="btn-delete-comp" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #b91c1c; border: 1px solid #991b1b; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Delete Component">
           Delete
         </button>
       </div>
+      ${extraButtonsHTML}
     `;
     
     const propGroup = document.createElement('div');
@@ -41,7 +56,208 @@ export function updatePropertiesPanel(): void {
     propGroup.innerHTML = '<h4 class="category-title">Parameters</h4>';
     
     // Create params forms
-    if (comp.parameters) {
+    const isMaskedSubsystem = comp.type === 'SUBSYSTEM' && comp.mask && comp.mask.parameters && comp.mask.parameters.length > 0;
+    if (isMaskedSubsystem) {
+      comp.mask.parameters.forEach((param: any) => {
+        const key = param.name;
+        const row = document.createElement('div');
+        row.className = 'prop-row';
+        row.style.display = 'flex';
+        row.style.flexDirection = 'column';
+        row.style.marginBottom = '12px';
+        
+        const label = document.createElement('label');
+        label.className = 'prop-label';
+        label.textContent = param.label || key;
+        
+        const inputField = document.createElement('input');
+        inputField.type = 'text';
+        inputField.className = 'prop-input';
+        inputField.value = comp.parameters[key] !== undefined ? String(comp.parameters[key]) : param.value;
+        
+        inputField.addEventListener('change', (e: any) => {
+          saveState();
+          comp.parameters[key] = e.target.value;
+          draw();
+        });
+        
+        row.appendChild(label);
+        row.appendChild(inputField);
+        propGroup.appendChild(row);
+      });
+    } else if (comp.type === 'PROBE') {
+      const targetVal = comp.parameters.target || "";
+      const targets = targetVal.split(",").filter(Boolean);
+      
+      // 1. Open Probe Editor button
+      const openBtn = document.createElement('button');
+      openBtn.className = 'prop-input';
+      openBtn.style.marginTop = '4px';
+      openBtn.style.marginBottom = '12px';
+      openBtn.style.backgroundColor = '#0ea5e9';
+      openBtn.style.border = 'none';
+      openBtn.style.color = 'white';
+      openBtn.style.padding = '8px';
+      openBtn.style.borderRadius = '6px';
+      openBtn.style.cursor = 'pointer';
+      openBtn.style.fontWeight = 'bold';
+      openBtn.style.fontSize = '11px';
+      openBtn.textContent = 'Open Probe Editor';
+      openBtn.addEventListener('click', () => {
+        openProbeEditorModal(comp);
+      });
+      propGroup.appendChild(openBtn);
+
+      // 2. Select dropdown to quickly append target component
+      const row = document.createElement('div');
+      row.className = 'prop-row';
+      row.style.display = 'flex';
+      row.style.flexDirection = 'column';
+      row.style.marginBottom = '12px';
+      
+      const label = document.createElement('label');
+      label.className = 'prop-label';
+      label.textContent = 'Add Component to Probe';
+      
+      const select = document.createElement('select');
+      select.className = 'prop-input';
+      
+      const optNone = document.createElement('option');
+      optNone.value = '';
+      optNone.textContent = '-- Select to add --';
+      select.appendChild(optNone);
+      
+      state.components.forEach((c: any) => {
+        if (c.id === comp.id || targets.includes(c.id)) return;
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = `${c.id} (${c.type})`;
+        select.appendChild(opt);
+      });
+      
+      select.addEventListener('change', (e: any) => {
+        if (!e.target.value) return;
+        saveState();
+        const currentTargets = (comp.parameters.target || "").split(",").filter(Boolean);
+        if (!currentTargets.includes(e.target.value)) {
+          currentTargets.push(e.target.value);
+          comp.parameters.target = currentTargets.join(",");
+        }
+        cleanDanglingWires(comp.id);
+        updatePropertiesPanel();
+        draw();
+      });
+      
+      row.appendChild(label);
+      row.appendChild(select);
+      propGroup.appendChild(row);
+      
+      // 3. Drop zone showing active target list
+      const dropZone = document.createElement('div');
+      dropZone.id = 'probe-drop-zone';
+      dropZone.style.border = '2px dashed #334155';
+      dropZone.style.borderRadius = '6px';
+      dropZone.style.padding = '12px';
+      dropZone.style.textAlign = 'center';
+      dropZone.style.color = '#94a3b8';
+      dropZone.style.fontSize = '11px';
+      dropZone.style.marginBottom = '12px';
+      dropZone.style.background = '#0b1329';
+      dropZone.textContent = targets.length > 0 ? `Probed: ${targets.join(", ")}` : 'Drag & drop components here';
+      propGroup.appendChild(dropZone);
+
+      // 4. Render monitored signals checkboxes grouped by component
+      if (targets.length > 0) {
+        const sigsLabel = document.createElement('label');
+        sigsLabel.className = 'prop-label';
+        sigsLabel.textContent = 'Monitored Signals';
+        sigsLabel.style.marginTop = '12px';
+        sigsLabel.style.marginBottom = '6px';
+        propGroup.appendChild(sigsLabel);
+
+        targets.forEach((targetId: string) => {
+          const targetComp = state.components.find((c: any) => c.id === targetId);
+          if (!targetComp) return;
+
+          const groupDiv = document.createElement('div');
+          groupDiv.style.marginBottom = '8px';
+          groupDiv.style.borderLeft = '2px solid #334155';
+          groupDiv.style.paddingLeft = '8px';
+
+          const compHeader = document.createElement('div');
+          compHeader.style.fontSize = '10px';
+          compHeader.style.fontWeight = 'bold';
+          compHeader.style.color = '#94a3b8';
+          compHeader.style.marginBottom = '4px';
+          compHeader.textContent = `${targetComp.id} (${targetComp.type})`;
+          groupDiv.appendChild(compHeader);
+
+          const finalVars = getComponentProbeSignals(targetComp);
+          const selected = (comp.parameters.selected_signals || "").split(",").filter(Boolean);
+
+          finalVars.forEach(sig => {
+            const sigRow = document.createElement('div');
+            sigRow.style.display = 'flex';
+            sigRow.style.alignItems = 'center';
+            sigRow.style.gap = '8px';
+            sigRow.style.marginBottom = '4px';
+            sigRow.style.cursor = 'pointer';
+            
+            const isChecked = selected.includes(sig.value);
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = isChecked;
+            checkbox.style.cursor = 'pointer';
+            checkbox.style.accentColor = '#0ea5e9';
+            
+            const updateSelectedSignals = () => {
+              saveState();
+              let currentSel = (comp.parameters.selected_signals || "").split(",").filter(Boolean);
+              if (checkbox.checked) {
+                if (!currentSel.includes(sig.value)) currentSel.push(sig.value);
+              } else {
+                currentSel = currentSel.filter((x: string) => x !== sig.value);
+              }
+              comp.parameters.selected_signals = currentSel.join(",");
+              cleanDanglingWires(comp.id);
+              updatePropertiesPanel();
+              draw();
+            };
+            
+            checkbox.addEventListener('change', () => {
+              updateSelectedSignals();
+            });
+            
+            const sigLabel = document.createElement('span');
+            sigLabel.style.fontSize = '10px';
+            sigLabel.style.fontFamily = 'monospace';
+            sigLabel.style.cursor = 'pointer';
+            sigLabel.style.color = isChecked ? '#38bdf8' : '#cbd5e1';
+            sigLabel.textContent = sig.label;
+            
+            sigRow.appendChild(checkbox);
+            sigRow.appendChild(sigLabel);
+            
+            sigRow.addEventListener('click', (e) => {
+              if (e.target !== checkbox) {
+                checkbox.checked = !checkbox.checked;
+                updateSelectedSignals();
+              }
+            });
+            groupDiv.appendChild(sigRow);
+          });
+          propGroup.appendChild(groupDiv);
+        });
+      } else {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.style.fontSize = '10px';
+        emptyMsg.style.color = '#64748b';
+        emptyMsg.style.fontStyle = 'italic';
+        emptyMsg.textContent = 'No active target probed.';
+        propGroup.appendChild(emptyMsg);
+      }
+    } else if (comp.parameters) {
       Object.keys(comp.parameters).forEach(key => {
         if (key === 'code') return; // Handled by Python Modal editor
         if (comp.type === 'GEN_EBLOCK' && !['terminals', 'timestep', 'plot_disabled_pins', 'plot_custom_vars'].includes(key)) return;
@@ -384,6 +600,18 @@ export function updatePropertiesPanel(): void {
           deleteSelected();
         });
       }
+      const btnLookInside = document.getElementById('btn-look-inside');
+      if (btnLookInside) {
+        btnLookInside.addEventListener('click', () => {
+          enterSubsystem(comp.id);
+        });
+      }
+      const btnEditMask = document.getElementById('btn-edit-mask');
+      if (btnEditMask) {
+        btnEditMask.addEventListener('click', () => {
+          openMaskEditorModal(comp);
+        });
+      }
     }, 0);
   } else if (state.selectedComponentIds.length > 0 || state.selectedWireIds.length > 0) {
     const card = document.createElement('div');
@@ -392,13 +620,13 @@ export function updatePropertiesPanel(): void {
     let buttonsHtml = '';
     if (state.selectedComponentIds.length > 0) {
       buttonsHtml += `
-        <button id="btn-rotate-comp" class="prop-input" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #075985; border: 1px solid #0369a1; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Rotate Selection 90°">
+        <button id="btn-rotate-comp" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #075985; border: 1px solid #0369a1; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Rotate Selection 90°">
           Rotate
         </button>
       `;
     }
     buttonsHtml += `
-      <button id="btn-delete-comp" class="prop-input" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #b91c1c; border: 1px solid #991b1b; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Delete Selection">
+      <button id="btn-delete-comp" style="flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #b91c1c; border: 1px solid #991b1b; color: white; padding: 6px 12px; height: 32px; border-radius: 6px; font-size: 11px;" title="Delete Selection">
         Delete
       </button>
     `;
@@ -945,3 +1173,453 @@ function getComponentNodes(compId: string): string[] {
   
   return Array.from(new Set(res));
 }
+
+export function openMaskEditorModal(comp: any): void {
+  const modal = document.getElementById('mask-editor-modal');
+  const container = document.getElementById('mask-params-container');
+  const addBtn = document.getElementById('btn-add-mask-param');
+  const saveBtn = document.getElementById('mask-editor-save');
+  const cancelBtn = document.getElementById('mask-editor-cancel');
+
+  if (!modal || !container || !saveBtn || !cancelBtn) return;
+
+  let params = comp.mask && comp.mask.parameters ? JSON.parse(JSON.stringify(comp.mask.parameters)) : [];
+
+  const renderParams = () => {
+    container.innerHTML = '';
+    if (params.length === 0) {
+      container.innerHTML = `<div style="font-size: 11px; color: #64748b; font-style: italic; padding: 8px;">No parameters defined yet. Click "Add Parameter" below.</div>`;
+      return;
+    }
+
+    params.forEach((p: any, idx: number) => {
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.gap = '8px';
+      row.style.marginBottom = '8px';
+      row.style.alignItems = 'center';
+
+      row.innerHTML = `
+        <input type="text" placeholder="Variable Name" class="prop-input name-input" value="${p.name}" style="flex: 1; font-family: monospace; background: #020617; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 4px 8px; font-size: 11px;" />
+        <input type="text" placeholder="Label" class="prop-input label-input" value="${p.label}" style="flex: 1.5; background: #020617; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 4px 8px; font-size: 11px;" />
+        <input type="text" placeholder="Default Value" class="prop-input val-input" value="${p.value}" style="flex: 1; font-family: monospace; background: #020617; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 4px 8px; font-size: 11px;" />
+        <button class="btn-delete-param" style="background: #b91c1c; border: none; color: white; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 11px;">×</button>
+      `;
+
+      const nameInput = row.querySelector('.name-input') as HTMLInputElement;
+      const labelInput = row.querySelector('.label-input') as HTMLInputElement;
+      const valInput = row.querySelector('.val-input') as HTMLInputElement;
+      const deleteBtn = row.querySelector('.btn-delete-param') as HTMLButtonElement;
+
+      nameInput.addEventListener('input', (e: any) => { p.name = e.target.value.trim(); });
+      labelInput.addEventListener('input', (e: any) => { p.label = e.target.value.trim(); });
+      valInput.addEventListener('input', (e: any) => { p.value = e.target.value.trim(); });
+      deleteBtn.addEventListener('click', () => {
+        params.splice(idx, 1);
+        renderParams();
+      });
+
+      container.appendChild(row);
+    });
+  };
+
+  renderParams();
+
+  const handleAdd = () => {
+    params.push({ name: `param_${params.length + 1}`, label: `Parameter ${params.length + 1}`, value: '1.0' });
+    renderParams();
+  };
+  addBtn?.replaceWith(addBtn.cloneNode(true));
+  const newAddBtn = document.getElementById('btn-add-mask-param');
+  newAddBtn?.addEventListener('click', handleAdd);
+
+  const handleSave = () => {
+    saveState();
+    const validParams = params.filter((p: any) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(p.name));
+    
+    comp.mask = {
+      title: comp.id + " Mask",
+      parameters: validParams
+    };
+
+    if (!comp.parameters) comp.parameters = {};
+    validParams.forEach((p: any) => {
+      if (comp.parameters[p.name] === undefined) {
+        comp.parameters[p.name] = p.value;
+      }
+    });
+
+    const validNames = new Set(validParams.map((p: any) => p.name));
+    Object.keys(comp.parameters).forEach(k => {
+      if (!validNames.has(k)) {
+        delete comp.parameters[k];
+      }
+    });
+
+    modal.classList.remove('show');
+    updatePropertiesPanel();
+    draw();
+  };
+  saveBtn.replaceWith(saveBtn.cloneNode(true));
+  const newSaveBtn = document.getElementById('mask-editor-save');
+  newSaveBtn?.addEventListener('click', handleSave);
+
+  const handleCancel = () => {
+    modal.classList.remove('show');
+  };
+  cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+  const newCancelBtn = document.getElementById('mask-editor-cancel');
+  newCancelBtn?.addEventListener('click', handleCancel);
+
+  modal.classList.add('show');
+}
+
+export function openMaskValuesModal(comp: any): void {
+  const modal = document.getElementById('mask-values-modal');
+  const title = document.getElementById('mask-values-title');
+  const container = document.getElementById('mask-values-container');
+  const saveBtn = document.getElementById('mask-values-save');
+  const cancelBtn = document.getElementById('mask-values-cancel');
+
+  if (!modal || !container || !saveBtn || !cancelBtn) return;
+
+  if (title) title.textContent = comp.id + " Parameters";
+
+  container.innerHTML = '';
+  const params = comp.mask && comp.mask.parameters ? comp.mask.parameters : [];
+
+  const inputs: Record<string, HTMLInputElement> = {};
+
+  params.forEach((param: any) => {
+    const row = document.createElement('div');
+    row.className = 'prop-row';
+    row.style.display = 'flex';
+    row.style.flexDirection = 'column';
+    row.style.marginBottom = '12px';
+
+    const label = document.createElement('label');
+    label.className = 'prop-label';
+    label.textContent = param.label || param.name;
+
+    const inputField = document.createElement('input');
+    inputField.type = 'text';
+    inputField.className = 'prop-input';
+    inputField.value = comp.parameters[param.name] !== undefined ? String(comp.parameters[param.name]) : param.value;
+
+    row.appendChild(label);
+    row.appendChild(inputField);
+    container.appendChild(row);
+
+    inputs[param.name] = inputField;
+  });
+
+  const handleSave = () => {
+    saveState();
+    params.forEach((param: any) => {
+      comp.parameters[param.name] = inputs[param.name].value;
+    });
+    modal.classList.remove('show');
+    updatePropertiesPanel();
+    draw();
+  };
+
+  saveBtn.replaceWith(saveBtn.cloneNode(true));
+  const newSaveBtn = document.getElementById('mask-values-save');
+  newSaveBtn?.addEventListener('click', handleSave);
+
+  cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+  const newCancelBtn = document.getElementById('mask-values-cancel');
+  newCancelBtn?.addEventListener('click', () => {
+    modal.classList.remove('show');
+  });
+
+  modal.classList.add('show');
+}
+
+export function getComponentProbeSignals(tc: any): { label: string, value: string }[] {
+  if (!tc) return [];
+  const signals: { label: string, value: string }[] = [];
+  const id = tc.id;
+  const type = tc.type;
+  
+  const isSwitch = ['Switch', 'Diode', 'MOSFET', 'IGBT', 'IGBT_DIODE', 'S', 'D', 'IGCT', 'GTO', 'THYRISTOR', 'JFET', 'BJT'].includes(type);
+  const isResistor = ['R', 'Resistor', 'VAR_R', 'VariableResistor'].includes(type);
+  const isInductor = ['L', 'Inductor'].includes(type);
+  const isCapacitor = ['C', 'Capacitor'].includes(type);
+  const isSource = ['VoltageSource', 'CurrentSource', 'ACVoltageSource', 'ACCurrentSource', 'V', 'I', 'AC_V', 'AC_I', 'ControlledVoltageSource', 'ControlledCurrentSource'].includes(type);
+  
+  if (isSwitch) {
+    signals.push({ label: 'Device current', value: `I_${id}` });
+    signals.push({ label: 'Device voltage', value: `V_${id}` });
+    signals.push({ label: 'Conducting state (0 or 1)', value: `Conducting_${id}` });
+    signals.push({ label: 'Device power dissipation', value: `Power_${id}` });
+  } else if (isResistor) {
+    signals.push({ label: 'Resistor current', value: `I_${id}` });
+    signals.push({ label: 'Resistor voltage', value: `V_${id}` });
+    signals.push({ label: 'Resistor power', value: `Power_${id}` });
+  } else if (isInductor) {
+    signals.push({ label: 'Inductor current', value: `I_${id}` });
+    signals.push({ label: 'Inductor voltage', value: `V_${id}` });
+    signals.push({ label: 'Inductor power', value: `Power_${id}` });
+  } else if (isCapacitor) {
+    signals.push({ label: 'Capacitor current', value: `I_${id}` });
+    signals.push({ label: 'Capacitor voltage', value: `V_${id}` });
+    signals.push({ label: 'Capacitor power', value: `Power_${id}` });
+  } else if (isSource) {
+    signals.push({ label: 'Source current', value: `I_${id}` });
+    signals.push({ label: 'Source voltage', value: `V_${id}` });
+    signals.push({ label: 'Source power', value: `Power_${id}` });
+  } else {
+    const isControl = ['CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'Constant', 'Gain', 'PID_Controller', 'SummingJunction', 'PWM_Generator', 'Triangle_Carrier', 'Comparator', 'Product', 'CustomFunction', 'CustomScript'].includes(type);
+    if (isControl) {
+      const pins = getComponentPins(tc);
+      Object.keys(pins).forEach(pinName => {
+        signals.push({ label: `${id}.${pinName}`, value: `${id}.${pinName}` });
+      });
+    } else {
+      signals.push({ label: 'Voltage', value: `V_${id}` });
+      signals.push({ label: 'Current', value: `I_${id}` });
+      signals.push({ label: 'Power', value: `Power_${id}` });
+    }
+  }
+  return signals;
+}
+
+export function openProbeEditorModal(comp: any): void {
+  const modal = document.getElementById('probe-editor-modal');
+  const title = document.getElementById('probe-editor-title');
+  const componentsList = document.getElementById('probe-components-list');
+  const signalsList = document.getElementById('probe-signals-list');
+  const closeBtn = document.getElementById('probe-editor-close');
+  const closeIconBtn = document.getElementById('probe-editor-close-btn');
+  const helpBtn = document.getElementById('probe-editor-help');
+  
+  const removeBtn = document.getElementById('probe-comp-remove');
+  const upBtn = document.getElementById('probe-comp-up');
+  const downBtn = document.getElementById('probe-comp-down');
+  const locateBtn = document.getElementById('probe-comp-locate');
+
+  if (!modal || !componentsList || !signalsList) return;
+
+  state.activeProbeId = comp.id;
+  if (title) title.textContent = `Probe Editor: ${state.currentSubsystemId || 'untitled1'}/${comp.id}`;
+
+  let localSelectedTargetId = "";
+
+  const render = () => {
+    componentsList.innerHTML = '';
+    const targets = (comp.parameters.target || "").split(",").filter(Boolean);
+
+    if (targets.length === 0) {
+      const emptyItem = document.createElement('div');
+      emptyItem.className = 'p-3 text-xs text-slate-500 italic text-center';
+      emptyItem.textContent = 'No components probed yet.';
+      componentsList.appendChild(emptyItem);
+      signalsList.innerHTML = '<div class="p-3 text-xs text-slate-500 italic text-center">Select a probed component to view its signals.</div>';
+      return;
+    }
+
+    targets.forEach((targetId: string) => {
+      const tc = state.components.find((c: any) => c.id === targetId);
+      if (!tc) return;
+
+      const item = document.createElement('div');
+      const isSelected = localSelectedTargetId === targetId;
+      item.className = `p-2 rounded text-xs flex justify-between items-center cursor-pointer transition-all duration-150 ${
+        isSelected 
+          ? 'bg-sky-500/20 text-sky-400 font-semibold border border-sky-500/40 shadow shadow-sky-500/10' 
+          : 'bg-slate-900/40 text-slate-300 hover:bg-slate-800/60 border border-transparent'
+      }`;
+
+      const left = document.createElement('div');
+      left.className = 'flex flex-col';
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'font-bold';
+      nameSpan.textContent = tc.id;
+      const typeSpan = document.createElement('span');
+      typeSpan.className = 'text-[10px] text-slate-500';
+      typeSpan.textContent = tc.type;
+      left.appendChild(nameSpan);
+      left.appendChild(typeSpan);
+
+      const right = document.createElement('div');
+      right.className = 'text-[10px] text-slate-500 italic pr-2';
+      right.textContent = state.currentSubsystemId || 'untitled1';
+
+      item.appendChild(left);
+      item.appendChild(right);
+
+      item.addEventListener('click', () => {
+        localSelectedTargetId = targetId;
+        render();
+      });
+
+      componentsList.appendChild(item);
+    });
+
+    signalsList.innerHTML = '';
+    const activeTarget = state.components.find((c: any) => c.id === localSelectedTargetId);
+    if (!activeTarget) {
+      signalsList.innerHTML = '<div class="p-3 text-xs text-slate-500 italic text-center">Select a probed component from the list on the left to view signals.</div>';
+      return;
+    }
+
+    const availableSignals = getComponentProbeSignals(activeTarget);
+    const selectedSignals = (comp.parameters.selected_signals || "").split(",").filter(Boolean);
+
+    availableSignals.forEach((sig: { label: string, value: string }) => {
+      const sigRow = document.createElement('div');
+      sigRow.className = 'flex items-center gap-2 p-1.5 rounded hover:bg-slate-900/40 cursor-pointer select-none transition-colors duration-100';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'cursor-pointer accent-sky-500 h-4 w-4 rounded';
+      const isChecked = selectedSignals.includes(sig.value);
+      checkbox.checked = isChecked;
+
+      const sigLabel = document.createElement('span');
+      sigLabel.className = `text-xs cursor-pointer ${isChecked ? 'text-sky-400 font-semibold' : 'text-slate-300'}`;
+      sigLabel.textContent = sig.label;
+
+      const toggleSignal = () => {
+        saveState();
+        let curSignals = (comp.parameters.selected_signals || "").split(",").filter(Boolean);
+        if (checkbox.checked) {
+          if (!curSignals.includes(sig.value)) curSignals.push(sig.value);
+        } else {
+          curSignals = curSignals.filter(x => x !== sig.value);
+        }
+        comp.parameters.selected_signals = curSignals.join(",");
+        cleanDanglingWires(comp.id);
+        updatePropertiesPanel();
+        draw();
+        render();
+      };
+
+      checkbox.addEventListener('change', toggleSignal);
+      sigRow.addEventListener('click', (e) => {
+        if (e.target !== checkbox) {
+          checkbox.checked = !checkbox.checked;
+          toggleSignal();
+        }
+      });
+
+      sigRow.appendChild(checkbox);
+      sigRow.appendChild(sigLabel);
+      signalsList.appendChild(sigRow);
+    });
+  };
+
+  const reorderTargets = (dir: number) => {
+    if (!localSelectedTargetId) return;
+    saveState();
+    const targets = (comp.parameters.target || "").split(",").filter(Boolean);
+    const idx = targets.indexOf(localSelectedTargetId);
+    if (idx === -1) return;
+    const nextIdx = idx + dir;
+    if (nextIdx < 0 || nextIdx >= targets.length) return;
+    
+    const temp = targets[idx];
+    targets[idx] = targets[nextIdx];
+    targets[nextIdx] = temp;
+    
+    comp.parameters.target = targets.join(",");
+    cleanDanglingWires(comp.id);
+    updatePropertiesPanel();
+    draw();
+    render();
+  };
+
+  if (removeBtn) {
+    removeBtn.replaceWith(removeBtn.cloneNode(true));
+    const newRemoveBtn = document.getElementById('probe-comp-remove');
+    newRemoveBtn?.addEventListener('click', () => {
+      if (!localSelectedTargetId) return;
+      saveState();
+      let targets = (comp.parameters.target || "").split(",").filter(Boolean);
+      targets = targets.filter(t => t !== localSelectedTargetId);
+      comp.parameters.target = targets.join(",");
+      
+      let curSignals = (comp.parameters.selected_signals || "").split(",").filter(Boolean);
+      curSignals = curSignals.filter(sig => {
+        const isTargetSignal = sig.includes(`_${localSelectedTargetId}`) || sig.startsWith(`${localSelectedTargetId}.`);
+        return !isTargetSignal;
+      });
+      comp.parameters.selected_signals = curSignals.join(",");
+
+      localSelectedTargetId = targets[0] || "";
+      cleanDanglingWires(comp.id);
+      updatePropertiesPanel();
+      draw();
+      render();
+    });
+  }
+
+  if (upBtn) {
+    upBtn.replaceWith(upBtn.cloneNode(true));
+    const newUpBtn = document.getElementById('probe-comp-up');
+    newUpBtn?.addEventListener('click', () => reorderTargets(-1));
+  }
+
+  if (downBtn) {
+    downBtn.replaceWith(downBtn.cloneNode(true));
+    const newDownBtn = document.getElementById('probe-comp-down');
+    newDownBtn?.addEventListener('click', () => reorderTargets(1));
+  }
+
+  if (locateBtn) {
+    locateBtn.replaceWith(locateBtn.cloneNode(true));
+    const newLocateBtn = document.getElementById('probe-comp-locate');
+    newLocateBtn?.addEventListener('click', () => {
+      if (!localSelectedTargetId) return;
+      saveState();
+      state.selectedComponentIds = [localSelectedTargetId];
+      state.selectedWireIds = [];
+      draw();
+      showToast(`Located ${localSelectedTargetId} on schematic.`);
+    });
+  }
+
+  const handleClose = () => {
+    modal.classList.remove('show');
+    state.activeProbeId = null;
+  };
+
+  if (closeBtn) {
+    closeBtn.replaceWith(closeBtn.cloneNode(true));
+    const newCloseBtn = document.getElementById('probe-editor-close');
+    newCloseBtn?.addEventListener('click', handleClose);
+  }
+
+  if (closeIconBtn) {
+    closeIconBtn.replaceWith(closeIconBtn.cloneNode(true));
+    const newCloseIconBtn = document.getElementById('probe-editor-close-btn');
+    newCloseIconBtn?.addEventListener('click', handleClose);
+  }
+
+  if (helpBtn) {
+    helpBtn.replaceWith(helpBtn.cloneNode(true));
+    const newHelpBtn = document.getElementById('probe-editor-help');
+    newHelpBtn?.addEventListener('click', () => {
+      alert("PLECS-style Probe Editor:\n\n1. Double-click a Probe block on the canvas to open this window.\n2. Drag components (like Inductors or MOSFETs) from the canvas and drop them into the 'Probed components' panel on the left.\n3. Click on any probed component in the list, then check the signals you wish to monitor in the right panel.\n4. Close this dialog. Each selected signal will create a corresponding output terminal pin on the Probe block.");
+    });
+  }
+
+  (window as any).refreshProbeEditorModal = () => {
+    const freshComp = state.components.find((c: any) => c.id === comp.id);
+    if (freshComp) {
+      const currentTargets = (freshComp.parameters.target || "").split(",").filter(Boolean);
+      if (currentTargets.length > 0 && !currentTargets.includes(localSelectedTargetId)) {
+        localSelectedTargetId = currentTargets[currentTargets.length - 1];
+      }
+      render();
+    }
+  };
+
+  const initialTargets = (comp.parameters.target || "").split(",").filter(Boolean);
+  localSelectedTargetId = initialTargets[0] || "";
+
+  render();
+  modal.classList.add('show');
+}
+

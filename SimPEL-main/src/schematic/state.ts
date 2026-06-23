@@ -2,6 +2,8 @@
 export const state: any = {
   components: [],
   wires: [],
+  navigationStack: [],
+  currentSubsystemId: null,
   
   // Selection sets
   selectedComponentIds: [],

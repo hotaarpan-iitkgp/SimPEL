@@ -38,7 +38,31 @@ export function getTerminalDir(comp: any, terminalName: string) {
 }
 
 // Determine pin net domain ('control' or 'electrical')
-export function getPinDomain(compType: string, terminalName: string): string {
+export function getPinDomain(compType: string, terminalName: string, comp?: any): string {
+  // If it is a subsystem, resolve domain dynamically based on internal schematic ports
+  if (compType.includes('SUBSYSTEM')) {
+    if (comp && comp.sub_schematic && comp.sub_schematic.components) {
+      const internalComp = comp.sub_schematic.components.find((c: any) => c.id === terminalName);
+      if (internalComp) {
+        if (internalComp.type === 'INPORT' || internalComp.type === 'OUTPORT') {
+          return 'control';
+        }
+        if (internalComp.type === 'E_PORT') {
+          return 'electrical';
+        }
+      }
+    }
+    // Fallback based on port naming conventions
+    const lowerName = terminalName.toLowerCase();
+    if (lowerName.startsWith('in') || lowerName.startsWith('out')) {
+      return 'control';
+    }
+    if (lowerName.includes('eport') || lowerName.startsWith('e_')) {
+      return 'electrical';
+    }
+    return 'electrical';
+  }
+
   // Check if it's a basic control/general component
   if (['CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'SCOPE', 'CSCRIPT', 'PROBE'].includes(compType)) {
     return 'control';
@@ -97,7 +121,7 @@ export function getEndpointDomain(endpoint: any): string {
   if (endpoint.type === 'pin') {
     const comp = state.components.find((c: any) => c.id === endpoint.compId);
     if (!comp) return 'electrical';
-    return getPinDomain(comp.type, endpoint.terminal);
+    return getPinDomain(comp.type, endpoint.terminal, comp);
   } else if (endpoint.type === 'wire') {
     const wire = state.wires.find((w: any) => w.id === endpoint.wireId);
     if (!wire) return 'electrical';
@@ -110,14 +134,14 @@ export function getEndpointDomain(endpoint: any): string {
 export function getWireDomain(wire: any): string {
   if (wire.from.type === 'pin') {
     const comp = state.components.find((c: any) => c.id === wire.from.compId);
-    if (comp) return getPinDomain(comp.type, wire.from.terminal);
+    if (comp) return getPinDomain(comp.type, wire.from.terminal, comp);
   } else if (wire.from.type === 'wire') {
     const parentWire = state.wires.find((w: any) => w.id === wire.from.wireId);
     if (parentWire) return getWireDomain(parentWire);
   }
   if (wire.to && wire.to.type === 'pin') {
     const comp = state.components.find((c: any) => c.id === wire.to.compId);
-    if (comp) return getPinDomain(comp.type, wire.to.terminal);
+    if (comp) return getPinDomain(comp.type, wire.to.terminal, comp);
   } else if (wire.to && wire.to.type === 'wire') {
     const parentWire = state.wires.find((w: any) => w.id === wire.to.wireId);
     if (parentWire) return getWireDomain(parentWire);
@@ -242,6 +266,11 @@ export function getComponentBounds(comp: any): { xMin: number; xMax: number; yMi
     const halfHeight = Math.max(40, Math.round(Math.max(Ni, No) * spacing / 2) + 20);
     w = halfWidth * 2;
     h = halfHeight * 2;
+  } else if (comp.type === 'PROBE') {
+    const selected = (comp.parameters && comp.parameters.selected_signals || "").split(",").filter(Boolean);
+    const numPins = selected.length;
+    w = 60;
+    h = Math.max(40, numPins * 30);
   }
   const rot = (comp.rotation || 0) % 360;
   if (rot === 90 || rot === 270 || rot === -90 || rot === -270) {

@@ -20,7 +20,7 @@ import {
   clearWorkspace, 
   undo 
 } from './actions';
-import { updatePropertiesPanel } from './properties';
+import { updatePropertiesPanel, cleanDanglingWires } from './properties';
 import { openPlotConfig } from './plotConfig';
 import { openSimSettings } from './simSettings';
 
@@ -294,8 +294,90 @@ export function initInteractions(svg: SVGSVGElement): () => void {
         }
       });
       
+      // Detect if we dropped a component on a PROBE component or inside properties probe-drop-zone
+      const mousePos = screenToCanvas(e.clientX, e.clientY);
+      const draggedComp = state.draggingComponent;
+      
+      // 1. Check if dropped directly onto a PROBE block on canvas
+      const targetProbe = state.components.find((c: any) => {
+        if (c.type === 'PROBE' && c.id !== draggedComp.id) {
+          const b = getComponentBounds(c);
+          return mousePos.x >= b.xMin - 15 && mousePos.x <= b.xMax + 15 &&
+                 mousePos.y >= b.yMin - 15 && mousePos.y <= b.yMax + 15;
+        }
+        return false;
+      });
+      
+      // 2. Check if dropped inside the properties panel '#probe-drop-zone'
+      let droppedInZone = false;
+      const dropZone = document.getElementById('probe-drop-zone');
+      if (dropZone) {
+        const rect = dropZone.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right &&
+            e.clientY >= rect.top && e.clientY <= rect.bottom) {
+          droppedInZone = true;
+        }
+      }
+
+      // 3. Check if dropped inside the Probe Editor modal '#probe-editor-drop-zone'
+      let droppedInProbeEditor = false;
+      const probeEditorDropZone = document.getElementById('probe-editor-drop-zone');
+      if (probeEditorDropZone) {
+        const rect = probeEditorDropZone.getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right &&
+            e.clientY >= rect.top && e.clientY <= rect.bottom) {
+          droppedInProbeEditor = true;
+        }
+      }
+      
+      if (targetProbe) {
+        saveState();
+        let targets = (targetProbe.parameters.target || "").split(",").filter(Boolean);
+        if (!targets.includes(draggedComp.id)) {
+          targets.push(draggedComp.id);
+          targetProbe.parameters.target = targets.join(",");
+        }
+        cleanDanglingWires(targetProbe.id);
+        // Force select the probe block to show its properties panel immediately
+        state.selectedComponentIds = [targetProbe.id];
+        state.selectedWireIds = [];
+      } else if (droppedInZone) {
+        // Find the currently selected PROBE block
+        const selectedProbeId = state.selectedComponentIds.find((id: string) => {
+          const c = state.components.find((comp: any) => comp.id === id);
+          return c && c.type === 'PROBE';
+        });
+        if (selectedProbeId) {
+          const activeProbe = state.components.find((c: any) => c.id === selectedProbeId);
+          if (activeProbe && activeProbe.id !== draggedComp.id) {
+            saveState();
+            let targets = (activeProbe.parameters.target || "").split(",").filter(Boolean);
+            if (!targets.includes(draggedComp.id)) {
+              targets.push(draggedComp.id);
+              activeProbe.parameters.target = targets.join(",");
+            }
+            cleanDanglingWires(activeProbe.id);
+          }
+        }
+      } else if (droppedInProbeEditor && state.activeProbeId) {
+        const activeProbe = state.components.find((c: any) => c.id === state.activeProbeId);
+        if (activeProbe && activeProbe.id !== draggedComp.id) {
+          saveState();
+          let targets = (activeProbe.parameters.target || "").split(",").filter(Boolean);
+          if (!targets.includes(draggedComp.id)) {
+            targets.push(draggedComp.id);
+            activeProbe.parameters.target = targets.join(",");
+          }
+          cleanDanglingWires(activeProbe.id);
+          if (typeof (window as any).refreshProbeEditorModal === 'function') {
+            (window as any).refreshProbeEditorModal();
+          }
+        }
+      }
+      
       state.draggingComponent = null;
       draw();
+      updatePropertiesPanel();
       return;
     }
     

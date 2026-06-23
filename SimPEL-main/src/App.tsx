@@ -478,6 +478,10 @@ export default function App() {
           pinNames = ['A', 'B'];
         } else if (visualType === 'MOSFET') {
           pinNames = ['D', 'S'];
+        } else if (['E_PORT', 'E_LABEL'].includes(visualType)) {
+          pinNames = ['A'];
+        } else if (visualType === 'GND') {
+          pinNames = ['Gnd'];
         }
         
         if (comp.nodes && comp.nodes.length > 0) {

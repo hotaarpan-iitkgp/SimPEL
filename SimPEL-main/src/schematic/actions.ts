@@ -43,7 +43,7 @@ export function getControlOutputPins(comp: any): string[] {
 export function isControlOutputPin(compId: string, pinName: string): boolean {
   const comp = state.components.find((c: any) => c.id === compId);
   if (!comp) return false;
-  if (getPinDomain(comp.type, pinName) !== 'control') return false;
+  if (getPinDomain(comp.type, pinName, comp) !== 'control') return false;
   
   const outputs = getControlOutputPins(comp);
   return outputs.includes(pinName);
@@ -52,7 +52,7 @@ export function isControlOutputPin(compId: string, pinName: string): boolean {
 export function isControlInputPin(compId: string, pinName: string): boolean {
   const comp = state.components.find((c: any) => c.id === compId);
   if (!comp) return false;
-  if (getPinDomain(comp.type, pinName) !== 'control') return false;
+  if (getPinDomain(comp.type, pinName, comp) !== 'control') return false;
   
   const outputs = getControlOutputPins(comp);
   return !outputs.includes(pinName);
@@ -657,7 +657,23 @@ const insertTapPointsAndSplit = (path: { x: number; y: number }[], taps: { x: nu
 
 // CRITICAL EXPORTER: Converts the schematic spatial representation into structured Dual-Graph simulation Netlist
 export function exportDualGraphJSON(fastMode: boolean = false): any {
-  const uf = new UnionFind();
+  // Commit current sub-schematic edits to parent/root
+  commitCurrentSchematicState();
+
+  // Get root schematic
+  const root = getRootSchematic();
+
+  // Compile / flatten the hierarchical netlist
+  const flat = compileHierarchicalNetlist(root.components, root.wires);
+
+  // Swap state components/wires with flat ones temporarily
+  const originalComponents = state.components;
+  const originalWires = state.wires;
+  state.components = flat.components;
+  state.wires = flat.wires;
+
+  try {
+    const uf = new UnionFind();
   
   // 1. Map all physical power-stage component pins to unique strings
   const physicalComponents = state.components.filter((c: any) => {
@@ -670,7 +686,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
     const pinMap = getComponentPins(comp);
     Object.keys(pinMap).forEach(term => {
       // Check if this terminal is control-loop domain
-      if (getPinDomain(comp.type, term) === 'control') return;
+      if (getPinDomain(comp.type, term, comp) === 'control') return;
       
       const pinKey = `${comp.id}.${term}`;
       uf.find(pinKey); // Initializes node
@@ -702,12 +718,18 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
   });
   
   // Union terminal A and B for label/port feedthrough transparency
-  eLabels.forEach((comp: any) => {
-    uf.union(`${comp.id}.A`, `${comp.id}.B`);
-  });
+  // (no longer needed as labels have only one terminal A)
+  // eLabels.forEach((comp: any) => {
+  //   uf.union(`${comp.id}.A`, `${comp.id}.B`);
+  // });
   
   state.components.filter((c: any) => c.type === 'E_PORT').forEach((comp: any) => {
-    uf.union(`${comp.id}.A`, `${comp.id}.B`);
+    const parts = comp.id.split('.');
+    if (parts.length > 1) {
+      const portName = parts.pop()!;
+      const parentSubsysId = parts.join('.');
+      uf.union(`${parentSubsysId}.${portName}`, `${comp.id}.A`);
+    }
   });
 
   // Union LINE_3PH phases to simulate them as wire segments
@@ -925,7 +947,8 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
     custom_functions: [],
     custom_scripts: [],
     signals_routing: [],
-    plls: []
+    plls: [],
+    probes: []
   };
   
   // Parse parameters fields cleanly
@@ -1452,7 +1475,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       }
       default: {
         const isDetailedElect = DETAILED_COMPONENTS.some(dc => dc.type === comp.type && dc.category === 'electrical');
-        if (isDetailedElect) {
+        if (isDetailedElect && comp.type !== 'E_PORT' && comp.type !== 'E_LABEL') {
           physical_stage.resistors.push({
             id: comp.id,
             nodes: resolveNodes(comp.id, 2, ['A', 'B']),
@@ -1545,12 +1568,58 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'UNIT_DELAY':
       case 'DISCRETE_MEAN':
       case 'DISCRETE_PID':
+      case 'COMPARE_TO_CONSTANT':
+      case 'MONOFLOP':
+      case 'MONOSTABLE':
         control_loops.gains.push({
           ...p,
           id: comp.id,
           input: getIncomingControlTerminal(comp.id, 'In'),
           output: `${comp.id}.Out`,
-          K: p.K || 1.0,
+          K: p.gain || p.K || 1.0,
+          original_type: comp.type
+        });
+        break;
+      case 'PERIODIC_IMP_AVG':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          control_signal: getIncomingControlTerminal(comp.id, 'Trig'),
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
+      case 'FOURIER_TRANS':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          output_mag: `${comp.id}.Mag`,
+          output_phase: `${comp.id}.Phase`,
+          original_type: comp.type
+        });
+        break;
+      case 'D_FLIP_FLOP':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input_d: getIncomingControlTerminal(comp.id, 'D'),
+          control_signal: getIncomingControlTerminal(comp.id, 'Clk'),
+          output_q: `${comp.id}.Q`,
+          output_qbar: `${comp.id}.Q_bar`,
+          original_type: comp.type
+        });
+        break;
+      case 'JK_FLIP_FLOP':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input_j: getIncomingControlTerminal(comp.id, 'J'),
+          input_k: getIncomingControlTerminal(comp.id, 'K'),
+          control_signal: getIncomingControlTerminal(comp.id, 'Clk'),
+          output_q: `${comp.id}.Q`,
+          output_qbar: `${comp.id}.Q_bar`,
           original_type: comp.type
         });
         break;
@@ -1724,6 +1793,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'MIN_MAX':
       case 'LOGIC_OP':
       case 'LUT_2D':
+      case 'RELATIONAL_OPERATOR':
         control_loops.product_blocks.push({
           ...p,
           id: comp.id,
@@ -1817,6 +1887,13 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
         });
         break;
       }
+      case 'PROBE':
+        control_loops.probes.push({
+          id: comp.id,
+          target: comp.parameters?.target || "",
+          selected_signals: comp.parameters?.selected_signals || ""
+        });
+        break;
       default:
         // Untouched control blocks are explicitly identified but kept untouched / ignored by the transient solver
         break;
@@ -1889,13 +1966,16 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       });
     }
   });
-  
-  return {
-    physical_stage,
-    control_loops,
-    simulation_parameters,
-    probes
-  };
+    return {
+      physical_stage,
+      control_loops,
+      simulation_parameters,
+      probes
+    };
+  } finally {
+    state.components = originalComponents;
+    state.wires = originalWires;
+  }
 }
 
 // Find source control endpoint mapping for wire routing connection using bidirectional net tracing
@@ -1912,6 +1992,47 @@ function getIncomingControlTerminal(compId: string, destTerminalName: string): s
       const pinKey = `${curr.compId}.${curr.terminal}`;
       if (visitedPins.has(pinKey)) continue;
       visitedPins.add(pinKey);
+      
+      // Port boundary bypass: if we hit an INPORT, jump to the external subsystem boundary pin
+      const comp = state.components.find((c: any) => c.id === curr.compId);
+      
+      // Wireless signal routing: if we hit a FROM_SIG, jump to the matching GOTO_SIG's input terminal
+      if (comp && comp.type === 'FROM_SIG') {
+        const fromTag = (comp.parameters?.tag || 'A').trim();
+        const matchingGoto = state.components.find((c: any) => 
+          c.type === 'GOTO_SIG' && (c.parameters?.tag || 'A').trim() === fromTag
+        );
+        if (matchingGoto) {
+          queue.push({ type: 'pin', compId: matchingGoto.id, terminal: 'In' });
+          continue;
+        }
+      }
+      
+      if (comp && comp.type === 'INPORT') {
+        const parts = curr.compId.split('.');
+        if (parts.length > 1) {
+          const portName = parts.pop()!;
+          const parentSubsysId = parts.join('.');
+          queue.push({ type: 'pin', compId: parentSubsysId, terminal: portName });
+          continue;
+        }
+      }
+      
+      // Port boundary bypass: if we hit a SUBSYSTEM boundary pin that corresponds
+      // to an OUTPORT inside it, jump to the internal OUTPORT block's In terminal.
+      // For INPORT-mapped boundary pins, skip this bypass and let wire scanning
+      // find the incoming root-level wires instead.
+      if (comp && comp.type === 'SUBSYSTEM') {
+        const subComps = (comp.sub_schematic?.components || []) as any[];
+        const internalComp = subComps.find((c: any) => c.id === curr.terminal);
+        if (internalComp && internalComp.type === 'OUTPORT') {
+          // Jump to the internal OUTPORT's input terminal (inside the subsystem)
+          queue.push({ type: 'pin', compId: `${curr.compId}.${curr.terminal}`, terminal: 'In' });
+          continue;
+        }
+        // For INPORT-mapped terminals: fall through to wire scanning to find
+        // the root-level wire that feeds signal into this subsystem boundary pin.
+      }
       
       // Check if this pin is a control source (output)
       if (isControlOutputPin(curr.compId, curr.terminal)) {
@@ -1969,3 +2090,205 @@ function getIncomingControlTerminal(compId: string, destTerminalName: string): s
   
   return "0.0"; // default zero constant fallback
 }
+
+// Subsystem navigation and hierarchy management
+export function commitCurrentSchematicState() {
+  let currentComps = [...state.components];
+  let currentWires = [...state.wires];
+  let currentId = state.currentSubsystemId;
+
+  for (let i = state.navigationStack.length - 1; i >= 0; i--) {
+    const layer = state.navigationStack[i];
+    const subsys = layer.components.find((c: any) => c.id === currentId);
+    if (subsys && subsys.type === 'SUBSYSTEM') {
+      subsys.sub_schematic = {
+        components: currentComps,
+        wires: currentWires
+      };
+    }
+    currentComps = layer.components;
+    currentWires = layer.wires;
+    currentId = layer.subsystemId;
+  }
+}
+
+export function getRootSchematic(): { components: any[]; wires: any[] } {
+  commitCurrentSchematicState();
+  if (state.navigationStack && state.navigationStack.length > 0) {
+    return {
+      components: state.navigationStack[0].components,
+      wires: state.navigationStack[0].wires
+    };
+  }
+  return {
+    components: state.components,
+    wires: state.wires
+  };
+}
+
+export function enterSubsystem(subsystemId: string) {
+  const comp = state.components.find((c: any) => c.id === subsystemId);
+  if (!comp || comp.type !== 'SUBSYSTEM') return;
+
+  // Save current layer state to navigation stack
+  state.navigationStack.push({
+    subsystemId: state.currentSubsystemId,
+    subsystemName: state.currentSubsystemId || 'Main',
+    components: [...state.components],
+    wires: [...state.wires]
+  });
+
+  // Switch canvas workspace to the subsystem's sub-schematic
+  state.currentSubsystemId = comp.id;
+  if (!comp.sub_schematic) {
+    comp.sub_schematic = { components: [], wires: [] };
+  }
+  state.components = comp.sub_schematic.components || [];
+  state.wires = comp.sub_schematic.wires || [];
+
+  // Clear selections
+  state.selectedComponentIds = [];
+  state.selectedWireIds = [];
+
+  draw();
+  updatePropertiesPanel();
+  window.dispatchEvent(new CustomEvent('schematicNavigationChanged'));
+}
+
+export function exitSubsystem() {
+  if (state.navigationStack.length === 0) return;
+
+  // Commit current sub-schematic edits to the hierarchy first
+  commitCurrentSchematicState();
+
+  const parentLayer = state.navigationStack.pop()!;
+
+  // Restore parent layer canvas state
+  state.currentSubsystemId = parentLayer.subsystemId;
+  state.components = parentLayer.components;
+  state.wires = parentLayer.wires;
+
+  // Clear selections
+  state.selectedComponentIds = [];
+  state.selectedWireIds = [];
+
+  draw();
+  updatePropertiesPanel();
+  window.dispatchEvent(new CustomEvent('schematicNavigationChanged'));
+}
+
+export function navigateToLevel(levelIndex: number) {
+  if (levelIndex === state.navigationStack.length - 1) return;
+  while (state.navigationStack.length > levelIndex + 1) {
+    exitSubsystem();
+  }
+}
+
+export function compileHierarchicalNetlist(
+  rootComponents: any[],
+  rootWires: any[]
+): { components: any[]; wires: any[] } {
+  const flatComponents: any[] = [];
+  const flatWires: any[] = [];
+
+  function evaluateExpression(expr: any, scope: Record<string, number>): number {
+    if (typeof expr !== 'string') return Number(expr) || 0;
+    const trimmed = expr.trim();
+    if (trimmed === '') return 0;
+    if (!isNaN(Number(trimmed))) return Number(trimmed);
+    
+    let evalStr = trimmed;
+    const varNames = Object.keys(scope).sort((a, b) => b.length - a.length);
+    varNames.forEach(varName => {
+      const escapedVar = varName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const regex = new RegExp(`\\b${escapedVar}\\b`, 'g');
+      evalStr = evalStr.replace(regex, String(scope[varName]));
+    });
+
+    try {
+      return Function(`"use strict"; return (${evalStr})`)();
+    } catch {
+      return 0.0;
+    }
+  }
+
+  function processLayer(
+    comps: any[],
+    wires: any[],
+    parentScope: Record<string, number>,
+    prefix: string
+  ) {
+    comps.forEach(comp => {
+      const prefixedId = prefix ? `${prefix}.${comp.id}` : comp.id;
+
+      if (comp.type === 'SUBSYSTEM') {
+        const localScope: Record<string, number> = { ...parentScope };
+        if (comp.parameters) {
+          Object.keys(comp.parameters).forEach(k => {
+            const rawVal = comp.parameters[k];
+            const resolvedVal = evaluateExpression(rawVal, parentScope);
+            localScope[k] = resolvedVal;
+          });
+        }
+
+        const subSchematic = comp.sub_schematic || { components: [], wires: [] };
+        processLayer(
+          subSchematic.components || [],
+          subSchematic.wires || [],
+          localScope,
+          prefixedId
+        );
+        // Add a ghost SUBSYSTEM entry so that control signal tracers
+        // (getIncomingControlTerminal) can find this subsystem boundary
+        // and correctly jump through INPORT/OUTPORT port bypasses.
+        flatComponents.push({
+          id: prefixedId,
+          type: 'SUBSYSTEM',
+          x: comp.x,
+          y: comp.y,
+          parameters: {},
+          sub_schematic: subSchematic
+        });
+      } else {
+        const resolvedParameters: Record<string, any> = {};
+        if (comp.parameters) {
+          Object.keys(comp.parameters).forEach(k => {
+            const val = comp.parameters[k];
+            if (typeof val === 'string' && val.trim() !== '' && k !== 'code') {
+              const resolved = evaluateExpression(val, parentScope);
+              resolvedParameters[k] = String(resolved);
+            } else {
+              resolvedParameters[k] = val;
+            }
+          });
+        }
+
+        flatComponents.push({
+          ...comp,
+          id: prefixedId,
+          parameters: resolvedParameters
+        });
+      }
+    });
+
+    wires.forEach(w => {
+      const newWire = {
+        ...w,
+        id: prefix ? `${prefix}.${w.id}` : w.id,
+        from: {
+          ...w.from,
+          compId: prefix ? `${prefix}.${w.from.compId}` : w.from.compId
+        },
+        to: w.to ? {
+          ...w.to,
+          compId: prefix ? `${prefix}.${w.to.compId}` : w.to.compId
+        } : undefined
+      };
+      flatWires.push(newWire);
+    });
+  }
+
+  processLayer(rootComponents, rootWires, {}, "");
+  return { components: flatComponents, wires: flatWires };
+}
+

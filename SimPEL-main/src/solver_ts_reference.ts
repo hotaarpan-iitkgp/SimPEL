@@ -449,8 +449,11 @@ export class CircuitSimulator {
 
                         if (cat.type === "Constant" && item.output) {
                             comp.channels = { Out: item.output };
-                                                } else if (cat.type === "Gain" && item.output) {
-                            const chs: Record<string, string> = { Out: item.output };
+                                                } else if (cat.type === "Gain" && (item.output || item.output_mag)) {
+                            const chs: Record<string, string> = {};
+                            if (item.output) chs.Out = item.output;
+                            if (item.output_mag) chs.Mag = item.output_mag;
+                            if (item.output_phase) chs.Phase = item.output_phase;
                             if (item.input) chs.In = item.input;
                             if (item.input1) chs.In1 = item.input1;
                             if (item.input2) chs.In2 = item.input2;
@@ -762,8 +765,10 @@ export class CircuitSimulator {
                 }
             }
             for (const b of this.control_loops) {
-                const out = b.channels.Out; if (!out) continue;
-                if (b.type === "Gain") {
+                const out = b.channels.Out;
+                // Allow FOURIER_TRANS through even without Out channel (it uses Mag/Phase channels)
+                if (!out && !(b.type === "Gain" && b.parameters.original_type === "FOURIER_TRANS")) continue;
+                if (b.type === "Gain" && out) {
                     const orig = b.parameters.original_type;
                     if (orig === "OFFSET") {
                         signals[out] = (signals[b.channels.In] ?? 0) + parseScientific(b.parameters.offset ?? "0.0");
@@ -968,9 +973,82 @@ export class CircuitSimulator {
                             }
                         }
                         signals[out] = y_temp;
+                    } else if (orig === "PERIODIC_IMP_AVG") {
+                        const val = signals[b.channels.In] ?? 0.0;
+                        const trig = signals[b.channels.Ctrl] ?? 0.0;
+                        const initialVal = parseScientific(b.parameters.initial_value ?? "0.0");
+                        if (!cs[b.id]) {
+                            (cs as any)[b.id] = { prev_trig: 0.0, integral: 0.0, period_time: 0.0, held_out: initialVal, prev_u: val, last_t: time };
+                        }
+                        const st = cs[b.id];
+                        const is_rising = (st.prev_trig < 0.5 && trig >= 0.5);
+                        let y_temp = st.held_out;
+                        if (is_rising && st.period_time > 0.0) {
+                            y_temp = st.integral / st.period_time;
+                        }
+                        if (dt > 0.0 && !first) {
+                            const dt_step = dt;
+                            if (is_rising && st.period_time > 0.0) {
+                                st.integral = 0.0;
+                                st.period_time = 0.0;
+                                st.held_out = y_temp;
+                            } else {
+                                st.integral += 0.5 * (val + st.prev_u) * dt_step;
+                                st.period_time += dt_step;
+                            }
+                            st.prev_trig = trig;
+                            st.prev_u = val;
+                            st.last_t = time;
+                        }
+                        signals[out] = y_temp;
                     } else {
                         signals[out] = parseScientific(b.parameters.K ?? "1") * (signals[b.channels.In] ?? 0);
                     }
+                } else if (b.type === "Gain" && !out && b.parameters.original_type === "FOURIER_TRANS") {
+                    // FOURIER_TRANS: multi-output Gain with Mag and Phase channels
+                    const outMag = b.channels.Mag;
+                    const outPhase = b.channels.Phase;
+                    const uVal = signals[b.channels.In] ?? 0.0;
+                    const f = parseScientific(b.parameters.f ?? "50.0");
+                    const harmonic = parseInt(b.parameters.harmonic ?? "1") || 1;
+                    const ts = parseScientific(b.parameters.ts ?? "100u");
+                    const k = Math.floor((time + 1e-11) / ts);
+                    let N = Math.round(1.0 / (f * ts));
+                    if (N < 2) N = 2;
+                    if (!cs[b.id]) {
+                        (cs as any)[b.id] = {
+                            history: new Array(N).fill(0.0),
+                            idx: 0,
+                            last_sample_k: k,
+                            held_mag: 0.0,
+                            held_phase: 0.0
+                        };
+                    }
+                    const st = cs[b.id];
+                    let mag_temp = st.held_mag;
+                    let phase_temp = st.held_phase;
+                    if (k > st.last_sample_k) {
+                        st.history[st.idx] = uVal;
+                        st.idx = (st.idx + 1) % N;
+                        const omega = 2.0 * Math.PI * harmonic / N;
+                        let Re = 0.0, Im = 0.0;
+                        for (let i = 0; i < N; i++) {
+                            const sample = st.history[i];
+                            Re += sample * Math.cos(omega * i);
+                            Im += sample * Math.sin(omega * i);
+                        }
+                        Re = (2.0 / N) * Re;
+                        Im = (2.0 / N) * Im;
+                        mag_temp = Math.sqrt(Re * Re + Im * Im);
+                        phase_temp = Math.atan2(-Im, Re) * (180.0 / Math.PI);
+                        if (dt > 0.0 && !first) {
+                            st.held_mag = mag_temp;
+                            st.held_phase = phase_temp;
+                            st.last_sample_k = k;
+                        }
+                    }
+                    if (outMag) signals[outMag] = mag_temp;
+                    if (outPhase) signals[outPhase] = phase_temp;
                 } else if (b.type === "SummingJunction") {
                     const ctrlSig = b.channels.Ctrl;
                     if (ctrlSig && (signals[ctrlSig] ?? 0.0) <= 0.5) {

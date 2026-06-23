@@ -14,8 +14,8 @@ import {
 } from './routing';
 import { getComponentSVG, createTerminalOverlay } from './components';
 import { pathToString, screenToCanvas, showToast, generateNextId } from './utils';
-import { updatePropertiesPanel, openCodeEditorModal } from './properties';
-import { completeWire, isControlInputPin, normalizeControlWires, getControlOutputPins } from './actions';
+import { updatePropertiesPanel, openCodeEditorModal, openMaskValuesModal, openProbeEditorModal } from './properties';
+import { completeWire, isControlInputPin, normalizeControlWires, getControlOutputPins, enterSubsystem } from './actions';
 import { getComponentPins } from './config';
 
 // Keep manual paths connected to moved elements and preserve orthogonality
@@ -350,6 +350,22 @@ export function draw(): void {
       g.appendChild(termOverlay);
     });
     
+    // Double click to look inside subsystem, or open mask parameters values modal if masked
+    g.addEventListener('dblclick', (e: any) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (comp.type === 'SUBSYSTEM') {
+        const hasMask = comp.mask && comp.mask.parameters && comp.mask.parameters.length > 0;
+        if (hasMask) {
+          openMaskValuesModal(comp);
+        } else {
+          enterSubsystem(comp.id);
+        }
+      } else if (comp.type === 'PROBE') {
+        openProbeEditorModal(comp);
+      }
+    });
+    
     // Dragging & Selecting component handler
     g.addEventListener('pointerdown', (e: any) => {
       if (e.button !== 0) return; // Ignore right/middle click so it bubbles up to SVG for panning
@@ -388,14 +404,14 @@ export function draw(): void {
         // Target control inputs
         const targetControlInputs = targetAllPins.filter(pinName => isControlInputPin(comp.id, pinName));
         // Target electrical pins
-        const targetElectricalPins = targetAllPins.filter(pinName => getPinDomain(comp.type, pinName) === 'electrical');
+        const targetElectricalPins = targetAllPins.filter(pinName => getPinDomain(comp.type, pinName, comp) === 'electrical');
 
         const locallyConnectedPins = new Set<string>();
 
         selectedComps.forEach((c: any) => {
           const cPinsMap = getComponentPins(c);
           const cAllPins = Object.keys(cPinsMap);
-          const cElectricalPins = cAllPins.filter(pinName => getPinDomain(c.type, pinName) === 'electrical');
+          const cElectricalPins = cAllPins.filter(pinName => getPinDomain(c.type, pinName, c) === 'electrical');
 
           // Decide domain: if both c and target have electrical pins, route electrical wire
           if (cElectricalPins.length > 0 && targetElectricalPins.length > 0) {

@@ -13,7 +13,7 @@ import { generateNextId, showToast } from '../schematic/utils';
 import { DEFAULT_PARAMETERS, getComponentPins } from '../schematic/config';
 import { openSimSettings, saveSimSettings, closeSimSettings } from '../schematic/simSettings';
 import { openPlotConfig, savePlotConfig, closePlotConfig, setAvailableVariables } from '../schematic/plotConfig';
-import { exportDualGraphJSON, triggerImport, exportJSON, clearWorkspace, undo } from '../schematic/actions';
+import { exportDualGraphJSON, triggerImport, exportJSON, clearWorkspace, undo, navigateToLevel } from '../schematic/actions';
 import { DETAILED_COMPONENTS } from '../schematic/detailedLibrary';
 
 interface SchematicEditorProps {
@@ -125,6 +125,23 @@ export default function SchematicEditor({
   useEffect(() => {
     setAvailableVariables(availableTraces);
   }, [availableTraces]);
+
+  const [navigationPath, setNavigationPath] = useState<string[]>([]);
+
+  useEffect(() => {
+    const handleNavChange = () => {
+      const path = state.navigationStack.map((layer: any) => layer.subsystemId || 'Main');
+      if (state.currentSubsystemId) {
+        path.push(state.currentSubsystemId);
+      }
+      setNavigationPath(path);
+    };
+
+    window.addEventListener('schematicNavigationChanged', handleNavChange);
+    return () => {
+      window.removeEventListener('schematicNavigationChanged', handleNavChange);
+    };
+  }, []);
 
   // Mount Interactions
   useEffect(() => {
@@ -725,7 +742,7 @@ export default function SchematicEditor({
 
         {/* Center workbench - canvas viewer */}
         <div className="flex-1 min-h-[300px] md:min-h-none flex flex-col relative bg-slate-950/10">
-          <div className="absolute top-2 left-2 z-10 flex flex-col gap-1 pointer-events-none select-none">
+          <div className="absolute bottom-3 left-3 z-10 flex flex-col gap-1 pointer-events-none select-none">
             <div id="zoom-display" className="px-2 py-1 border border-slate-800 bg-slate-950/80 backdrop-blur text-[9.5px] font-mono rounded text-slate-400 font-bold">
               Zoom: 100%
             </div>
@@ -733,6 +750,35 @@ export default function SchematicEditor({
               Use scroll-wheel to zoom. Drag background to pan.
             </div>
           </div>
+
+          {/* Breadcrumbs navigation bar */}
+          {navigationPath.length > 0 && (
+            <div className="flex items-center gap-1.5 px-4 py-2 border-b bg-slate-950/40 text-[11px] font-mono select-none" style={{ borderColor: 'var(--color-border)' }}>
+              <button 
+                onClick={() => navigateToLevel(-1)} 
+                className="text-sky-400 hover:text-sky-300 font-bold cursor-pointer transition-colors"
+              >
+                Main
+              </button>
+              {navigationPath.map((name, index) => (
+                <React.Fragment key={index}>
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                  <button
+                    onClick={() => navigateToLevel(index)}
+                    disabled={index === navigationPath.length - 1}
+                    className={`transition-colors truncate max-w-[100px] ${
+                      index === navigationPath.length - 1 
+                        ? 'text-slate-300 font-bold pointer-events-none' 
+                        : 'text-sky-400 hover:text-sky-300 cursor-pointer'
+                    }`}
+                    title={name}
+                  >
+                    {name.split('.').pop()}
+                  </button>
+                </React.Fragment>
+              ))}
+            </div>
+          )}
 
           {/* Canvas SVG */}
           <div className="w-full h-full min-h-[640px] flex-1 overflow-hidden">
@@ -934,6 +980,97 @@ export default function SchematicEditor({
               <button id="code-editor-cancel" className="px-4 py-2 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer">Discard</button>
               <button id="code-editor-save" className="px-4 py-2 bg-emerald-500 hover:bg-emerald-650 font-bold rounded text-xs cursor-pointer text-white">Save Code Block</button>
             </div>
+          </div>
+        </div>
+      </div>
+      {/* Modal 4: Subsystem Mask Structure Editor */}
+      <div id="mask-editor-modal" className="modal-overlay animate-fade-in">
+        <div className="modal-content text-slate-200 text-sm max-w-[600px] w-11/12 overflow-hidden flex flex-col transition-all duration-200" style={{ maxHeight: "85vh" }}>
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+            <h3 className="font-bold flex items-center gap-2">
+              <Sliders className="h-4 w-4 text-sky-400" />
+              <span>Edit Subsystem Mask</span>
+            </h3>
+            <button onClick={() => document.getElementById('mask-editor-modal')?.classList.remove('show')} className="text-slate-550 hover:text-slate-350 cursor-pointer text-xl font-bold">×</button>
+          </div>
+          <div className="p-4 flex flex-col gap-4 overflow-y-auto" style={{ flex: 1 }}>
+            <div className="text-xs text-slate-400 leading-relaxed">
+              Define the parameters that this subsystem exposes. Child blocks inside the subsystem can reference these parameters by variable name.
+            </div>
+            <div id="mask-params-container" className="flex flex-col gap-2">
+              {/* Parameter rows generated dynamically */}
+            </div>
+            <button id="btn-add-mask-param" className="mt-2 px-3 py-2 border border-dashed border-slate-800 hover:border-sky-500 hover:text-sky-450 rounded-lg text-xs font-bold cursor-pointer text-slate-400 transition-colors flex items-center justify-center gap-1">
+              <PlusCircle className="h-4 w-4" />
+              <span>Add Parameter</span>
+            </button>
+          </div>
+          <div className="p-4 border-t border-slate-800 flex justify-end gap-2 bg-slate-900/10">
+            <button id="mask-editor-cancel" className="px-4 py-2 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer">Discard</button>
+            <button id="mask-editor-save" className="px-4 py-2 bg-sky-500 hover:bg-sky-650 font-bold rounded text-xs cursor-pointer text-white">Save Mask</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal 5: Subsystem Mask Values Parameters Dialog */}
+      <div id="mask-values-modal" className="modal-overlay animate-fade-in">
+        <div className="modal-content text-slate-200 text-sm max-w-[450px] w-11/12 overflow-hidden flex flex-col transition-all duration-200" style={{ maxHeight: "80vh" }}>
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+            <h3 id="mask-values-title" className="font-bold flex items-center gap-2">Subsystem Parameters</h3>
+            <button onClick={() => document.getElementById('mask-values-modal')?.classList.remove('show')} className="text-slate-550 hover:text-slate-350 cursor-pointer text-xl font-bold">×</button>
+          </div>
+          <div id="mask-values-container" className="p-4 flex flex-col gap-3 overflow-y-auto" style={{ flex: 1 }}>
+            {/* Value inputs generated dynamically */}
+          </div>
+          <div className="p-4 border-t border-slate-800 flex justify-end gap-2 bg-slate-900/10">
+            <button id="mask-values-cancel" className="px-4 py-2 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer">Cancel</button>
+            <button id="mask-values-save" className="px-4 py-2 bg-sky-500 hover:bg-sky-650 font-bold rounded text-xs cursor-pointer text-white">OK</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal 6: PLECS Probe Editor Dialog */}
+      <div id="probe-editor-modal" className="modal-overlay animate-fade-in">
+        <div id="probe-editor-drop-zone" className="modal-content text-slate-200 text-sm max-w-[650px] w-11/12 overflow-hidden flex flex-col transition-all duration-200" style={{ maxHeight: "80vh" }}>
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+            <h3 id="probe-editor-title" className="font-bold flex items-center gap-2">Probe Editor</h3>
+            <button id="probe-editor-close-btn" className="text-slate-400 hover:text-slate-200 cursor-pointer text-xl font-bold">×</button>
+          </div>
+          
+          <div className="p-4 flex gap-4 overflow-hidden" style={{ flex: 1, minHeight: "350px" }}>
+            {/* Left Column: Probed Components */}
+            <div className="w-1/2 flex flex-col border border-slate-800 rounded bg-slate-950/40 overflow-hidden">
+              <div className="p-2 border-b border-slate-800 bg-slate-900/30 flex justify-between items-center">
+                <span className="font-bold text-xs text-slate-400">Probed components</span>
+                <div className="flex gap-1">
+                  <button id="probe-comp-remove" title="Remove selected component" className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs cursor-pointer text-slate-200">-</button>
+                  <button id="probe-comp-up" title="Move Up" className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs cursor-pointer text-slate-200">▲</button>
+                  <button id="probe-comp-down" title="Move Down" className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs cursor-pointer text-slate-200">▼</button>
+                  <button id="probe-comp-locate" title="Highlight in schematic" className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs cursor-pointer text-slate-200">👁</button>
+                </div>
+              </div>
+              <div id="probe-components-list" className="p-2 flex-1 overflow-y-auto flex flex-col gap-1 select-none">
+                {/* List items will be rendered here dynamically */}
+              </div>
+              <div className="p-2 text-[10px] text-slate-500 border-t border-slate-800 bg-slate-900/10 text-center">
+                Drag & drop components from canvas here to add
+              </div>
+            </div>
+            
+            {/* Right Column: Component Signals */}
+            <div className="w-1/2 flex flex-col border border-slate-800 rounded bg-slate-950/40 overflow-hidden">
+              <div className="p-2 border-b border-slate-800 bg-slate-900/30">
+                <span className="font-bold text-xs text-slate-400">Component signals</span>
+              </div>
+              <div id="probe-signals-list" className="p-3 flex-1 overflow-y-auto flex flex-col gap-2">
+                {/* Checkboxes will be rendered here dynamically */}
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 border-t border-slate-800 flex justify-between bg-slate-900/10">
+            <button id="probe-editor-help" className="px-3 py-1.5 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer text-slate-400">Help</button>
+            <button id="probe-editor-close" className="px-4 py-2 bg-sky-500 hover:bg-sky-600 font-bold rounded text-xs cursor-pointer text-white">Close</button>
           </div>
         </div>
       </div>

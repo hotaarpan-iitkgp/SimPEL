@@ -233,15 +233,40 @@ export function getComponentSVG(comp: any): string {
         <text x="-1.5" y="4" font-family="Inter, sans-serif" font-size="14" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">×</text>
       `;
       break;
-    case 'PROBE': // Unified Probe
-      shape = `
-        <circle cx="0" cy="0" r="6" class="comp-path" fill="none" stroke="currentColor" stroke-width="2" />
-        <path class="comp-path" d="M -6,0 L -16,0 M 6,0 L 20,0 M 0,-6 L 0,-12 M 0,6 L 0,12" fill="none" stroke="currentColor" stroke-width="2" />
-        <polygon points="20,0 15,-3 15,3" fill="currentColor" />
-        <path class="comp-path" d="M 0,-15 L 20,-15 M 17,-18 L 20,-15 L 17,-12 M 0,15 L 20,15 M 17,12 L 20,15 L 17,18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-        <text x="-1" y="-9" font-family="Inter, sans-serif" font-size="8" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">P</text>
-      `;
+    case 'PROBE': { // Unified Probe
+      const target = comp.parameters && comp.parameters.target || "";
+      const selected = (comp.parameters && comp.parameters.selected_signals || "").split(",").filter(Boolean);
+      const numPins = selected.length;
+      if (numPins === 0) {
+        shape = `
+          <rect class="comp-path" x="-20" y="-15" width="40" height="30" rx="4" fill="none" stroke="currentColor" stroke-width="2" />
+          <text x="0" y="3" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">PROBE</text>
+          <path class="comp-path" d="M 20,0 L 25,0" fill="none" stroke="currentColor" stroke-width="2" />
+        `;
+      } else {
+        const height = Math.max(40, numPins * 30);
+        const halfH = height / 2;
+        const width = 60;
+        const halfW = width / 2;
+        let pinsSVG = '';
+        for (let i = 0; i < numPins; i++) {
+          let yOffset = 0;
+          if (numPins > 1) {
+            yOffset = -15 * (numPins - 1) + 30 * i;
+          }
+          pinsSVG += `
+            <path class="comp-path" d="M ${halfW - 5},${yOffset} L ${halfW + 10},${yOffset}" fill="none" stroke="currentColor" stroke-width="2" />
+            <text x="${halfW - 8}" y="${yOffset + 3}" font-family="Inter, sans-serif" font-size="8" fill="currentColor" text-anchor="end" stroke="none">${selected[i]}</text>
+          `;
+        }
+        shape = `
+          <rect class="comp-path" x="-${halfW}" y="-${halfH}" width="${width}" height="${height}" rx="4" fill="none" stroke="currentColor" stroke-width="2" />
+          <text x="0" y="4" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">${target || 'PROBE'}</text>
+          ${pinsSVG}
+        `;
+      }
       break;
+    }
     case 'SCOPE': { // Oscilloscope display screen
       const numChannels = parseInt(comp.parameters && comp.parameters.channels) || 2;
       let scopeLines = '';
