@@ -624,6 +624,50 @@ std::map<std::string, double> CircuitSimulator::evaluateControls(
     return signals_local;
 }
 
+Vector CircuitSimulator::buildRHS(double t_stage, const std::map<std::string, std::string>& ss) {
+    Vector b(dim, 0.0);
+    for (const auto& src : voltage_sources) {
+        int idx_V = V_to_idx.at(src.id);
+        if (src.type == "VoltageSource") {
+            b[idx_V] = src.getParam("value", 24.0);
+        } else if (src.type == "ACVoltageSource") {
+            double amp = src.getParam("amplitude", 12.0);
+            double freq = src.getParam("frequency", 50.0);
+            b[idx_V] = amp * std::sin(2.0 * M_PI * freq * t_stage);
+        } else if (src.type == "Ammeter") {
+            b[idx_V] = 0.0;
+        }
+    }
+    for (const auto& comp : physical_stage) {
+        if (comp.type == "CurrentSource") {
+            std::string n1, n2;
+            split_into_nodes(comp.nodes, n1, n2);
+            int idx1 = (n1 != "node_0" && node_to_idx.count(n1)) ? node_to_idx[n1] : -1;
+            int idx2 = (n2 != "node_0" && node_to_idx.count(n2)) ? node_to_idx[n2] : -1;
+            double i_val = comp.getParam("value", 1.0);
+            if (idx1 >= 0) b[idx1] -= i_val;
+            if (idx2 >= 0) b[idx2] += i_val;
+        }
+    }
+    for (const auto& sw : switches) {
+        if (sw.type == "Diode") {
+            std::string state = ss.count(sw.id) ? ss.at(sw.id) : "OFF";
+            if (state == "ON") {
+                double ron = sw.getParam("Ron", 1e-3);
+                double vd_drop = sw.getParam("Vd", 0.7);
+                double Ieq = vd_drop / ron;
+                std::string n1, n2;
+                split_into_nodes(sw.nodes, n1, n2);
+                int idx1 = (n1 != "node_0" && node_to_idx.count(n1)) ? node_to_idx[n1] : -1;
+                int idx2 = (n2 != "node_0" && node_to_idx.count(n2)) ? node_to_idx[n2] : -1;
+                if (idx1 >= 0) b[idx1] += Ieq;
+                if (idx2 >= 0) b[idx2] -= Ieq;
+            }
+        }
+    }
+    return b;
+}
+
 Vector CircuitSimulator::compute_k(
     double t_stage, const Vector& w_stage,
     std::map<std::string, std::map<std::string, double>>& ctrl_states,
@@ -638,33 +682,7 @@ Vector CircuitSimulator::compute_k(
         stampSwitch(K, sw, sw_st);
     }
 
-    Vector b(dim, 0.0);
-    // Source values
-    for (const auto& src : voltage_sources) {
-        int idx_V = V_to_idx[src.id];
-        if (src.type == "VoltageSource") {
-            b[idx_V] = src.getParam("value", 24.0);
-        } else if (src.type == "ACVoltageSource") {
-            double amp = src.getParam("amplitude", 12.0);
-            double freq = src.getParam("frequency", 50.0);
-            b[idx_V] = amp * std::sin(2.0 * M_PI * freq * t_stage);
-        } else if (src.type == "Ammeter") {
-            b[idx_V] = 0.0;
-        }
-    }
-
-    // Current sources stamps in b vector
-    for (const auto& comp : physical_stage) {
-        if (comp.type == "CurrentSource") {
-            std::string n1, n2;
-            split_into_nodes(comp.nodes, n1, n2);
-            int idx1 = (n1 != "node_0" && node_to_idx.count(n1)) ? node_to_idx[n1] : -1;
-            int idx2 = (n2 != "node_0" && node_to_idx.count(n2)) ? node_to_idx[n2] : -1;
-            double i_val = comp.getParam("value", 1.0);
-            if (idx1 >= 0) b[idx1] -= i_val;
-            if (idx2 >= 0) b[idx2] += i_val;
-        }
-    }
+    Vector b = buildRHS(t_stage, sw_states_curr);
 
     // Solve for algebraic constraint variables
     if (!alg_idx.empty() && !diff_idx.empty()) {
@@ -725,9 +743,13 @@ Vector CircuitSimulator::compute_k(
 
             if (sw_type == "MOSFET") {
                 double gate_val = signals_local[sw.getChannelRef("G")];
-                new_state = (gate_val > 0.5) ? "ON" : "OFF";
+                bool gate_on = gate_val > 0.5;
+                double vd_drop = sw.getParam("Vd", 0.7);
+                bool diode_on = -vd > ((old_state == "ON") ? vd_drop - 0.1 : vd_drop);
+                new_state = (gate_on || diode_on) ? "ON" : "OFF";
             } else if (sw_type == "Diode") {
-                double threshold = (old_state == "ON") ? 0.0 : 0.7;
+                double vd_drop = sw.getParam("Vd", 0.7);
+                double threshold = (old_state == "ON") ? vd_drop - 0.1 : vd_drop;
                 new_state = (vd > threshold) ? "ON" : "OFF";
             } else if (sw_type == "Switch") {
                 double sw_val = sw.getParam("state", 0.0);
@@ -747,6 +769,7 @@ Vector CircuitSimulator::compute_k(
                 std::string sw_st = sw_stage_states[sw.id];
                 stampSwitch(K, sw, sw_st);
             }
+            b = buildRHS(t_stage, sw_stage_states);
             if (!alg_idx.empty() && !diff_idx.empty()) {
                 Matrix K_aa = K.submatrix(alg_idx, alg_idx);
                 Matrix K_ad = K.submatrix(alg_idx, diff_idx);
@@ -815,31 +838,7 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
                 stampSwitch(K, sw, sw_st);
             }
 
-            Vector b(dim, 0.0);
-            for (const auto& src : voltage_sources) {
-                int idx_V = V_to_idx[src.id];
-                if (src.type == "VoltageSource") {
-                    b[idx_V] = src.getParam("value", 24.0);
-                } else if (src.type == "ACVoltageSource") {
-                    double amp = src.getParam("amplitude", 12.0);
-                    double freq = src.getParam("frequency", 50.0);
-                    b[idx_V] = amp * std::sin(2.0 * M_PI * freq * (t_curr + dt_val));
-                } else if (src.type == "Ammeter") {
-                    b[idx_V] = 0.0;
-                }
-            }
-
-            for (const auto& comp : physical_stage) {
-                if (comp.type == "CurrentSource") {
-                    std::string n1, n2;
-                    split_into_nodes(comp.nodes, n1, n2);
-                    int idx1 = (n1 != "node_0" && node_to_idx.count(n1)) ? node_to_idx[n1] : -1;
-                    int idx2 = (n2 != "node_0" && node_to_idx.count(n2)) ? node_to_idx[n2] : -1;
-                    double i_val = comp.getParam("value", 1.0);
-                    if (idx1 >= 0) b[idx1] -= i_val;
-                    if (idx2 >= 0) b[idx2] += i_val;
-                }
-            }
+            Vector b = buildRHS(t_curr + dt_val, sw_stage_states);
 
             // A_num = M / dt + K
             Matrix A_num(dim, dim);
@@ -891,9 +890,13 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
 
                 if (sw_type == "MOSFET") {
                     double gate_val = signals_local[sw.getChannelRef("G")];
-                    new_state = (gate_val > 0.5) ? "ON" : "OFF";
+                    bool gate_on = gate_val > 0.5;
+                    double vd_drop = sw.getParam("Vd", 0.7);
+                    bool diode_on = -vd > ((old_state == "ON") ? vd_drop - 0.1 : vd_drop);
+                    new_state = (gate_on || diode_on) ? "ON" : "OFF";
                 } else if (sw_type == "Diode") {
-                    double threshold = (old_state == "ON") ? 0.0 : 0.7;
+                    double vd_drop = sw.getParam("Vd", 0.7);
+                    double threshold = (old_state == "ON") ? vd_drop - 0.1 : vd_drop;
                     new_state = (vd > threshold) ? "ON" : "OFF";
                 } else if (sw_type == "Switch") {
                     double sw_val = sw.getParam("state", 0.0);
@@ -981,9 +984,13 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
 
                 if (sw_type == "MOSFET") {
                     double gate_val = signals_local[sw.getChannelRef("G")];
-                    new_state = (gate_val > 0.5) ? "ON" : "OFF";
+                    bool gate_on = gate_val > 0.5;
+                    double vd_drop = sw.getParam("Vd", 0.7);
+                    bool diode_on = -vd > ((old_state == "ON") ? vd_drop - 0.1 : vd_drop);
+                    new_state = (gate_on || diode_on) ? "ON" : "OFF";
                 } else if (sw_type == "Diode") {
-                    double threshold = (old_state == "ON") ? 0.0 : 0.7;
+                    double vd_drop = sw.getParam("Vd", 0.7);
+                    double threshold = (old_state == "ON") ? vd_drop - 0.1 : vd_drop;
                     new_state = (vd > threshold) ? "ON" : "OFF";
                 } else if (sw_type == "Switch") {
                     double sw_val = sw.getParam("state", 0.0);
@@ -1014,11 +1021,7 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
                     stampSwitch(K, sw, sw_stage_states[sw.id]);
                 }
 
-                Vector b(dim, 0.0);
-                for (const auto& src : voltage_sources) {
-                    int idx_V = V_to_idx[src.id];
-                    b[idx_V] = (src.type == "VoltageSource") ? src.getParam("value", 24.0) : 0.0;
-                }
+                Vector b = buildRHS(t_curr + dt_val, sw_stage_states);
 
                 if (!alg_idx.empty() && !diff_idx.empty()) {
                     Matrix K_aa = K.submatrix(alg_idx, alg_idx);
@@ -1079,34 +1082,8 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
                     stampSwitch(K_j, sw, sw_stage_states[sw.id]);
                 }
 
-                Vector b_j(dim, 0.0);
-                for (const auto& src : voltage_sources) {
-                    int idx_V = V_to_idx[src.id];
-                    if (src.type == "VoltageSource") {
-                        b_j[idx_V] = src.getParam("value", 24.0);
-                    } else if (src.type == "ACVoltageSource") {
-                        double amp = src.getParam("amplitude", 12.0);
-                        double freq = src.getParam("frequency", 50.0);
-                        b_j[idx_V] = amp * std::sin(2.0 * M_PI * freq * T_j);
-                    } else if (src.type == "Ammeter") {
-                        b_j[idx_V] = 0.0;
-                    }
-                }
-
-                for (const auto& comp : physical_stage) {
-                    if (comp.type == "CurrentSource") {
-                        std::string n1, n2;
-                        split_into_nodes(comp.nodes, n1, n2);
-                        int idx1 = (n1 != "node_0" && node_to_idx.count(n1)) ? node_to_idx[n1] : -1;
-                        int idx2 = (n2 != "node_0" && node_to_idx.count(n2)) ? node_to_idx[n2] : -1;
-                        double i_val = comp.getParam("value", 1.0);
-                        if (idx1 >= 0) b_j[idx1] -= i_val;
-                        if (idx2 >= 0) b_j[idx2] += i_val;
-                    }
-                }
-
+                b_list.push_back(buildRHS(T_j, sw_stage_states));
                 K_list.push_back(K_j);
-                b_list.push_back(b_j);
             }
 
             // Build coupled system size 3N x 3N
@@ -1180,9 +1157,13 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
 
                 if (sw_type == "MOSFET") {
                     double gate_val = signals_local[sw.getChannelRef("G")];
-                    new_state = (gate_val > 0.5) ? "ON" : "OFF";
+                    bool gate_on = gate_val > 0.5;
+                    double vd_drop = sw.getParam("Vd", 0.7);
+                    bool diode_on = -vd > ((old_state == "ON") ? vd_drop - 0.1 : vd_drop);
+                    new_state = (gate_on || diode_on) ? "ON" : "OFF";
                 } else if (sw_type == "Diode") {
-                    double threshold = (old_state == "ON") ? 0.0 : 0.7;
+                    double vd_drop = sw.getParam("Vd", 0.7);
+                    double threshold = (old_state == "ON") ? vd_drop - 0.1 : vd_drop;
                     new_state = (vd > threshold) ? "ON" : "OFF";
                 } else if (sw_type == "Switch") {
                     double sw_val = sw.getParam("state", 0.0);

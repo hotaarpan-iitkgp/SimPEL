@@ -96,6 +96,7 @@ public:
                                                   bool is_first_step = false);
 
     void stampSwitch(Matrix& K, const Component& sw, const std::string& state);
+    Vector buildRHS(double t_stage, const std::map<std::string, std::string>& ss);
 
     Vector compute_k(double t_stage, const Vector& w_stage,
                       std::map<std::string, std::map<std::string, double>>& ctrl_states,

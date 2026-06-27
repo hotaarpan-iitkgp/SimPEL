@@ -2662,7 +2662,7 @@ export class CircuitSimulator {
         return signals;
     }
 
-    buildRHS(t_stage: number, w_stage: number[], sigs: Record<string, number>): number[] {
+    buildRHS(t_stage: number, w_stage: number[], sigs: Record<string, number>, ss?: Record<string, string>): number[] {
         const b = new Array(this.dim).fill(0.0);
         for (const src of this.voltage_sources) {
             const idx = this.V_to_idx[src.id];
@@ -2741,6 +2741,19 @@ export class CircuitSimulator {
                 }
             }
         }
+        const current_sw_states = ss || this.sw_states || {};
+        for (const sw of this.switches) {
+            if (sw.type === "Diode" && current_sw_states[sw.id] === "ON") {
+                const ron = parseScientific(sw.parameters.Ron ?? "1e-3");
+                const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                const Ieq = vd_drop / ron;
+                const n1 = sw.nodes[0] ?? "node_0", n2 = sw.nodes[1] ?? "node_0";
+                const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1;
+                const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
+                if (i1 >= 0) b[i1] += Ieq;
+                if (i2 >= 0) b[i2] -= Ieq;
+            }
+        }
         return b;
     }
 
@@ -2766,7 +2779,7 @@ export class CircuitSimulator {
         const K = new Matrix(this.dim, this.dim); K.data = [...this.K_static.data];
         for (const sw of this.switches) this.stampSwitch(K, sw, ss[sw.id] ?? "OFF");
         this.stampVariableResistors(K, sigs);
-        let b = this.buildRHS(t_stage, wl, sigs);
+        let b = this.buildRHS(t_stage, wl, sigs, ss);
 
         if (this.alg_idx.length > 0 && this.diff_idx.length > 0) {
             try {
@@ -2793,10 +2806,14 @@ export class CircuitSimulator {
                 let swn = "OFF";
                 if (sw.type === "MOSFET" || sw.type === "vg-FET") {
                     const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
-                    const diode_on = -vd > (old === "ON" ? 0.0 : 0.7);
+                    const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                    const diode_on = -vd > (old === "ON" ? vd_drop - 0.1 : vd_drop);
                     swn = (gate_on || diode_on) ? "ON" : "OFF";
                 }
-                else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
+                else if (sw.type === "Diode") {
+                    const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                    swn = vd > (old === "ON" ? vd_drop - 0.1 : vd_drop) ? "ON" : "OFF";
+                }
                 else if (sw.type === "Switch") {
                     const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
                     if (swCtrl && sigs[swCtrl] !== undefined) {
@@ -2818,7 +2835,7 @@ export class CircuitSimulator {
                 const K_new = new Matrix(this.dim, this.dim); K_new.data = [...this.K_static.data];
                 for (const sw of this.switches) this.stampSwitch(K_new, sw, ss[sw.id] ?? "OFF");
                 this.stampVariableResistors(K_new, sigs);
-                b = this.buildRHS(t_stage, wl, sigs);
+                b = this.buildRHS(t_stage, wl, sigs, ss);
                 if (this.alg_idx.length > 0 && this.diff_idx.length > 0) {
                     try {
                         const K_aa = K_new.submatrix(this.alg_idx, this.alg_idx), K_ad = K_new.submatrix(this.alg_idx, this.diff_idx);
@@ -2835,7 +2852,7 @@ export class CircuitSimulator {
         const fK = new Matrix(this.dim, this.dim); fK.data = [...this.K_static.data];
         for (const sw of this.switches) this.stampSwitch(fK, sw, ss[sw.id] ?? "OFF");
         this.stampVariableResistors(fK, sigs);
-        b = this.buildRHS(t_stage, wl, sigs);
+        b = this.buildRHS(t_stage, wl, sigs, ss);
         const rhs = b.map((v, idx) => v - fK.multiply(wl)[idx]); const dw = new Array(this.dim).fill(0.0);
         if (this.diff_idx.length > 0) {
             try {
@@ -2858,7 +2875,7 @@ export class CircuitSimulator {
                 const K = new Matrix(this.dim, this.dim); K.data = [...this.K_static.data];
                 for (const sw of this.switches) this.stampSwitch(K, sw, s_stage[sw.id]);
                 this.stampVariableResistors(K, sigs);
-                const b = this.buildRHS(time + dt, wn, sigs);
+                const b = this.buildRHS(time + dt, wn, sigs, s_stage);
                 if (time === 0 && loop === 1) {
                     console.log("DEBUG MNA:", {
                         node_to_idx: this.node_to_idx,
@@ -2889,10 +2906,14 @@ export class CircuitSimulator {
                     let swn = "OFF";
                     if (sw.type === "MOSFET" || sw.type === "vg-FET") {
                         const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
-                        const diode_on = -vd > (old === "ON" ? 0.0 : 0.7);
+                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                        const diode_on = -vd > (old === "ON" ? vd_drop - 0.1 : vd_drop);
                         swn = (gate_on || diode_on) ? "ON" : "OFF";
                     }
-                    else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
+                    else if (sw.type === "Diode") {
+                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                        swn = vd > (old === "ON" ? vd_drop - 0.1 : vd_drop) ? "ON" : "OFF";
+                    }
                     else if (sw.type === "Switch") {
                         const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
                         if (swCtrl && sigs[swCtrl] !== undefined) {
@@ -2933,10 +2954,14 @@ export class CircuitSimulator {
                     let swn = "OFF";
                     if (sw.type === "MOSFET" || sw.type === "vg-FET") {
                         const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
-                        const diode_on = -vd > (old === "ON" ? 0.0 : 0.7);
+                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                        const diode_on = -vd > (old === "ON" ? vd_drop - 0.1 : vd_drop);
                         swn = (gate_on || diode_on) ? "ON" : "OFF";
                     }
-                    else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
+                    else if (sw.type === "Diode") {
+                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                        swn = vd > (old === "ON" ? vd_drop - 0.1 : vd_drop) ? "ON" : "OFF";
+                    }
                     else if (sw.type === "Switch") {
                         const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
                         if (swCtrl && sigs[swCtrl] !== undefined) {
@@ -2952,7 +2977,7 @@ export class CircuitSimulator {
                     const K = new Matrix(this.dim, this.dim); K.data = [...this.K_static.data];
                     for (const sw of this.switches) this.stampSwitch(K, sw, s_stage[sw.id]);
                     this.stampVariableResistors(K, sigs);
-                    const b = this.buildRHS(time + dt, w_con, sigs);
+                    const b = this.buildRHS(time + dt, w_con, sigs, s_stage);
                     if (this.alg_idx.length > 0 && this.diff_idx.length > 0) {
                         try {
                             const K_aa = K.submatrix(this.alg_idx, this.alg_idx), K_ad = K.submatrix(this.alg_idx, this.diff_idx);
@@ -2985,7 +3010,7 @@ export class CircuitSimulator {
                     const Kj = new Matrix(this.dim, this.dim); Kj.data = [...this.K_static.data];
                     for (const sw of this.switches) this.stampSwitch(Kj, sw, s_stage[sw.id]);
                     this.stampVariableResistors(Kj, sigs);
-                    const bj = this.buildRHS(Tj, W[j], sigs);
+                    const bj = this.buildRHS(Tj, W[j], sigs, s_stage);
                     Klist.push(Kj); blist.push(bj);
                 }
                 const A_block = new Matrix(3 * this.dim, 3 * this.dim, 0.0); const b_block = new Array(3 * this.dim).fill(0.0);
@@ -3014,10 +3039,14 @@ export class CircuitSimulator {
                     let swn = "OFF";
                     if (sw.type === "MOSFET" || sw.type === "vg-FET") {
                         const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
-                        const diode_on = -vd > (old === "ON" ? 0.0 : 0.7);
+                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                        const diode_on = -vd > (old === "ON" ? vd_drop - 0.1 : vd_drop);
                         swn = (gate_on || diode_on) ? "ON" : "OFF";
                     }
-                    else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
+                    else if (sw.type === "Diode") {
+                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                        swn = vd > (old === "ON" ? vd_drop - 0.1 : vd_drop) ? "ON" : "OFF";
+                    }
                     else if (sw.type === "Switch") {
                         const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
                         if (swCtrl && sigs[swCtrl] !== undefined) {

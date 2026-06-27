@@ -1319,9 +1319,7 @@ export class CircuitSimulator {
         return signals;
     }
 
-    compute_k(t_stage: number, w_stage: number[], cs: Record<string, Record<string, number>>, dt: number, ss: Record<string, string>): number[] {
-        const wl = [...w_stage]; const K = new Matrix(this.dim, this.dim); K.data = [...this.K_static.data];
-        for (const sw of this.switches) this.stampSwitch(K, sw, ss[sw.id] ?? "OFF");
+    buildRHS(t_stage: number, ss: Record<string, string>): number[] {
         const b = new Array(this.dim).fill(0.0);
         for (const src of this.voltage_sources) {
             const idx = this.V_to_idx[src.id];
@@ -1339,6 +1337,24 @@ export class CircuitSimulator {
                 if (i1 >= 0) b[i1] -= iv; if (i2 >= 0) b[i2] += iv;
             }
         }
+        for (const sw of this.switches) {
+            if (sw.type === "Diode" && ss[sw.id] === "ON") {
+                const ron = parseScientific(sw.parameters.Ron ?? "1e-3");
+                const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                const Ieq = vd_drop / ron;
+                const n1 = sw.nodes[0] ?? "node_0", n2 = sw.nodes[1] ?? "node_0";
+                const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
+                if (i1 >= 0) b[i1] += Ieq;
+                if (i2 >= 0) b[i2] -= Ieq;
+            }
+        }
+        return b;
+    }
+
+    compute_k(t_stage: number, w_stage: number[], cs: Record<string, Record<string, number>>, dt: number, ss: Record<string, string>): number[] {
+        const wl = [...w_stage]; const K = new Matrix(this.dim, this.dim); K.data = [...this.K_static.data];
+        for (const sw of this.switches) this.stampSwitch(K, sw, ss[sw.id] ?? "OFF");
+        let b = this.buildRHS(t_stage, ss);
         if (this.alg_idx.length > 0 && this.diff_idx.length > 0) {
             try {
                 const K_aa = K.submatrix(this.alg_idx, this.alg_idx), K_ad = K.submatrix(this.alg_idx, this.diff_idx);
@@ -1364,10 +1380,9 @@ export class CircuitSimulator {
                 else if (sw.type === "Switch") swn = parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
                 if (swn !== old) { ss[sw.id] = swn; any_ch = true; }
             }
-            if (any_ch) {
-                const K_new = new Matrix(this.dim, this.dim); K_new.data = [...this.K_static.data];
+            if (any_ch) {                const K_new = new Matrix(this.dim, this.dim); K_new.data = [...this.K_static.data];
                 for (const sw of this.switches) this.stampSwitch(K_new, sw, ss[sw.id] ?? "OFF");
-                if (this.alg_idx.length > 0 && this.diff_idx.length > 0) {
+                b = this.buildRHS(t_stage, ss); if (this.alg_idx.length > 0 && this.diff_idx.length > 0) {
                     try {
                         const K_aa = K_new.submatrix(this.alg_idx, this.alg_idx), K_ad = K_new.submatrix(this.alg_idx, this.diff_idx);
                         const ba = this.alg_idx.map(i => b[i]), wd = this.diff_idx.map(i => wl[i]);
@@ -1380,7 +1395,7 @@ export class CircuitSimulator {
 
         const fK = new Matrix(this.dim, this.dim); fK.data = [...this.K_static.data];
         for (const sw of this.switches) this.stampSwitch(fK, sw, ss[sw.id] ?? "OFF");
-        const rhs = b.map((v, idx) => v - fK.multiply(wl)[idx]); const dw = new Array(this.dim).fill(0.0);
+        b = this.buildRHS(t_stage, ss); let rhs = b.map((v, idx) => v - fK.multiply(wl)[idx]); const dw = new Array(this.dim).fill(0.0);
         if (this.diff_idx.length > 0) {
             try {
                 const sol = this.M.submatrix(this.diff_idx, this.diff_idx).solve(this.diff_idx.map(i => rhs[i]));
@@ -1398,23 +1413,7 @@ export class CircuitSimulator {
                 s_ch = false; loop++;
                 const K = new Matrix(this.dim, this.dim); K.data = [...this.K_static.data];
                 for (const sw of this.switches) this.stampSwitch(K, sw, s_stage[sw.id]);
-                const b = new Array(this.dim).fill(0.0);
-                for (const src of this.voltage_sources) {
-                    const idx = this.V_to_idx[src.id];
-                    if (src.type === "VoltageSource") b[idx] = parseScientific(src.parameters.value ?? "24");
-                    else if (src.type === "ACVoltageSource") {
-                        const amp = parseScientific(src.parameters.amplitude ?? "12"), freq = parseScientific(src.parameters.frequency ?? "50");
-                        b[idx] = amp * Math.sin(2.0 * Math.PI * freq * (time + dt));
-                    }
-                }
-                for (const c of this.physical_stage) {
-                    if (c.type === "CurrentSource") {
-                        const n1 = c.nodes[0] ?? "node_0", n2 = c.nodes[1] ?? "node_0";
-                        const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
-                        const iv = parseScientific(c.parameters.value ?? "1");
-                        if (i1 >= 0) b[i1] -= iv; if (i2 >= 0) b[i2] += iv;
-                    }
-                }
+                const b = this.buildRHS(time + dt, s_stage);
                 const Anum = new Matrix(this.dim, this.dim);
                 for (let r = 0; r < this.dim; r++) {
                     for (let c = 0; c < this.dim; c++) Anum.set(r, c, this.M.get(r, c) / dt + K.get(r, c));
@@ -1466,8 +1465,16 @@ export class CircuitSimulator {
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                     const vd = ((i1 >= 0) ? w_con[i1] : 0.0) - ((i2 >= 0) ? w_con[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; let swn = "OFF";
-                    if (sw.type === "MOSFET" || sw.type === "vg-FET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
-                    else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
+                    if (sw.type === "MOSFET" || sw.type === "vg-FET") {
+                        const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
+                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                        const diode_on = -vd > (old === "ON" ? vd_drop - 0.1 : vd_drop);
+                        swn = (gate_on || diode_on) ? "ON" : "OFF";
+                    }
+                    else if (sw.type === "Diode") {
+                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                        swn = vd > (old === "ON" ? vd_drop - 0.1 : vd_drop) ? "ON" : "OFF";
+                    }
                     else if (sw.type === "Switch") swn = parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
                     next_sw[sw.id] = swn; if (swn !== old) any_ch = true;
                 }
@@ -1476,8 +1483,7 @@ export class CircuitSimulator {
                     s_stage = next_sw;
                     const K = new Matrix(this.dim, this.dim); K.data = [...this.K_static.data];
                     for (const sw of this.switches) this.stampSwitch(K, sw, s_stage[sw.id]);
-                    const b = new Array(this.dim).fill(0.0);
-                    for (const src of this.voltage_sources) { const idx = this.V_to_idx[src.id]; b[idx] = (src.type === "VoltageSource") ? parseScientific(src.parameters.value ?? "24") : 0.0; }
+                    const b = this.buildRHS(time + dt, s_stage);
                     if (this.alg_idx.length > 0 && this.diff_idx.length > 0) {
                         try {
                             const K_aa = K.submatrix(this.alg_idx, this.alg_idx), K_ad = K.submatrix(this.alg_idx, this.diff_idx);
@@ -1506,21 +1512,7 @@ export class CircuitSimulator {
                     this.evaluateControls(Tj, W[j], t_cs, dt, s_stage);
                     const Kj = new Matrix(this.dim, this.dim); Kj.data = [...this.K_static.data];
                     for (const sw of this.switches) this.stampSwitch(Kj, sw, s_stage[sw.id]);
-                    const bj = new Array(this.dim).fill(0.0);
-                    for (const src of this.voltage_sources) {
-                        const idx = this.V_to_idx[src.id];
-                        if (src.type === "VoltageSource") bj[idx] = parseScientific(src.parameters.value ?? "24");
-                        else if (src.type === "ACVoltageSource") bj[idx] = parseScientific(src.parameters.amplitude ?? "12") * Math.sin(2.0 * Math.PI * parseScientific(src.parameters.frequency ?? "50") * Tj);
-                    }
-                    for (const c of this.physical_stage) {
-                        if (c.type === "CurrentSource") {
-                            const n1 = c.nodes[0] ?? "node_0", n2 = c.nodes[1] ?? "node_0";
-                            const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
-                            const iv = parseScientific(c.parameters.value ?? "1");
-                            if (i1 >= 0) bj[i1] -= iv; if (i2 >= 0) bj[i2] += iv;
-                        }
-                    }
-                    Klist.push(Kj); blist.push(bj);
+                    Klist.push(Kj); blist.push(this.buildRHS(Tj, s_stage));
                 }
                 const A_block = new Matrix(3 * this.dim, 3 * this.dim, 0.0); const b_block = new Array(3 * this.dim).fill(0.0);
                 for (let i = 0; i < 3; i++) {
@@ -1545,8 +1537,16 @@ export class CircuitSimulator {
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                     const vd = ((i1 >= 0) ? wn[i1] : 0.0) - ((i2 >= 0) ? wn[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; let swn = "OFF";
-                    if (sw.type === "MOSFET" || sw.type === "vg-FET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
-                    else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
+                    if (sw.type === "MOSFET" || sw.type === "vg-FET") {
+                        const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
+                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                        const diode_on = -vd > (old === "ON" ? vd_drop - 0.1 : vd_drop);
+                        swn = (gate_on || diode_on) ? "ON" : "OFF";
+                    }
+                    else if (sw.type === "Diode") {
+                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                        swn = vd > (old === "ON" ? vd_drop - 0.1 : vd_drop) ? "ON" : "OFF";
+                    }
                     else if (sw.type === "Switch") swn = parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
                     next_sw[sw.id] = swn; if (swn !== old) any_ch = true;
                 }
