@@ -3292,7 +3292,7 @@ export class CircuitSimulator {
             }
 
             if (iterations % 200 === 0) {
-                await new Promise(resolve => setImmediate(resolve));
+                await new Promise(resolve => setTimeout(resolve, 0));
                 if (shouldCancel()) {
                     console.log("runAsync simulation cancelled.");
                     break;
