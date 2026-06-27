@@ -3,8 +3,8 @@ const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icon-192.jpg',
-  '/icon-512.jpg'
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 // Install Event - Pre-cache core shell
