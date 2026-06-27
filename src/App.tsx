@@ -3,7 +3,7 @@ import {
   Play, RotateCcw, Plus, Trash2, Cpu, Settings, Activity, Zap, CheckCircle, 
   HelpCircle, Sliders, Layers, BarChart2, PlusCircle, Server, Code, FileText,
   SlidersHorizontal, ChevronRight, Check, Database, UploadCloud, X, ArrowUp, ArrowDown,
-  LayoutGrid, Sparkles, RefreshCcw, FileCode, Edit3, Sun, Moon, Pause, StopCircle
+  LayoutGrid, Sparkles, RefreshCcw, FileCode, Edit3, Sun, Moon, Pause, StopCircle, Download
 } from 'lucide-react';
 import { Component, SolverConfig, SimulationResults } from './types';
 import { CIRCUITS_TEMPLATES } from './templates';
@@ -11,7 +11,7 @@ import SchematicEditor from './components/SchematicEditor';
 import SimulationPlayer from './components/SimulationPlayer';
 import { state } from './schematic/state';
 import { getWireDomain } from './schematic/routing';
-import { triggerImport } from './schematic/actions';
+import { triggerImport, exportDualGraphJSON } from './schematic/actions';
 
 export default function App() {
   const resolveInputPinToSource = (trace: string): string => {
@@ -19,11 +19,13 @@ export default function App() {
     const [compId, terminal] = trace.split('.');
     if (!compId || !terminal) return trace;
     
-    // If it is an output pin, it is already the source!
-    if (terminal === 'Out' || terminal.startsWith('Out')) return trace;
-    
+    // If it is an output pin of a standard component (excluding FROM_SIG wireless block), it is already the source!
     const initialComp = state.components.find(c => c.id === compId);
-    if (initialComp && (initialComp.type === 'CSCRIPT' || initialComp.type === 'GEN_EBLOCK')) return trace;
+    if (initialComp && initialComp.type !== 'FROM_SIG' && (terminal === 'Out' || terminal.startsWith('Out'))) {
+      return trace;
+    }
+    
+    if (initialComp && (initialComp.type === 'CSCRIPT' || initialComp.type === 'GEN_EBLOCK' || initialComp.type === 'PROBE')) return trace;
     
     const visitedPins = new Set<string>();
     const visitedWires = new Set<string>();
@@ -38,30 +40,68 @@ export default function App() {
         if (visitedPins.has(pinKey)) continue;
         visitedPins.add(pinKey);
         
+        const c = state.components.find(comp => comp.id === curr.compId);
+
+        // Wireless signal routing: if we hit a FROM_SIG, jump to the matching GOTO_SIG's input terminal
+        if (c && c.type === 'FROM_SIG') {
+          const fromTag = String(c.parameters?.tag || 'A').trim().toLowerCase();
+          
+          // Find subsystem prefix of the current FROM_SIG
+          const compIdParts = c.id.split('.');
+          const subsystemPrefix = compIdParts.slice(0, -1).join('.'); // Empty if at root
+          
+          // Find all GOTO_SIGs with matching tag
+          const matchingGotos = state.components.filter((other: any) => 
+            other.type === 'GOTO_SIG' && String(other.parameters?.tag || 'A').trim().toLowerCase() === fromTag
+          );
+          
+          // Scoping rule:
+          // 1. Try to find one in the EXACT same subsystem (same prefix)
+          // 2. Try to find one at the root level (no prefix)
+          // 3. Fallback to any matching one
+          let matchingGoto = matchingGotos.find((other: any) => {
+            const parts = other.id.split('.');
+            const prefix = parts.slice(0, -1).join('.');
+            return prefix === subsystemPrefix;
+          });
+          
+          if (!matchingGoto) {
+            matchingGoto = matchingGotos.find((other: any) => !other.id.includes('.'));
+          }
+          
+          if (!matchingGoto && matchingGotos.length > 0) {
+            matchingGoto = matchingGotos[0];
+          }
+
+          if (matchingGoto) {
+            queue.push({ type: 'pin', compId: matchingGoto.id, terminal: 'In' });
+            continue;
+          }
+        }
+        
         // Check if this pin is a control source (output)
         if (curr.terminal === 'Out' || curr.terminal.startsWith('Out')) {
-          if (curr.compId !== compId || curr.terminal !== terminal) {
-            return pinKey;
-          }
-        }
-        
-        const c = state.components.find(comp => comp.id === curr.compId);
-        if (c && (c.type === 'CSCRIPT' || c.type === 'GEN_EBLOCK')) {
-          if (curr.compId !== compId || curr.terminal !== terminal) {
-            return pinKey;
-          }
-        }
-        
-        // Find all wires connected to this pin
-        state.wires.forEach((w: any) => {
-          if (getWireDomain(w) === 'control') {
-            if (w.from.type === 'pin' && w.from.compId === curr.compId && w.from.terminal === curr.terminal) {
-              queue.push(w.to);
-              queue.push({ type: 'wire_obj', wire: w });
-            } else if (w.to && w.to.type === 'pin' && w.to.compId === curr.compId && w.to.terminal === curr.terminal) {
-              queue.push(w.from);
-              queue.push({ type: 'wire_obj', wire: w });
+          if (c && c.type !== 'FROM_SIG') {
+            if (curr.compId !== compId || curr.terminal !== terminal) {
+              return pinKey;
             }
+          }
+        }
+        
+        if (c && (c.type === 'CSCRIPT' || c.type === 'GEN_EBLOCK' || c.type === 'PROBE')) {
+          if (curr.compId !== compId || curr.terminal !== terminal) {
+            return pinKey;
+          }
+        }
+        
+        // Find all wires connected to this pin (no getWireDomain check for extreme robustness)
+        state.wires.forEach((w: any) => {
+          if (w.from.type === 'pin' && w.from.compId === curr.compId && w.from.terminal === curr.terminal) {
+            queue.push(w.to);
+            queue.push({ type: 'wire_obj', wire: w });
+          } else if (w.to && w.to.type === 'pin' && w.to.compId === curr.compId && w.to.terminal === curr.terminal) {
+            queue.push(w.from);
+            queue.push({ type: 'wire_obj', wire: w });
           }
         });
       } else if (curr.type === 'wire_obj') {
@@ -75,12 +115,10 @@ export default function App() {
         
         // Find other wires that branch off this wire or this wire branches off of
         state.wires.forEach((otherW: any) => {
-          if (getWireDomain(otherW) === 'control') {
-            if (otherW.from.type === 'wire' && otherW.from.wireId === w.id) {
-              queue.push({ type: 'wire_obj', wire: otherW });
-            } else if (otherW.to && otherW.to.type === 'wire' && otherW.to.wireId === w.id) {
-              queue.push({ type: 'wire_obj', wire: otherW });
-            }
+          if (otherW.from.type === 'wire' && otherW.from.wireId === w.id) {
+            queue.push({ type: 'wire_obj', wire: otherW });
+          } else if (otherW.to && otherW.to.type === 'wire' && otherW.to.wireId === w.id) {
+            queue.push({ type: 'wire_obj', wire: otherW });
           }
         });
         
@@ -167,6 +205,21 @@ export default function App() {
       });
     }, 500);
     return () => clearInterval(checkInterval);
+  }, [activeTab]);
+
+  // Keep raw netlist source code synchronized with visual schematic editor when switching to the simulator tab
+  const prevActiveTabRef = useRef(activeTab);
+  useEffect(() => {
+    if (activeTab === 'simulator' && prevActiveTabRef.current !== 'simulator') {
+      try {
+        const netlist = exportDualGraphJSON(true); // default fast mode
+        const netlistStr = JSON.stringify(netlist, null, 2);
+        setJsonText(netlistStr);
+      } catch (err) {
+        console.error("Auto netlist export error:", err);
+      }
+    }
+    prevActiveTabRef.current = activeTab;
   }, [activeTab]);
 
   const closeScopeTab = (scopeId: string, e: React.MouseEvent) => {
@@ -289,6 +342,22 @@ export default function App() {
 
     try {
       const parsed = JSON.parse(exportedNetlist);
+
+      // Validate GOTO and FROM blocks matching tag labels
+      const physicalComps = Array.isArray(parsed.physical_stage) ? parsed.physical_stage : [];
+      const controlComps = Array.isArray(parsed.control_loops) ? parsed.control_loops : [];
+      const allComponents = [...physicalComps, ...controlComps];
+      const fromBlocks = allComponents.filter((c: any) => c.type === 'FROM_SIG');
+      const gotoBlocks = allComponents.filter((c: any) => c.type === 'GOTO_SIG');
+
+      for (const fromComp of fromBlocks) {
+        const fromTag = String(fromComp.parameters?.tag || 'A').trim().toLowerCase();
+        const hasMatchingGoto = gotoBlocks.some((c: any) => String(c.parameters?.tag || 'A').trim().toLowerCase() === fromTag);
+        if (!hasMatchingGoto) {
+          throw new Error(`Signal From block has no matching Signal Goto block with the same tag label "${String(fromComp.parameters?.tag || 'A').trim()}".`);
+        }
+      }
+
       parsed.sessionId = sessionId;
 
       const response = await fetch('/api/simulate', {
@@ -707,6 +776,19 @@ export default function App() {
       return;
     }
 
+    // Validate GOTO and FROM blocks matching tag labels
+    const fromBlocks = components.filter((c: any) => c.type === 'FROM_SIG');
+    const gotoBlocks = components.filter((c: any) => c.type === 'GOTO_SIG');
+
+    for (const fromComp of fromBlocks) {
+      const fromTag = String(fromComp.parameters?.tag || 'A').trim().toLowerCase();
+      const hasMatchingGoto = gotoBlocks.some((c: any) => String(c.parameters?.tag || 'A').trim().toLowerCase() === fromTag);
+      if (!hasMatchingGoto) {
+        alert(`Signal From block has no matching Signal Goto block with the same tag label "${String(fromComp.parameters?.tag || 'A').trim()}".`);
+        return;
+      }
+    }
+
     setIsLoading(true);
     setServerStatus('compiling');
     
@@ -852,15 +934,38 @@ export default function App() {
     return Array.from(new Set(traces)).sort();
   };
 
+  const prefixTraceWithSubsystem = (trace: string): string => {
+    if (!trace || !trace.includes('.')) return trace;
+    const currentPrefix = [...state.navigationStack.map((layer: any) => layer.subsystemId), state.currentSubsystemId].filter(Boolean).join('.');
+    if (!currentPrefix) return trace;
+    
+    if (trace.startsWith(currentPrefix + '.')) return trace;
+    return `${currentPrefix}.${trace}`;
+  };
+
   const getTraceData = (trace: string): number[] => {
     if (!simResults) return [];
     
     const resolvedTrace = resolveInputPinToSource(trace);
+    const prefixedTrace = prefixTraceWithSubsystem(resolvedTrace);
+
+    if (simResults.custom_plots[prefixedTrace]) return simResults.custom_plots[prefixedTrace];
+    if (simResults.signals[prefixedTrace]) return simResults.signals[prefixedTrace];
+    
+    if (prefixedTrace.endsWith('_V')) {
+      const base = prefixedTrace.substring(0, prefixedTrace.length - 2);
+      if (simResults.voltages[base]) return simResults.voltages[base];
+      if (simResults.voltmeters[base]) return simResults.voltmeters[base];
+    }
+    if (prefixedTrace.endsWith('_I')) {
+      const base = prefixedTrace.substring(0, prefixedTrace.length - 2);
+      if (simResults.inductors[base]) return simResults.inductors[base];
+      if (simResults.ammeters[base]) return simResults.ammeters[base];
+    }
 
     if (simResults.custom_plots[resolvedTrace]) return simResults.custom_plots[resolvedTrace];
     if (simResults.signals[resolvedTrace]) return simResults.signals[resolvedTrace];
     
-    // Fallback checks for backward compatibility
     if (resolvedTrace.endsWith('_V')) {
       const base = resolvedTrace.substring(0, resolvedTrace.length - 2);
       if (simResults.voltages[base]) return simResults.voltages[base];
@@ -932,6 +1037,224 @@ export default function App() {
     setZoomRangesY({});
     setGlobalMeasureRange(null);
     setMeasureRanges({});
+  };
+
+  const getActiveSubplotsForExport = (): { id: string; title: string; traces: string[] }[] => {
+    const isInsideScopeTab = activeTab !== 'schematic' && activeTab !== 'simulator';
+    if (isInsideScopeTab) {
+      const scopeComp = state.components.find(c => c.id === activeTab);
+      if (!scopeComp) return [];
+      const numChannels = parseInt(scopeComp.parameters?.channels) || 2;
+      const channels: string[] = [];
+      for (let i = 1; i <= numChannels; i++) {
+        channels.push(`${activeTab}.In${i}`);
+      }
+      const isOverlay = scopeOverlayModes[activeTab] || false;
+      if (isOverlay) {
+        return [{
+          id: `${activeTab}_overlay`,
+          title: `Overlay View [CH 1 - CH ${numChannels}]`,
+          traces: channels
+        }];
+      } else {
+        return channels.map((chan, idx) => ({
+          id: `${activeTab}_channel_${idx + 1}`,
+          title: `${activeTab} Channel ${idx + 1} Input Signal`,
+          traces: [chan]
+        }));
+      }
+    } else {
+      if (isGlobalOverlay) {
+        return [{ id: "unified", title: "Consolidated Solver Outputs", traces: [] }];
+      } else {
+        return subplots;
+      }
+    }
+  };
+
+  const getPlottedTracesForSubplot = (subplot: { id: string; title: string; traces: string[] }): string[] => {
+    const isInsideScopeTab = activeTab !== 'schematic' && activeTab !== 'simulator';
+    const availableTraces = extractAvailableTraces(simResults);
+    if (isGlobalOverlay && !isInsideScopeTab) {
+      return availableTraces;
+    }
+    if (isInsideScopeTab) {
+      return subplot.traces;
+    }
+    return subplot.traces.filter(t => availableTraces.includes(resolveInputPinToSource(t)));
+  };
+
+  const getPlottedTracesForExport = (): string[] => {
+    if (!simResults) return [];
+    const activeSubplots = getActiveSubplotsForExport();
+    const tracesSet = new Set<string>();
+    
+    activeSubplots.forEach(sp => {
+      const traces = getPlottedTracesForSubplot(sp);
+      traces.forEach(t => {
+        const data = getTraceData(t);
+        if (data && data.length > 0) {
+          tracesSet.add(t);
+        }
+      });
+    });
+    
+    return Array.from(tracesSet);
+  };
+
+  const exportCombinedSVG = () => {
+    if (!simResults) {
+      alert("No simulation data available to export!");
+      return;
+    }
+    
+    try {
+      const activeSubplots = getActiveSubplotsForExport();
+      if (activeSubplots.length === 0) {
+        alert("No subplots active to export!");
+        return;
+      }
+      
+      let totalHeight = 0;
+      const spacing = 12;
+      let combinedContent = "";
+      let combinedDefs = "";
+      const width = 800;
+      
+      let bgColor = "#020617";
+      if (theme === 'light') {
+        bgColor = "#ffffff";
+      } else if (isImPlotTheme) {
+        bgColor = "#141517";
+      }
+      
+      let foundAnyElement = false;
+      
+      activeSubplots.forEach((sp) => {
+        const svgEl = document.getElementById(`plot-svg-${sp.id}`);
+        if (!svgEl) return;
+        
+        foundAnyElement = true;
+        const cloned = svgEl.cloneNode(true) as SVGSVGElement;
+        
+        const defs = cloned.querySelector('defs');
+        if (defs) {
+          combinedDefs += defs.innerHTML;
+          defs.remove();
+        }
+        
+        const viewBox = cloned.getAttribute('viewBox');
+        let h = 240;
+        if (viewBox) {
+          const parts = viewBox.split(' ');
+          if (parts.length === 4) {
+            h = parseFloat(parts[3]);
+          }
+        }
+        
+        combinedContent += `\n  <!-- Subplot: ${sp.title} -->\n  <g transform="translate(0, ${totalHeight})">${cloned.innerHTML}</g>`;
+        totalHeight += h + spacing;
+      });
+      
+      if (!foundAnyElement) {
+        alert("Could not locate the SVG elements of the plot subplots. Please make sure they are visible on screen.");
+        return;
+      }
+      
+      totalHeight = Math.max(50, totalHeight - spacing);
+      
+      const bgStyle = `
+        <style>
+          svg {
+            background-color: ${bgColor};
+          }
+          text {
+            font-family: monospace;
+          }
+          path {
+            opacity: 0.95;
+          }
+        </style>
+      `;
+      
+      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${totalHeight}" width="${width}" height="${totalHeight}" style="background-color: ${bgColor}">
+  <defs>
+    ${bgStyle}
+    ${combinedDefs}
+  </defs>
+  ${combinedContent}
+</svg>`;
+      
+      const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const baseName = activeTab === 'simulator' ? 'waveform_solver' : `${activeTab}_scope`;
+      a.download = `${baseName}_zoomed_view.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error("Failed to export combined SVG", err);
+      alert(`Failed to export combined SVG: ${err.message || err}`);
+    }
+  };
+
+  const exportCombinedCSV = () => {
+    if (!simResults || !simResults.time || simResults.time.length === 0) {
+      alert("No simulation data available to export!");
+      return;
+    }
+    try {
+      const activeTraces = getPlottedTracesForExport();
+      if (activeTraces.length === 0) {
+        alert("No plotted variables found to export!");
+        return;
+      }
+      
+      const tData = simResults.time;
+      const headers = ['Time', ...activeTraces.map(t => {
+        if (t.includes('.')) {
+          const parts = t.split('.');
+          const resolved = resolveInputPinToSource(t);
+          if (resolved !== t) {
+            return `${t} (${resolved})`;
+          }
+          return parts[1];
+        }
+        return t;
+      })];
+      
+      const rows: string[] = [];
+      const traceArrays = activeTraces.map(trace => ({
+        trace,
+        arr: getTraceData(trace)
+      }));
+      
+      for (let i = 0; i < tData.length; i++) {
+        const row = [tData[i].toString()];
+        traceArrays.forEach(({ arr }) => {
+          row.push(arr[i] !== undefined && arr[i] !== null ? arr[i].toString() : '');
+        });
+        rows.push(row.join(','));
+      }
+      
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const baseName = activeTab === 'simulator' ? 'waveform_solver' : `${activeTab}_scope`;
+      a.download = `${baseName}_full_data.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error("Failed to export combined CSV", err);
+      alert(`Failed to export combined CSV: ${err.message || err}`);
+    }
   };
 
   const getSegmentStatsForTrace = (traceName: string, startT: number, endT: number) => {
@@ -1540,6 +1863,7 @@ export default function App() {
           </div>
         ) : (
           <svg 
+            id={`plot-svg-${subplot.id}`}
             viewBox={`0 0 ${width} ${height}`} 
             className="w-full h-auto"
             style={{ backgroundColor: bgColor }}
@@ -2453,16 +2777,42 @@ export default function App() {
               <BarChart2 className="h-4.5 w-4.5 text-emerald-400 animate-pulse" />
               <span>🔬 {scopeId} Dedicated Oscilloscope screen</span>
             </div>
-            <button
-              onClick={resetAllPlotZoom}
-              className={`px-3 py-1 text-[10px] font-bold rounded border transition-all cursor-pointer ${
-                theme === 'light'
-                  ? 'bg-slate-550/5 border-slate-200 hover:bg-slate-100 text-slate-700'
-                  : 'bg-slate-900 hover:bg-slate-850 border-slate-800 text-slate-300'
-              }`}
-            >
-              Fit Viewport Zoom
-            </button>
+            <div className="flex items-center gap-2 text-[10px] font-bold">
+              <button
+                onClick={resetAllPlotZoom}
+                className={`px-3 py-1.5 rounded border transition-all cursor-pointer ${
+                  theme === 'light'
+                    ? 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
+                    : 'bg-slate-900 hover:bg-slate-800 border-slate-800 text-slate-300'
+                }`}
+              >
+                Fit Viewport Zoom
+              </button>
+              <button
+                onClick={exportCombinedSVG}
+                className={`px-3 py-1.5 rounded flex items-center gap-1.5 cursor-pointer transition-all border ${
+                  theme === 'light'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                  : 'bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-400 border-emerald-400/20 hover:border-emerald-400/30'
+                }`}
+                title="Export oscilloscope screen channel plots as a combined SVG image"
+              >
+                <FileCode className="h-3.5 w-3.5" />
+                Export SVG Plot
+              </button>
+              <button
+                onClick={exportCombinedCSV}
+                className={`px-3 py-1.5 rounded flex items-center gap-1.5 cursor-pointer transition-all border ${
+                  theme === 'light'
+                  ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                  : 'bg-amber-500/10 hover:bg-amber-500/15 text-amber-450 border-amber-400/20 hover:border-amber-400/30'
+                }`}
+                title="Export full simulation data for all scope channels in a single CSV file"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export CSV Data
+              </button>
+            </div>
           </div>
 
           <div className={isOverlay ? "flex-1 flex flex-col gap-5" : `flex-1 flex flex-col gap-0 border rounded-xl overflow-hidden shadow-md ${theme === 'light' ? 'border-slate-200 shadow-slate-100' : 'border-slate-900 shadow-slate-950/20'}`}>
@@ -2847,6 +3197,30 @@ export default function App() {
                     }`}
                   >
                     Fit All Channels
+                  </button>
+                  <button
+                    onClick={exportCombinedSVG}
+                    className={`px-2.5 py-1 rounded flex items-center gap-1.5 cursor-pointer transition-all border ${
+                      theme === 'light'
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                      : 'bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-400 border-emerald-450/20 hover:border-emerald-400/30'
+                    }`}
+                    title="Export all plotted subplots as a single combined SVG image"
+                  >
+                    <FileCode className="h-3 w-3" />
+                    Export SVG Plot
+                  </button>
+                  <button
+                    onClick={exportCombinedCSV}
+                    className={`px-2.5 py-1 rounded flex items-center gap-1.5 cursor-pointer transition-all border ${
+                      theme === 'light'
+                      ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                      : 'bg-amber-500/10 hover:bg-amber-500/15 text-amber-450 border-amber-450/20 hover:border-amber-400/30'
+                    }`}
+                    title="Export full simulation data for all plotted signals in a single CSV file"
+                  >
+                    <Download className="h-3 w-3" />
+                    Export CSV Data
                   </button>
                 </div>
               )}

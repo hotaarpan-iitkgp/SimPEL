@@ -278,7 +278,7 @@ export function updatePropertiesPanel(): void {
           // Number dropdown selectors
           inputField = document.createElement('select');
           inputField.className = 'prop-input';
-          const maxVal = key === 'channels' ? 4 : 8;
+          const maxVal = 20;
           for (let i = 1; i <= maxVal; i++) {
             const opt = document.createElement('option');
             opt.value = String(i);

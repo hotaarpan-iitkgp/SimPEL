@@ -35,6 +35,10 @@ export function getControlOutputPins(comp: any): string[] {
   if (type === 'INV_PARK') {
     return ['Alpha', 'Beta'];
   }
+  if (type === 'PROBE') {
+    const pinsMap = getComponentPins(comp);
+    return Object.keys(pinsMap);
+  }
   
   const pinsMap = getComponentPins(comp);
   return Object.keys(pinsMap).filter(pinName => pinName.startsWith('Out'));
@@ -673,6 +677,18 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
   state.wires = flat.wires;
 
   try {
+    // 0. GOTO and FROM blocks matching tag labels validation
+    const fromBlocks = state.components.filter((c: any) => c.type === 'FROM_SIG');
+    const gotoBlocks = state.components.filter((c: any) => c.type === 'GOTO_SIG');
+
+    for (const fromComp of fromBlocks) {
+      const fromTag = String(fromComp.parameters?.tag || 'A').trim().toLowerCase();
+      const hasMatchingGoto = gotoBlocks.some((c: any) => String(c.parameters?.tag || 'A').trim().toLowerCase() === fromTag);
+      if (!hasMatchingGoto) {
+        throw new Error(`Signal From block has no matching Signal Goto block with the same tag label "${String(fromComp.parameters?.tag || 'A').trim()}".`);
+      }
+    }
+
     const uf = new UnionFind();
   
   // 1. Map all physical power-stage component pins to unique strings
@@ -1998,10 +2014,35 @@ function getIncomingControlTerminal(compId: string, destTerminalName: string): s
       
       // Wireless signal routing: if we hit a FROM_SIG, jump to the matching GOTO_SIG's input terminal
       if (comp && comp.type === 'FROM_SIG') {
-        const fromTag = (comp.parameters?.tag || 'A').trim();
-        const matchingGoto = state.components.find((c: any) => 
-          c.type === 'GOTO_SIG' && (c.parameters?.tag || 'A').trim() === fromTag
+        const fromTag = String(comp.parameters?.tag || 'A').trim().toLowerCase();
+        
+        // Find subsystem prefix of the current FROM_SIG
+        const compIdParts = comp.id.split('.');
+        const subsystemPrefix = compIdParts.slice(0, -1).join('.'); // Empty if at root
+        
+        // Find all GOTO_SIGs with matching tag
+        const matchingGotos = state.components.filter((c: any) => 
+          c.type === 'GOTO_SIG' && String(c.parameters?.tag || 'A').trim().toLowerCase() === fromTag
         );
+        
+        // Scoping rule:
+        // 1. Try to find one in the EXACT same subsystem (same prefix)
+        // 2. Try to find one at the root level (no prefix)
+        // 3. Fallback to any matching one
+        let matchingGoto = matchingGotos.find((c: any) => {
+          const parts = c.id.split('.');
+          const prefix = parts.slice(0, -1).join('.');
+          return prefix === subsystemPrefix;
+        });
+        
+        if (!matchingGoto) {
+          matchingGoto = matchingGotos.find((c: any) => !c.id.includes('.'));
+        }
+        
+        if (!matchingGoto && matchingGotos.length > 0) {
+          matchingGoto = matchingGotos[0];
+        }
+
         if (matchingGoto) {
           queue.push({ type: 'pin', compId: matchingGoto.id, terminal: 'In' });
           continue;
@@ -2195,7 +2236,13 @@ export function compileHierarchicalNetlist(
     if (typeof expr !== 'string') return Number(expr) || 0;
     const trimmed = expr.trim();
     if (trimmed === '') return 0;
-    if (!isNaN(Number(trimmed))) return Number(trimmed);
+    
+    // First check: if there are no scope variables referenced and no operators, we can directly parse
+    const hasScopeVar = Object.keys(scope).some(varName => trimmed.includes(varName));
+    const hasOperators = /[\+\-\*\(]/.test(trimmed); // exclude / as parseScientific handles division
+    if (!hasScopeVar && !hasOperators) {
+      return parseScientific(trimmed);
+    }
     
     let evalStr = trimmed;
     const varNames = Object.keys(scope).sort((a, b) => b.length - a.length);
@@ -2203,6 +2250,23 @@ export function compileHierarchicalNetlist(
       const escapedVar = varName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
       const regex = new RegExp(`\\b${escapedVar}\\b`, 'g');
       evalStr = evalStr.replace(regex, String(scope[varName]));
+    });
+
+    // Strip trailing units like ohm, v, a, hz, f, h, w, etc. case-insensitively
+    evalStr = evalStr.replace(/\b(ohms?|ohm|Ω|hz|hertz|v(?:olts?)?|a(?:mps?)?|f(?:arads?)?|h(?:enrys?)?|w(?:atts?))\b/gi, '');
+
+    // Replace any engineering notation suffixes (p, n, u, m, k, M, G) in the expression with standard scientific e notation
+    const prefixes: Record<string, string> = {
+      'p': 'e-12',
+      'n': 'e-9',
+      'u': 'e-6',
+      'm': 'e-3',
+      'k': 'e3',
+      'M': 'e6',
+      'G': 'e9'
+    };
+    evalStr = evalStr.replace(/\b(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*([pnuumkMG])\b/g, (match, num, pref) => {
+      return `${num}${prefixes[pref]}`;
     });
 
     try {
@@ -2254,9 +2318,22 @@ export function compileHierarchicalNetlist(
         if (comp.parameters) {
           Object.keys(comp.parameters).forEach(k => {
             const val = comp.parameters[k];
-            if (typeof val === 'string' && val.trim() !== '' && k !== 'code') {
-              const resolved = evaluateExpression(val, parentScope);
-              resolvedParameters[k] = String(resolved);
+            const stringKeys = [
+              'tag', 'label', 'code', 'plot_custom_vars', 'method', 'operator', 
+              'signs', 'edge', 'trigger_edge', 'datatype', 'retriggerable', 'type',
+              'target', 'selected_signals'
+            ];
+            const isStringParam = stringKeys.includes(k) || k.startsWith('plot_') || k.startsWith('trigger_');
+            
+            if (typeof val === 'string' && val.trim() !== '' && !isStringParam) {
+              const hasDigits = /\d/.test(val);
+              const hasScopeVar = Object.keys(parentScope).some(varName => new RegExp('\\b' + varName + '\\b').test(val));
+              if (hasDigits || hasScopeVar) {
+                const resolved = evaluateExpression(val, parentScope);
+                resolvedParameters[k] = String(resolved);
+              } else {
+                resolvedParameters[k] = val;
+              }
             } else {
               resolvedParameters[k] = val;
             }

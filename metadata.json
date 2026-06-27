@@ -1,6 +1,6 @@
 {
-  "name": "Voltaic++",
-  "description": "High-speed modular circuit CAD designer and transient simulator with a high-performance C++ solver engine.",
+  "name": "CircuitSim Pro",
+  "description": "Interactive RLC circuit simulator with real-time transient analysis and measurement plotting.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

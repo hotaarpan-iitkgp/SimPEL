@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Play, Pause, Square, SkipBack, SkipForward, Sliders, 
   HelpCircle, ZoomIn, ZoomOut, RotateCcw, AlertCircle, Info, ChevronRight,
-  Plus, Trash2, ChevronUp, ChevronDown, EyeOff, Layers, Eye, Maximize2, Minimize2
+  Plus, Trash2, ChevronUp, ChevronDown, EyeOff, Layers, Eye, Maximize2, Minimize2,
+  Download, FileCode
 } from 'lucide-react';
 import { state } from '../schematic/state';
 import { getWirePath, getTerminalCoords, getPinDomain, getWireDomain, getWireEndpointCoords } from '../schematic/routing';
@@ -183,6 +184,132 @@ const getWirePathMidpoint = (pathPoints: Array<{ x: number; y: number }>) => {
   return { x: last.x, y: last.y, angle: 0 };
 };
 
+const resolveInputPinToSource = (trace: string): string => {
+  if (!trace.includes('.')) return trace;
+  const [compId, terminal] = trace.split('.');
+  if (!compId || !terminal) return trace;
+  
+  // If it is an output pin of a standard component (excluding FROM_SIG wireless block), it is already the source!
+  const initialComp = state.components.find(c => c.id === compId);
+  if (initialComp && initialComp.type !== 'FROM_SIG' && (terminal === 'Out' || terminal.startsWith('Out'))) {
+    return trace;
+  }
+  
+  if (initialComp && (initialComp.type === 'CSCRIPT' || initialComp.type === 'GEN_EBLOCK' || initialComp.type === 'PROBE')) return trace;
+  
+  const visitedPins = new Set<string>();
+  const visitedWires = new Set<string>();
+  const queue: any[] = [{ type: 'pin', compId, terminal }];
+  
+  while (queue.length > 0) {
+    const curr = queue.shift();
+    if (!curr) continue;
+    
+    if (curr.type === 'pin') {
+      const pinKey = `${curr.compId}.${curr.terminal}`;
+      if (visitedPins.has(pinKey)) continue;
+      visitedPins.add(pinKey);
+      
+      const c = state.components.find(comp => comp.id === curr.compId);
+
+      // Wireless signal routing: if we hit a FROM_SIG, jump to the matching GOTO_SIG's input terminal
+      if (c && c.type === 'FROM_SIG') {
+        const fromTag = String(c.parameters?.tag || 'A').trim().toLowerCase();
+        
+        // Find subsystem prefix of the current FROM_SIG
+        const compIdParts = c.id.split('.');
+        const subsystemPrefix = compIdParts.slice(0, -1).join('.'); // Empty if at root
+        
+        // Find all GOTO_SIGs with matching tag
+        const matchingGotos = state.components.filter((other: any) => 
+          other.type === 'GOTO_SIG' && String(other.parameters?.tag || 'A').trim().toLowerCase() === fromTag
+        );
+        
+        // Scoping rule:
+        // 1. Try to find one in the EXACT same subsystem (same prefix)
+        // 2. Try to find one at the root level (no prefix)
+        // 3. Fallback to any matching one
+        let matchingGoto = matchingGotos.find((other: any) => {
+          const parts = other.id.split('.');
+          const prefix = parts.slice(0, -1).join('.');
+          return prefix === subsystemPrefix;
+        });
+        
+        if (!matchingGoto) {
+          matchingGoto = matchingGotos.find((other: any) => !other.id.includes('.'));
+        }
+        
+        if (!matchingGoto && matchingGotos.length > 0) {
+          matchingGoto = matchingGotos[0];
+        }
+
+        if (matchingGoto) {
+          queue.push({ type: 'pin', compId: matchingGoto.id, terminal: 'In' });
+          continue;
+        }
+      }
+      
+      // Check if this pin is a control source (output)
+      if (curr.terminal === 'Out' || curr.terminal.startsWith('Out')) {
+        if (c && c.type !== 'FROM_SIG') {
+          if (curr.compId !== compId || curr.terminal !== terminal) {
+            return pinKey;
+          }
+        }
+      }
+      
+      if (c && (c.type === 'CSCRIPT' || c.type === 'GEN_EBLOCK' || c.type === 'PROBE')) {
+        if (curr.compId !== compId || curr.terminal !== terminal) {
+          return pinKey;
+        }
+      }
+      
+      // Find all wires connected to this pin (no getWireDomain check for extreme robustness)
+      state.wires.forEach((w: any) => {
+        if (w.from.type === 'pin' && w.from.compId === curr.compId && w.from.terminal === curr.terminal) {
+          queue.push(w.to);
+          queue.push({ type: 'wire_obj', wire: w });
+        } else if (w.to && w.to.type === 'pin' && w.to.compId === curr.compId && w.to.terminal === curr.terminal) {
+          queue.push(w.from);
+          queue.push({ type: 'wire_obj', wire: w });
+        }
+      });
+    } else if (curr.type === 'wire_obj') {
+      const w = curr.wire;
+      if (visitedWires.has(w.id)) continue;
+      visitedWires.add(w.id);
+      
+      // Enqueue both endpoints
+      queue.push(w.from);
+      if (w.to) queue.push(w.to);
+      
+      // Find other wires that branch off this wire or this wire branches off of
+      state.wires.forEach((otherW: any) => {
+        if (otherW.from.type === 'wire' && otherW.from.wireId === w.id) {
+          queue.push({ type: 'wire_obj', wire: otherW });
+        } else if (otherW.to && otherW.to.type === 'wire' && otherW.to.wireId === w.id) {
+          queue.push({ type: 'wire_obj', wire: otherW });
+        }
+      });
+      
+      // If this wire's endpoints join other wires
+      if (w.from.type === 'wire') {
+        const parentW = state.wires.find((pw: any) => pw.id === w.from.wireId);
+        if (parentW) queue.push({ type: 'wire_obj', wire: parentW });
+      }
+      if (w.to && w.to.type === 'wire') {
+        const parentW = state.wires.find((pw: any) => pw.id === w.to.wireId);
+        if (parentW) queue.push({ type: 'wire_obj', wire: parentW });
+      }
+    } else if (curr.type === 'wire') {
+      const w = state.wires.find((pw: any) => pw.id === curr.wireId);
+      if (w) queue.push({ type: 'wire_obj', wire: w });
+    }
+  }
+  
+  return trace; // fallback to original trace if source not found
+};
+
 export default function SimulationPlayer({ simResults, onRunSimulation, subplots, theme }: SimulationPlayerProps) {
   // Check if current simulation results have high-fidelity segmented wire tracks
   const isFidelitySimActive = useMemo(() => {
@@ -271,6 +398,97 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
 
 
   const isLight = theme === 'light';
+
+  const exportPlotSVG = (subplot: { id: string; title: string; traces: string[] }) => {
+    const svgEl = document.getElementById(`plot-svg-${subplot.id}`);
+    if (!svgEl) {
+      alert("Plot graphic not found!");
+      return;
+    }
+    try {
+      const serializer = new XMLSerializer();
+      let svgStr = serializer.serializeToString(svgEl);
+      
+      // Ensure correct XML namespace
+      if (!svgStr.includes('xmlns=')) {
+        svgStr = svgStr.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+      }
+      
+      // Embed self-contained styling based on the current mode
+      const bgStyle = `
+        <style>
+          svg {
+            background-color: ${isLight ? '#ffffff' : '#050711'};
+          }
+          text {
+            fill: ${isLight ? '#475569' : '#94a3b8'};
+          }
+          line {
+            stroke: ${isLight ? '#cbd5e1' : '#1e293b'};
+          }
+          path {
+            opacity: 0.95;
+          }
+        </style>
+      `;
+      
+      // Insert style tag directly after the opening <svg> tag to prevent breaking any namespaces or defs attributes
+      const insertIndex = svgStr.indexOf('>') + 1;
+      svgStr = svgStr.slice(0, insertIndex) + bgStyle + svgStr.slice(insertIndex);
+
+      const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(subplot.title || 'plot').toLowerCase().replace(/\s+/g, '_')}.svg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error("Failed to export plot SVG", err);
+      alert(`Failed to export plot SVG: ${err.message || err}`);
+    }
+  };
+
+  const exportPlotCSV = (subplot: { id: string; title: string; traces: string[] }) => {
+    if (!tData || tData.length === 0) {
+      alert("No simulation data available to export!");
+      return;
+    }
+    try {
+      const headers = ['Time', ...subplot.traces];
+      const rows = [];
+      
+      // Cache trace arrays upfront to avoid doing nested O(Time * Wires) graph traversals in loop
+      const traceArrays = subplot.traces.map(trace => ({
+        trace,
+        arr: getFullTraceArray(trace)
+      }));
+      
+      for (let i = 0; i < tData.length; i++) {
+        const row = [tData[i].toString()];
+        traceArrays.forEach(({ arr }) => {
+          row.push(arr[i] !== undefined ? arr[i].toString() : '');
+        });
+        rows.push(row.join(','));
+      }
+      
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(subplot.title || 'plot').toLowerCase().replace(/\s+/g, '_')}_data.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error("Failed to export plot CSV", err);
+      alert(`Failed to export plot CSV: ${err.message || err}`);
+    }
+  };
 
   // Theme-specific styles & Tailwind classes
   const styles = {
@@ -1171,9 +1389,24 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
   const getComponentCurrentAtIndex = (compId: string, idx: number): number => {
     if (!simResults) return 0.0;
     
-    const ki = `I_${compId}`;
+    const currentPrefix = [...state.navigationStack.map((layer: any) => layer.subsystemId), state.currentSubsystemId].filter(Boolean).join('.');
+    const prefixCompId = currentPrefix && !compId.startsWith(currentPrefix + '.') ? `${currentPrefix}.${compId}` : compId;
+    
+    const ki = `I_${prefixCompId}`;
     if (simResults.custom_plots && simResults.custom_plots[ki]) {
       return simResults.custom_plots[ki][idx] ?? 0.0;
+    }
+    if (simResults.inductors && simResults.inductors[prefixCompId]) {
+      return simResults.inductors[prefixCompId][idx] ?? 0.0;
+    }
+    if (simResults.ammeters && simResults.ammeters[prefixCompId]) {
+      return simResults.ammeters[prefixCompId][idx] ?? 0.0;
+    }
+    
+    // Fallback: original compId
+    const kiOrig = `I_${compId}`;
+    if (simResults.custom_plots && simResults.custom_plots[kiOrig]) {
+      return simResults.custom_plots[kiOrig][idx] ?? 0.0;
     }
     if (simResults.inductors && simResults.inductors[compId]) {
       return simResults.inductors[compId][idx] ?? 0.0;
@@ -1181,6 +1414,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
     if (simResults.ammeters && simResults.ammeters[compId]) {
       return simResults.ammeters[compId][idx] ?? 0.0;
     }
+    
     return 0.0;
   };
 
@@ -1528,32 +1762,60 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
     return list[idx % list.length];
   };
 
+  const prefixTraceWithSubsystem = (trace: string): string => {
+    if (!trace || !trace.includes('.')) return trace;
+    const currentPrefix = [...state.navigationStack.map((layer: any) => layer.subsystemId), state.currentSubsystemId].filter(Boolean).join('.');
+    if (!currentPrefix) return trace;
+    
+    if (trace.startsWith(currentPrefix + '.')) return trace;
+    return `${currentPrefix}.${trace}`;
+  };
+
   const getTraceDataAtTime = (traceName: string, targetIdx: number): number => {
     if (!simResults) return 0;
-    if (simResults.custom_plots && simResults.custom_plots[traceName]) return simResults.custom_plots[traceName][targetIdx] ?? 0;
-    if (simResults.signals && simResults.signals[traceName]) return simResults.signals[traceName][targetIdx] ?? 0;
+    const resolved = resolveInputPinToSource(traceName);
+    const prefixed = prefixTraceWithSubsystem(resolved);
     
-    // Try node voltages:
-    const nodeMatch = traceName;
+    if (simResults.custom_plots && simResults.custom_plots[prefixed]) return simResults.custom_plots[prefixed][targetIdx] ?? 0;
+    if (simResults.signals && simResults.signals[prefixed]) return simResults.signals[prefixed][targetIdx] ?? 0;
+    if (simResults.voltages && simResults.voltages[prefixed]) return simResults.voltages[prefixed][targetIdx] ?? 0;
+    if (simResults.voltmeters && simResults.voltmeters[prefixed]) return simResults.voltmeters[prefixed][targetIdx] ?? 0;
+    if (simResults.inductors && simResults.inductors[prefixed]) return simResults.inductors[prefixed][targetIdx] ?? 0;
+    if (simResults.ammeters && simResults.ammeters[prefixed]) return simResults.ammeters[prefixed][targetIdx] ?? 0;
+
+    // Fallback:
+    if (simResults.custom_plots && simResults.custom_plots[resolved]) return simResults.custom_plots[resolved][targetIdx] ?? 0;
+    if (simResults.signals && simResults.signals[resolved]) return simResults.signals[resolved][targetIdx] ?? 0;
+    
+    const nodeMatch = resolved;
     if (simResults.voltages && simResults.voltages[nodeMatch]) return simResults.voltages[nodeMatch][targetIdx] ?? 0;
     if (simResults.voltmeters && simResults.voltmeters[nodeMatch]) return simResults.voltmeters[nodeMatch][targetIdx] ?? 0;
     
-    // Try currents:
     if (simResults.inductors && simResults.inductors[nodeMatch]) return simResults.inductors[nodeMatch][targetIdx] ?? 0;
     if (simResults.ammeters && simResults.ammeters[nodeMatch]) return simResults.ammeters[nodeMatch][targetIdx] ?? 0;
     
     return 0;
   };
 
-  // Helper: Retrieve full trace array
   const getFullTraceArray = (traceName: string): number[] => {
     if (!simResults) return [];
-    if (simResults.custom_plots && simResults.custom_plots[traceName]) return simResults.custom_plots[traceName];
-    if (simResults.signals && simResults.signals[traceName]) return simResults.signals[traceName];
-    if (simResults.voltages && simResults.voltages[traceName]) return simResults.voltages[traceName];
-    if (simResults.voltmeters && simResults.voltmeters[traceName]) return simResults.voltmeters[traceName];
-    if (simResults.inductors && simResults.inductors[traceName]) return simResults.inductors[traceName];
-    if (simResults.ammeters && simResults.ammeters[traceName]) return simResults.ammeters[traceName];
+    const resolved = resolveInputPinToSource(traceName);
+    const prefixed = prefixTraceWithSubsystem(resolved);
+    
+    if (simResults.custom_plots && simResults.custom_plots[prefixed]) return simResults.custom_plots[prefixed];
+    if (simResults.signals && simResults.signals[prefixed]) return simResults.signals[prefixed];
+    if (simResults.voltages && simResults.voltages[prefixed]) return simResults.voltages[prefixed];
+    if (simResults.voltmeters && simResults.voltmeters[prefixed]) return simResults.voltmeters[prefixed];
+    if (simResults.inductors && simResults.inductors[prefixed]) return simResults.inductors[prefixed];
+    if (simResults.ammeters && simResults.ammeters[prefixed]) return simResults.ammeters[prefixed];
+
+    // Fallback:
+    if (simResults.custom_plots && simResults.custom_plots[resolved]) return simResults.custom_plots[resolved];
+    if (simResults.signals && simResults.signals[resolved]) return simResults.signals[resolved];
+    if (simResults.voltages && simResults.voltages[resolved]) return simResults.voltages[resolved];
+    if (simResults.voltmeters && simResults.voltmeters[resolved]) return simResults.voltmeters[resolved];
+    if (simResults.inductors && simResults.inductors[resolved]) return simResults.inductors[resolved];
+    if (simResults.ammeters && simResults.ammeters[resolved]) return simResults.ammeters[resolved];
     return [];
   };
 
@@ -1695,8 +1957,22 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
             <ChevronDown className="h-3 w-3" />
           </button>
           <button 
+            onClick={() => exportPlotSVG(subplot)}
+            className={`p-0.5 rounded transition-all cursor-pointer ${isLight ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}
+            title="Save Plot as SVG"
+          >
+            <FileCode className="h-3 w-3 text-sky-400" />
+          </button>
+          <button 
+            onClick={() => exportPlotCSV(subplot)}
+            className={`p-0.5 rounded transition-all cursor-pointer ${isLight ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}`}
+            title="Save Plot Data as CSV"
+          >
+            <Download className="h-3 w-3 text-emerald-450" />
+          </button>
+          <button 
             onClick={() => setOpenPlotSettingsId(isSettingsOpen ? null : subplot.id)}
-            className={`p-0.5 rounded transition-all cursor-pointer ${isSettingsOpen ? 'bg-sky-500/20 text-sky-500' : (isLight ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900')}`}
+            className={`p-0.5 rounded transition-all cursor-pointer ${isSettingsOpen ? 'bg-sky-50/20 text-sky-550' : (isLight ? 'text-slate-400 hover:text-slate-700 hover:bg-slate-100' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900')}`}
             title="Select Traces & Rename"
           >
             <Plus className="h-3 w-3" />
@@ -1758,6 +2034,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
             </div>
           ) : (
             <svg 
+              id={`plot-svg-${subplot.id}`}
               viewBox={`0 0 ${width} ${height}`} 
               className="w-full h-auto cursor-col-resize select-none"
               onClick={handlePlotInteraction}

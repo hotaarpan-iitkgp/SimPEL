@@ -3,6 +3,10 @@ export function parseScientific(str: any): number {
     if (str === undefined || str === null || str === '') return 0.0;
     let s = String(str).trim();
     if (!s) return 0.0;
+
+    // Strip trailing units like ohm, v, a, hz, f, h, w, etc. case-insensitively
+    s = s.replace(/\s*(?:ohms?|ohm|Ω|hz|hertz|v(?:olts?)?|a(?:mps?)?|f(?:arads?)?|h(?:enrys?)?|w(?:atts?))\s*$/i, '');
+    if (!s) return 0.0;
     
     // Support simple division (e.g. "1/10000" or "1/10k")
     if (s.includes('/')) {
@@ -1108,7 +1112,7 @@ export class CircuitSimulator {
     evaluateControls(time: number, w_curr: number[], cs: Record<string, any>, dt: number, ss: Record<string, string>, first = false, integrate = false, is_logging = false): Record<string, number> {
         const signals: Record<string, number> = {};
         for (const b of this.control_loops) {
-            const out = b.channels.Out; if (!out) continue;
+            const out = b.channels.Out; if (!out && b.type !== "PROBE" && b.type !== "UnifiedProbe") continue;
             if (b.type === "Constant") {
                 const orig = b.parameters.original_type;
                 if (orig === "STEP") {
@@ -1178,17 +1182,21 @@ export class CircuitSimulator {
         }
         for (let iter = 0; iter < 3; iter++) {
             for (const c of this.physical_stage) {
-                const out = c.channels.Out;
-                if (c.type === "Voltmeter" && out) {
+                const outVM = c.channels.OutV || c.channels.Out;
+                const outAM = c.channels.OutI || c.channels.Out;
+                if (c.type === "Voltmeter" && outVM) {
                     const n1 = c.nodes[0] ?? "node_0", n2 = c.nodes[1] ?? "node_0";
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
-                    signals[out] = ((i1 >= 0) ? w_curr[i1] : 0.0) - ((i2 >= 0) ? w_curr[i2] : 0.0);
-                } else if (c.type === "Ammeter" && out) {
-                    const idx = this.V_to_idx[c.id]; signals[out] = (idx !== undefined) ? w_curr[idx] : 0.0;
+                    signals[outVM] = ((i1 >= 0) ? w_curr[i1] : 0.0) - ((i2 >= 0) ? w_curr[i2] : 0.0);
+                } else if (c.type === "Ammeter" && outAM) {
+                    const idx = this.V_to_idx[c.id]; signals[outAM] = (idx !== undefined) ? w_curr[idx] : 0.0;
                 } else if (c.type === "UnifiedProbe") {
                     const tid = c.parameters.target; let v = 0.0, i = 0.0;
                     if (tid) {
-                        const tc = this.physical_stage.find(x => x.id === tid);
+                        const idParts = c.id.split('.');
+                        const prefixPath = idParts.slice(0, -1).join('.');
+                        const fullTid = prefixPath ? `${prefixPath}.${tid}` : tid;
+                        const tc = this.physical_stage.find(x => x.id === fullTid);
                         if (tc) {
                             const n1 = tc.nodes[0] ?? "node_0", n2 = tc.nodes[1] ?? "node_0";
                             const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
@@ -2362,6 +2370,9 @@ export class CircuitSimulator {
                 } else if (b.type === "PROBE" || b.type === "UnifiedProbe") {
                     const target = b.parameters.target;
                     const selected = (b.parameters.selected_signals || "").split(",").filter(Boolean);
+                    const idParts = b.id.split('.');
+                    const prefixPath = idParts.slice(0, -1).join('.');
+
                     selected.forEach((sig: string) => {
                         let val = 0.0;
                         if (sig.startsWith("V_") || sig.startsWith("I_") || sig.startsWith("Ctrl_") || sig.startsWith("Power_") || sig.startsWith("Conducting_")) {
@@ -2369,7 +2380,8 @@ export class CircuitSimulator {
                             const parts = sig.split("_");
                             const prefix = parts[0];
                             const compId = parts.slice(1).join("_");
-                            const tc = this.physical_stage.find(x => x.id === compId);
+                            const fullCompId = prefixPath ? `${prefixPath}.${compId}` : compId;
+                            const tc = this.physical_stage.find(x => x.id === fullCompId);
                             if (tc) {
                                 const n1 = tc.nodes[0] ?? "node_0", n2 = tc.nodes[1] ?? "node_0";
                                 const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1;
@@ -2420,7 +2432,7 @@ export class CircuitSimulator {
                                         i = parseScientific(tc.parameters.value ?? "1.0");
                                     }
                                 }
-
+ 
                                 if (prefix === "V") {
                                     val = v;
                                 } else if (prefix === "I") {
@@ -2438,7 +2450,8 @@ export class CircuitSimulator {
                             }
                         } else {
                             // Control signal lookup
-                            val = signals[sig] ?? 0.0;
+                            const fullSigId = prefixPath ? `${prefixPath}.${sig}` : sig;
+                            val = signals[fullSigId] ?? 0.0;
                         }
                         signals[`${b.id}.${sig}`] = val;
                     });

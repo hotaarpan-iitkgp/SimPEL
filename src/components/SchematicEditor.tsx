@@ -15,6 +15,7 @@ import { openSimSettings, saveSimSettings, closeSimSettings } from '../schematic
 import { openPlotConfig, savePlotConfig, closePlotConfig, setAvailableVariables } from '../schematic/plotConfig';
 import { exportDualGraphJSON, triggerImport, exportJSON, clearWorkspace, undo, navigateToLevel } from '../schematic/actions';
 import { DETAILED_COMPONENTS } from '../schematic/detailedLibrary';
+import { exportCurrentSubsystemSVG, exportFullSchematicZIP } from '../schematic/svgExporter';
 
 interface SchematicEditorProps {
   onRunSimulation: (netlistJson: string) => void;
@@ -127,6 +128,38 @@ export default function SchematicEditor({
   }, [availableTraces]);
 
   const [navigationPath, setNavigationPath] = useState<string[]>([]);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleExportCurrentSVG = () => {
+    try {
+      exportCurrentSubsystemSVG();
+      showToast("Current subsystem schematic SVG exported.");
+    } catch (err: any) {
+      showToast(`Failed to export SVG: ${err.message || err}`);
+    }
+  };
+
+  const handleExportFullZIP = async () => {
+    try {
+      await exportFullSchematicZIP();
+      showToast("Full hierarchical schematic archive (ZIP) exported.");
+    } catch (err: any) {
+      showToast(`Failed to export ZIP: ${err.message || err}`);
+    }
+  };
 
   useEffect(() => {
     const handleNavChange = () => {
@@ -357,7 +390,7 @@ export default function SchematicEditor({
       />
       
       {/* Schematic Editor Toolbar controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-b border-slate-900 bg-slate-950/60 backdrop-blur-md">
+      <div className="relative z-30 flex flex-wrap items-center justify-between gap-4 p-4 border-b border-slate-900 bg-slate-950/60 backdrop-blur-md">
         
         {/* Actions panel */}
         <div className="flex flex-wrap items-center gap-2">
@@ -389,7 +422,7 @@ export default function SchematicEditor({
             onClick={() => importInputRef.current?.click()}
             className="px-3 py-2 border border-slate-800 hover:border-sky-950 bg-slate-900/60 hover:bg-sky-950/20 hover:text-sky-400 rounded-lg text-xs font-bold font-sans cursor-pointer transition-all flex items-center gap-1.5"
           >
-            <FolderInput className="h-3.5 w-3.5" />
+            <FolderInput className="h-3.5 w-3.5 text-sky-400" />
             <span>Open Layout</span>
           </button>
 
@@ -397,9 +430,45 @@ export default function SchematicEditor({
             onClick={handleExportFile}
             className="px-3 py-2 border border-slate-800 hover:border-sky-950 bg-slate-900/60 hover:bg-sky-950/20 hover:text-sky-400 rounded-lg text-xs font-bold font-sans cursor-pointer transition-all flex items-center gap-1.5"
           >
-            <FileJson className="h-3.5 w-3.5" />
+            <FileJson className="h-3.5 w-3.5 text-amber-500" />
             <span>Save Schematic</span>
           </button>
+
+          {/* Export Menu Dropdown */}
+          <div className="relative flex" ref={exportMenuRef}>
+            <button 
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="px-3 py-2 border border-slate-800 hover:border-sky-950 bg-slate-900/60 hover:bg-sky-950/20 hover:text-sky-400 rounded-lg text-xs font-bold font-sans cursor-pointer transition-all flex items-center gap-1.5"
+            >
+              <PlusCircle className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Export Schematics</span>
+              <ChevronDown className="h-3 w-3 text-slate-550" />
+            </button>
+            {showExportMenu && (
+              <div className="absolute left-0 top-full mt-1.5 w-52 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-50 flex flex-col p-1.5 gap-1 animate-fade-in text-slate-200">
+                <button
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    handleExportCurrentSVG();
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-slate-900 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center gap-2 text-slate-300 hover:text-white"
+                >
+                  <ArrowUpRight className="h-3.5 w-3.5 text-sky-450" />
+                  <span>Current View (SVG)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    handleExportFullZIP();
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-slate-900 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center gap-2 text-slate-300 hover:text-white"
+                >
+                  <PlusCircle className="h-3.5 w-3.5 text-emerald-450" />
+                  <span>Full Schematic (ZIP)</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Modal controls and running buttons */}

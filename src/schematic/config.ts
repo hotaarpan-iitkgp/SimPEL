@@ -31,7 +31,7 @@ export const COMPONENT_PINS: Record<string, any> = {
   FCN:    { In: {x: -20, y: 0, dx: -1, dy: 0}, Out: {x: 20, y: 0, dx: 1, dy: 0} },
   PROD:   { In1: {x: -20, y: -20, dx: -1, dy: 0}, In2: {x: -20, y: 20, dx: -1, dy: 0}, Out: {x: 20, y: 0, dx: 1, dy: 0} },
 
-  PROBE:  { OutV: {x: 20, y: -15, dx: 1, dy: 0}, OutI: {x: 20, y: 15, dx: 1, dy: 0} },
+  PROBE:  { OutV: {x: 40, y: -15, dx: 1, dy: 0}, OutI: {x: 40, y: 15, dx: 1, dy: 0} },
   SCOPE:  { In1: {x: -20, y: -20, dx: -1, dy: 0}, In2: {x: -20, y: 20, dx: -1, dy: 0} }
 };
 
@@ -55,12 +55,13 @@ export function getComponentPins(comp: any): Record<string, any> {
     if (numPins === 0) {
       pins['Out'] = { x: 20, y: 0, dx: 1, dy: 0 };
     } else {
+      const halfW = 30; // block width is 60, so boundary is at 30
       for (let i = 0; i < numPins; i++) {
         let yOffset = 0;
         if (numPins > 1) {
           yOffset = -15 * (numPins - 1) + 30 * i;
         }
-        pins[selected[i]] = { x: 20, y: Math.round(yOffset), dx: 1, dy: 0 };
+        pins[selected[i]] = { x: halfW, y: Math.round(yOffset), dx: 1, dy: 0 };
       }
     }
     return pins;
@@ -176,12 +177,13 @@ export function getComponentPins(comp: any): Record<string, any> {
   if (comp.type === 'SCOPE') {
     const numChannels = parseInt(comp.parameters && comp.parameters.channels) || 2;
     const pins: Record<string, any> = {};
+    const halfW = 16;
     for (let i = 1; i <= numChannels; i++) {
       let yOffset = 0;
       if (numChannels > 1) {
-        yOffset = -20 + (40 * (i - 1)) / (numChannels - 1);
+        yOffset = -10 * (numChannels - 1) + 20 * (i - 1);
       }
-      pins[`In${i}`] = { x: -20, y: Math.round(yOffset), dx: -1, dy: 0 };
+      pins[`In${i}`] = { x: -halfW, y: Math.round(yOffset), dx: -1, dy: 0 };
     }
     return pins;
   }

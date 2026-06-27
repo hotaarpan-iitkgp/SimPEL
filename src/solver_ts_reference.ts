@@ -3,6 +3,11 @@ export function parseScientific(str: any): number {
     if (str === undefined || str === null || str === '') return 0.0;
     let s = String(str).trim();
     if (!s) return 0.0;
+
+    // Strip trailing units like ohm, v, a, hz, f, h, w, etc. case-insensitively
+    s = s.replace(/\s*(?:ohms?|ohm|Ω|hz|hertz|v(?:olts?)?|a(?:mps?)?|f(?:arads?)?|h(?:enrys?)?|w(?:atts?))\s*$/i, '');
+    if (!s) return 0.0;
+
     const lastChar = s[s.length - 1];
     let multiplier = 1.0;
     let hasSuffix = false;

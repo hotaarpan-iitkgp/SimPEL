@@ -64,7 +64,7 @@ export function getPinDomain(compType: string, terminalName: string, comp?: any)
   }
 
   // Check if it's a basic control/general component
-  if (['CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'SCOPE', 'CSCRIPT', 'PROBE'].includes(compType)) {
+  if (['CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'SCOPE', 'CSCRIPT', 'PROBE', 'FROM_SIG', 'GOTO_SIG'].includes(compType)) {
     return 'control';
   }
 
@@ -413,6 +413,17 @@ export function findAStarPath(pStart: { x: number; y: number }, dirStart: { x: n
   return null;
 }
 
+function getOrthogonalTransition(p: { x: number; y: number }, dir: { x: number; y: number }, gridX: number, gridY: number): Array<{ x: number; y: number }> {
+  if (p.x === gridX && p.y === gridY) return [];
+  if (dir.x !== 0) {
+    return [{ x: gridX, y: p.y }];
+  } else if (dir.y !== 0) {
+    return [{ x: p.x, y: gridY }];
+  } else {
+    return [{ x: gridX, y: p.y }];
+  }
+}
+
 // Orthogonal Auto-Routing Router (Avoids passing wire inside components)
 export function getOrthogonalPath(p1: { x: number; y: number }, dir1: { x: number; y: number }, p2: { x: number; y: number }, dir2: { x: number; y: number }): Array<{ x: number; y: number }> {
   const d = 20;
@@ -423,7 +434,23 @@ export function getOrthogonalPath(p1: { x: number; y: number }, dir1: { x: numbe
   // Attempt A* component avoidance routing first
   const astarPath = findAStarPath(startExit, dir1, endExit, { x: -dir2.x, y: -dir2.y });
   if (astarPath) {
-    const fullPath = [p1, ...astarPath, p2];
+    const startX = Math.round(startExit.x / 20) * 20;
+    const startY = Math.round(startExit.y / 20) * 20;
+    const endX = Math.round(endExit.x / 20) * 20;
+    const endY = Math.round(endExit.y / 20) * 20;
+
+    const startTransition = getOrthogonalTransition(startExit, dir1, startX, startY);
+    const endTransition = getOrthogonalTransition(endExit, dir2, endX, endY);
+
+    const fullPath = [
+      p1,
+      startExit,
+      ...startTransition,
+      ...astarPath,
+      ...endTransition,
+      endExit,
+      p2
+    ];
     return simplifyPath(fullPath);
   }
   

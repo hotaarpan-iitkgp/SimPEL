@@ -241,7 +241,6 @@ export function getComponentSVG(comp: any): string {
         shape = `
           <rect class="comp-path" x="-20" y="-15" width="40" height="30" rx="4" fill="none" stroke="currentColor" stroke-width="2" />
           <text x="0" y="3" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">PROBE</text>
-          <path class="comp-path" d="M 20,0 L 25,0" fill="none" stroke="currentColor" stroke-width="2" />
         `;
       } else {
         const height = Math.max(40, numPins * 30);
@@ -255,8 +254,7 @@ export function getComponentSVG(comp: any): string {
             yOffset = -15 * (numPins - 1) + 30 * i;
           }
           pinsSVG += `
-            <path class="comp-path" d="M ${halfW - 5},${yOffset} L ${halfW + 10},${yOffset}" fill="none" stroke="currentColor" stroke-width="2" />
-            <text x="${halfW - 8}" y="${yOffset + 3}" font-family="Inter, sans-serif" font-size="8" fill="currentColor" text-anchor="end" stroke="none">${selected[i]}</text>
+            <text x="${halfW - 5}" y="${yOffset + 3}" font-family="Inter, sans-serif" font-size="8" fill="currentColor" text-anchor="end" stroke="none">${selected[i]}</text>
           `;
         }
         shape = `
@@ -269,21 +267,26 @@ export function getComponentSVG(comp: any): string {
     }
     case 'SCOPE': { // Oscilloscope display screen
       const numChannels = parseInt(comp.parameters && comp.parameters.channels) || 2;
+      const height = Math.max(32, numChannels * 20);
+      const halfH = height / 2;
+      const halfW = 16;
+      
       let scopeLines = '';
-      for (let i = 1; i <= numChannels; i++) {
+      for (let i = 0; i < numChannels; i++) {
         let yOffset = 0;
         if (numChannels > 1) {
-          yOffset = -20 + (40 * (i - 1)) / (numChannels - 1);
+          yOffset = -10 * (numChannels - 1) + 20 * i;
         }
         const y = Math.round(yOffset);
+        // Draw a small arrow pointing inside the block
         scopeLines += `
-          <path class="comp-path" d="M -20,${y} L -16,${y} M -19,${y-3} L -16,${y} L -19,${y+3}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <polygon class="comp-path" points="-${halfW},${y-3} -${halfW-4},${y} -${halfW},${y+3}" fill="currentColor" stroke="none" />
         `;
       }
+      
       shape = `
-        <rect class="comp-path" x="-16" y="-16" width="32" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="2" />
-        <path class="comp-path" d="M -16,0 L 16,0 M 0,-16 L 0,16" stroke="currentColor" stroke-width="0.8" stroke-dasharray="2 2" />
-        <path class="comp-path" d="M -12,6 L -8,-8 L -4,8 L 0,-6 L 4,6 L 8,-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
+        <rect class="comp-path" x="-${halfW}" y="-${halfH}" width="32" height="${height}" rx="4" fill="none" stroke="currentColor" stroke-width="2" />
+        <path class="comp-path" d="M -8,-6 L -4,-6 L -4,6 L 4,6 L 4,-6 L 8,-6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="1 1" />
         ${scopeLines}
       `;
       break;

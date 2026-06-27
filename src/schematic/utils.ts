@@ -65,6 +65,9 @@ export function parseScientific(valStr: string | number): number {
   valStr = valStr.trim();
   if (valStr === '') return 0.0;
 
+  // Strip trailing units like ohm, v, a, hz, f, h, w, etc. case-insensitively
+  valStr = valStr.replace(/\s*(?:ohms?|ohm|Ω|hz|hertz|v(?:olts?)?|a(?:mps?)?|f(?:arads?)?|h(?:enrys?)?|w(?:atts?))\s*$/i, '');
+
   // Support simple division (e.g. "1/10000" or "1/10k")
   if (valStr.includes('/')) {
     const parts = valStr.split('/');
