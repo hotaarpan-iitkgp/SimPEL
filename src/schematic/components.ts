@@ -197,6 +197,52 @@ export function getComponentSVG(comp: any): string {
         <path class="comp-path" d="M -10,6 L -10,-6 L 0,-6 L 0,6 L 10,6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="miter" stroke-linecap="round" />
       `;
       break;
+    case 'PWM_MASTER': {
+      const n = parseInt(comp.parameters && comp.parameters.num_carriers) || 3;
+      let config: any[] = [];
+      try {
+        config = JSON.parse(comp.parameters && comp.parameters.config || '[]');
+      } catch (_) {}
+      const width = 60;
+      const height = Math.max(60, n * 40);
+      const halfW = width / 2;
+      const halfH = height / 2;
+      
+      let svg = `
+        <rect class="comp-path" x="-${halfW}" y="-${halfH}" width="${width}" height="${height}" rx="6" fill="#0f172a" stroke="currentColor" stroke-width="2" />
+        <text x="0" y="-${halfH - 12}" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">PWM MASTER</text>
+        <text x="0" y="-${halfH - 24}" font-family="JetBrains Mono, monospace" font-size="7" fill="#64748b" text-anchor="middle" stroke="none">fc=${comp.parameters.fc || '10k'}</text>
+      `;
+
+      // Draw In (Modulation reference)
+      svg += `<path class="comp-path" d="M -${halfW + 4},-${halfH - 20} L -${halfW},-${halfH - 20}" stroke="currentColor" stroke-width="2" />`;
+      svg += `<text x="-${halfW - 4}" y="-${halfH - 17}" font-family="Inter, sans-serif" font-size="7" fill="#94a3b8" text-anchor="start" stroke="none">Mod</text>`;
+
+      let leftPinIndex = 1;
+      for (let i = 2; i <= n; i++) {
+        const cConf = config.find((c: any) => c.id === i);
+        if (cConf && cConf.phase_source === 'external') {
+          const yVal = -halfH + 20 + 30 * leftPinIndex;
+          svg += `<path class="comp-path" d="M -${halfW + 4},${yVal} L -${halfW},${yVal}" stroke="currentColor" stroke-width="2" />`;
+          svg += `<text x="-${halfW - 4}" y="${yVal + 3}" font-family="Inter, sans-serif" font-size="7" fill="#94a3b8" text-anchor="start" stroke="none">EP${i}</text>`;
+          leftPinIndex++;
+        }
+      }
+
+      for (let i = 1; i <= n; i++) {
+        const yDirect = -halfH + 15 + 40 * (i - 1);
+        const yCompl = -halfH + 30 + 40 * (i - 1);
+        
+        svg += `<path class="comp-path" d="M ${halfW},${yDirect} L ${halfW + 4},${yDirect}" stroke="currentColor" stroke-width="2" />`;
+        svg += `<text x="${halfW - 4}" y="${yDirect + 3}" font-family="Inter, sans-serif" font-size="7" fill="#38bdf8" text-anchor="end" stroke="none">D${i}</text>`;
+        
+        svg += `<path class="comp-path" d="M ${halfW},${yCompl} L ${halfW + 4},${yCompl}" stroke="currentColor" stroke-width="2" />`;
+        svg += `<text x="${halfW - 4}" y="${yCompl + 3}" font-family="Inter, sans-serif" font-size="7" fill="#fb7185" text-anchor="end" stroke="none">C${i}</text>`;
+      }
+
+      shape = svg;
+      break;
+    }
     case 'TRI': // Triangle wave carrier
       shape = `
         <rect class="comp-path" x="-16" y="-16" width="32" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="2" />

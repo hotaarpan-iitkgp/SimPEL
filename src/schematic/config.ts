@@ -214,6 +214,38 @@ export function getComponentPins(comp: any): Record<string, any> {
     }
     return pins;
   }
+  if (comp.type === 'PWM_MASTER') {
+    const n = parseInt(comp.parameters && comp.parameters.num_carriers) || 3;
+    let config: any[] = [];
+    try {
+      config = JSON.parse(comp.parameters && comp.parameters.config || '[]');
+    } catch (_) {}
+    const pins: Record<string, any> = {};
+    const width = 60;
+    const height = Math.max(60, n * 40);
+    const halfW = width / 2;
+    const halfH = height / 2;
+
+    pins['In'] = { x: -halfW, y: -halfH + 20, dx: -1, dy: 0 };
+
+    let leftPinIndex = 1;
+    for (let i = 2; i <= n; i++) {
+      const cConf = config.find((c: any) => c.id === i);
+      if (cConf && cConf.phase_source === 'external') {
+        const yVal = -halfH + 20 + 30 * leftPinIndex;
+        pins[`ExtPhase${i}`] = { x: -halfW, y: yVal, dx: -1, dy: 0 };
+        leftPinIndex++;
+      }
+    }
+
+    for (let i = 1; i <= n; i++) {
+      const yDirect = -halfH + 15 + 40 * (i - 1);
+      const yCompl = -halfH + 30 + 40 * (i - 1);
+      pins[`OutDirect${i}`] = { x: halfW, y: yDirect, dx: 1, dy: 0 };
+      pins[`OutCompl${i}`] = { x: halfW, y: yCompl, dx: 1, dy: 0 };
+    }
+    return pins;
+  }
   if (comp.type === 'GEN_EBLOCK') {
     let n = parseInt(comp.parameters && comp.parameters.terminals);
     if (isNaN(n) || n <= 0) {
@@ -331,6 +363,7 @@ export const DEFAULT_PARAMETERS: Record<string, any> = {
   GAIN:   { K: "2.5" },
   PID:    { Kp: "2.5", Ki: "50.0", Kd: "0" },
   PWM:    { frequency: "10k", min: "0", max: "1" },
+  PWM_MASTER: { num_carriers: "3", fc: "10k", dead_time: "1u", cycles: "2", config: "[]" },
   TRI:    { frequency: "10k", min: "0", max: "1" },
   COMP:   { hysteresis: "0" },
   FCN:    { expr: "u[0] * 2" },
@@ -425,6 +458,7 @@ export const EXPORT_TYPE_NAMES: Record<string, string> = {
   PID:    "PI_Controller",
   SUM:    "SummingJunction",
   PWM:    "PWM_Generator",
+  PWM_MASTER: "Master_PWM",
   TRI:    "Triangle_Carrier",
   COMP:   "Comparator",
   AND:    "AND_Gate",

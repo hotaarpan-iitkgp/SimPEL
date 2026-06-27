@@ -14,7 +14,7 @@ import {
 } from './routing';
 import { getComponentSVG, createTerminalOverlay } from './components';
 import { pathToString, screenToCanvas, showToast, generateNextId } from './utils';
-import { updatePropertiesPanel, openCodeEditorModal, openMaskValuesModal, openProbeEditorModal } from './properties';
+import { updatePropertiesPanel, openCodeEditorModal, openMaskValuesModal, openProbeEditorModal, openPwmMasterModal } from './properties';
 import { completeWire, isControlInputPin, normalizeControlWires, getControlOutputPins, enterSubsystem } from './actions';
 import { getComponentPins } from './config';
 
@@ -363,6 +363,8 @@ export function draw(): void {
         }
       } else if (comp.type === 'PROBE') {
         openProbeEditorModal(comp);
+      } else if (comp.type === 'PWM_MASTER') {
+        openPwmMasterModal(comp);
       }
     });
     

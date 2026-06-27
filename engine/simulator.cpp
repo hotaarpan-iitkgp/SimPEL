@@ -168,7 +168,7 @@ void CircuitSimulator::initializeNetwork() {
     for (const auto& block : control_loops) {
         if (block.type == "PI_Controller") {
             control_states[block.id]["integral"] = 0.0;
-        } else if (block.type == "PWM_Generator" || block.type == "Triangle_Carrier") {
+        } else if (block.type == "PWM_Generator" || block.type == "Triangle_Carrier" || block.type == "PWM_MASTER") {
             control_states[block.id]["time"] = 0.0;
         } else if (block.type == "CustomScript") {
             std::map<std::string, double> blk_params;
@@ -268,6 +268,82 @@ void CircuitSimulator::stampSwitch(Matrix& K, const Component& sw, const std::st
         K(idx1, idx2) -= g;
         K(idx2, idx1) -= g;
     }
+}
+
+struct CarrierConfig {
+    int id = 1;
+    std::string phase_source = "internal";
+    double phase = 0.0;
+    bool level_shift = false;
+    double level_offset = 0.0;
+};
+
+inline std::vector<CarrierConfig> parse_pwm_config(const std::string& json, int N) {
+    std::vector<CarrierConfig> configs(N + 1);
+    for (int i = 1; i <= N; i++) {
+        configs[i].id = i;
+        if (i == 1) {
+            configs[i].phase_source = "internal";
+            configs[i].phase = 0.0;
+        } else {
+            configs[i].phase_source = "internal";
+            configs[i].phase = (i - 1) * 360.0 / N;
+        }
+        configs[i].level_shift = false;
+        configs[i].level_offset = 0.0;
+    }
+
+    for (int i = 1; i <= N; i++) {
+        std::string search_id = "\"id\":" + std::to_string(i);
+        size_t id_pos = json.find(search_id);
+        if (id_pos == std::string::npos) continue;
+
+        size_t end_pos = json.find("}", id_pos);
+        if (end_pos == std::string::npos) continue;
+
+        std::string obj_str = json.substr(id_pos, end_pos - id_pos);
+
+        size_t ps_pos = obj_str.find("\"phase_source\":\"");
+        if (ps_pos != std::string::npos) {
+            size_t val_start = ps_pos + 16;
+            size_t val_end = obj_str.find("\"", val_start);
+            if (val_end != std::string::npos) {
+                configs[i].phase_source = obj_str.substr(val_start, val_end - val_start);
+            }
+        }
+
+        size_t p_pos = obj_str.find("\"phase\":");
+        if (p_pos != std::string::npos) {
+            size_t val_start = p_pos + 8;
+            size_t comma_pos = obj_str.find(",", val_start);
+            std::string val_str = obj_str.substr(val_start, comma_pos - val_start);
+            try {
+                configs[i].phase = std::stod(val_str);
+            } catch (...) {}
+        }
+
+        size_t ls_pos = obj_str.find("\"level_shift\":");
+        if (ls_pos != std::string::npos) {
+            size_t val_start = ls_pos + 14;
+            if (obj_str.substr(val_start, 4) == "true") {
+                configs[i].level_shift = true;
+            }
+        }
+
+        size_t lo_pos = obj_str.find("\"level_offset\":");
+        if (lo_pos != std::string::npos) {
+            size_t val_start = lo_pos + 15;
+            size_t comma_pos = obj_str.find(",", val_start);
+            if (comma_pos == std::string::npos) comma_pos = obj_str.size();
+            std::string val_str = obj_str.substr(val_start, comma_pos - val_start);
+            size_t bracket = val_str.find("}");
+            if (bracket != std::string::npos) val_str = val_str.substr(0, bracket);
+            try {
+                configs[i].level_offset = std::stod(val_str);
+            } catch (...) {}
+        }
+    }
+    return configs;
 }
 
 std::map<std::string, double> CircuitSimulator::evaluateControls(
@@ -389,9 +465,84 @@ std::map<std::string, double> CircuitSimulator::evaluateControls(
         // Evaluate signal processors
         for (const auto& block : control_loops) {
             std::string out_chan = block.getChannelRef("Out");
-            if (out_chan.empty()) continue;
+            if (out_chan.empty() && block.type != "PWM_MASTER") continue;
 
-            if (block.type == "Gain") {
+            if (block.type == "PWM_MASTER") {
+                int N = (int)block.getParam("num_carriers", 3.0);
+                double fc = parse_scientific(block.getParamStr("fc", "10k"));
+                double dead_time = parse_scientific(block.getParamStr("dead_time", "1u"));
+                std::string config_str = block.getParamStr("config", "[]");
+                
+                auto config = parse_pwm_config(config_str, N);
+                
+                std::string in_chan = block.getChannelRef("In");
+                double v_mod = in_chan.empty() ? 0.0 : signals_local[in_chan];
+                double Tc = 1.0 / fc;
+
+                for (int idx = 1; idx <= N; idx++) {
+                    double phase_deg = 0.0;
+                    double l_offset = 0.0;
+
+                    const auto& c_conf = config[idx];
+                    if (idx > 1 && c_conf.phase_source == "external") {
+                        std::string ext_phase_chan = block.getChannelRef("ExtPhase" + std::to_string(idx));
+                        phase_deg = ext_phase_chan.empty() ? 0.0 : signals_local[ext_phase_chan];
+                    } else {
+                        phase_deg = c_conf.phase;
+                    }
+                    l_offset = c_conf.level_shift ? c_conf.level_offset : 0.0;
+
+                    double t_offset = (phase_deg / 360.0) * Tc;
+                    double t_local = std::fmod(t_curr - t_offset, Tc);
+                    if (t_local < 0) t_local += Tc;
+
+                    double tri_val = (t_local < Tc / 2.0)
+                        ? (t_local / (Tc / 2.0))
+                        : (1.0 - (t_local - Tc / 2.0) / (Tc / 2.0));
+
+                    double v_carrier = tri_val + l_offset;
+
+                    int target_direct = (v_mod >= v_carrier) ? 1 : 0;
+                    int target_compl = (target_direct == 0) ? 1 : 0;
+
+                    std::string k_ltd = "last_target_direct_" + std::to_string(idx);
+                    std::string k_ltc = "last_target_compl_" + std::to_string(idx);
+                    std::string k_lttd = "last_transition_time_direct_" + std::to_string(idx);
+                    std::string k_lttc = "last_transition_time_compl_" + std::to_string(idx);
+
+                    if (ctrl_states[block.id].count(k_ltd) == 0) {
+                        ctrl_states[block.id][k_ltd] = 0.0;
+                        ctrl_states[block.id][k_ltc] = 0.0;
+                        ctrl_states[block.id][k_lttd] = 0.0;
+                        ctrl_states[block.id][k_lttc] = 0.0;
+                    }
+
+                    int prev_td = (int)ctrl_states[block.id][k_ltd];
+                    int prev_tc = (int)ctrl_states[block.id][k_ltc];
+                    double trans_time_direct = ctrl_states[block.id][k_lttd];
+                    double trans_time_compl = ctrl_states[block.id][k_lttc];
+
+                    if (target_direct == 1 && prev_td == 0) {
+                        trans_time_direct = t_curr;
+                    }
+                    if (target_compl == 1 && prev_tc == 0) {
+                        trans_time_compl = t_curr;
+                    }
+
+                    ctrl_states[block.id][k_ltd] = target_direct;
+                    ctrl_states[block.id][k_ltc] = target_compl;
+                    ctrl_states[block.id][k_lttd] = trans_time_direct;
+                    ctrl_states[block.id][k_lttc] = trans_time_compl;
+
+                    double out_d = (target_direct == 1 && (t_curr - trans_time_direct >= dead_time)) ? 1.0 : 0.0;
+                    double out_c = (target_compl == 1 && (t_curr - trans_time_compl >= dead_time)) ? 1.0 : 0.0;
+
+                    std::string out_d_chan = block.getChannelRef("OutDirect" + std::to_string(idx));
+                    std::string out_c_chan = block.getChannelRef("OutCompl" + std::to_string(idx));
+                    if (!out_d_chan.empty()) signals_local[out_d_chan] = out_d;
+                    if (!out_c_chan.empty()) signals_local[out_c_chan] = out_c;
+                }
+            } else if (block.type == "Gain") {
                 double k = block.getParam("K", 1.0);
                 double in_val = signals_local[block.getChannelRef("In")];
                 signals_local[out_chan] = k * in_val;

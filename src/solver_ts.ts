@@ -676,7 +676,8 @@ export class CircuitSimulator {
                 { key: "custom_scripts", type: "CustomScript" },
                 { key: "signals_routing", type: "routing" },
                 { key: "plls", type: "PLL" },
-                { key: "probes", type: "PROBE" }
+                { key: "probes", type: "PROBE" },
+                { key: "pwm_masters", type: "PWM_MASTER" }
             ];
 
             for (const cat of categories) {
@@ -751,6 +752,25 @@ export class CircuitSimulator {
                             comp.parameters.signs = item.signs;
                         } else if (cat.type === "PWM_Generator" && item.input && item.output) {
                             comp.channels = { In: item.input, Out: item.output };
+                        } else if (cat.type === "PWM_MASTER") {
+                            const chs: Record<string, string> = {};
+                            if (item.input) chs.In = item.input;
+                            if (Array.isArray(item.ext_phases)) {
+                                item.ext_phases.forEach((ep: string, index: number) => {
+                                    if (ep) chs[`ExtPhase${index + 1}`] = ep;
+                                });
+                            }
+                            if (Array.isArray(item.outputs_direct)) {
+                                item.outputs_direct.forEach((od: string, index: number) => {
+                                    if (od) chs[`OutDirect${index + 1}`] = od;
+                                });
+                            }
+                            if (Array.isArray(item.outputs_compl)) {
+                                item.outputs_compl.forEach((oc: string, index: number) => {
+                                    if (oc) chs[`OutCompl${index + 1}`] = oc;
+                                });
+                            }
+                            comp.channels = chs;
                         } else if (cat.type === "Triangle_Carrier" && item.output) {
                             comp.channels = { Out: item.output };
                         } else if (cat.type === "Comparator" && Array.isArray(item.inputs) && item.output) {
@@ -1018,7 +1038,7 @@ export class CircuitSimulator {
         this.control_states = {}; this.custom_blocks = {};
         for (const b of this.control_loops) {
             if (b.type === "PI_Controller") this.control_states[b.id] = { integral: 0.0 };
-            else if (["PWM_Generator", "Triangle_Carrier"].includes(b.type)) this.control_states[b.id] = { time: 0.0 };
+            else if (["PWM_Generator", "Triangle_Carrier", "PWM_MASTER"].includes(b.type)) this.control_states[b.id] = { time: 0.0 };
             else if (b.type === "CustomScript") {
                 const bp: Record<string, number> = {};
                 for (const [k, v] of Object.entries(b.parameters)) { 
@@ -2194,6 +2214,92 @@ export class CircuitSimulator {
                     if (b.channels.Freq) signals[b.channels.Freq] = omega_est / (2.0 * Math.PI);
                     if (b.channels.Cos) signals[b.channels.Cos] = Math.cos(theta);
                     if (b.channels.Sin) signals[b.channels.Sin] = Math.sin(theta);
+                } else if (b.type === "PWM_MASTER") {
+                    const N = parseInt(b.parameters.num_carriers) || 3;
+                    const fc = parseScientific(b.parameters.fc ?? "10k");
+                    const deadTime = parseScientific(b.parameters.dead_time ?? "1u");
+                    
+                    let config: any[] = [];
+                    try {
+                        config = JSON.parse(b.parameters.config || '[]');
+                    } catch (_) {}
+
+                    if (!cs[b.id] || !cs[b.id].last_target_direct) {
+                        cs[b.id] = {
+                            time: 0.0,
+                            last_target_direct: Array(N + 1).fill(0),
+                            last_target_compl: Array(N + 1).fill(0),
+                            last_transition_time_direct: Array(N + 1).fill(0.0),
+                            last_transition_time_compl: Array(N + 1).fill(0.0),
+                            direct_out: Array(N + 1).fill(0),
+                            compl_out: Array(N + 1).fill(0)
+                        };
+                    }
+
+                    const stateObj = cs[b.id];
+                    const vMod = signals[b.channels.In] ?? 0.0;
+                    const Tc = 1.0 / fc;
+
+                    for (let idx = 1; idx <= N; idx++) {
+                        const cConf = config.find((c: any) => c.id === idx);
+                        let phaseDeg = 0.0;
+                        let lOffset = 0.0;
+                        
+                        if (cConf) {
+                            if (idx > 1 && cConf.phase_source === 'external') {
+                                const extPhaseChan = b.channels[`ExtPhase${idx}`];
+                                phaseDeg = (extPhaseChan && signals[extPhaseChan] !== undefined) ? signals[extPhaseChan] : 0.0;
+                            } else {
+                                phaseDeg = parseFloat(cConf.phase) || 0.0;
+                            }
+                            lOffset = cConf.level_shift ? (parseFloat(cConf.level_offset) || 0.0) : 0.0;
+                        }
+
+                        const tOffset = (phaseDeg / 360.0) * Tc;
+                        let tLocal = (time - tOffset) % Tc;
+                        if (tLocal < 0) tLocal += Tc;
+
+                        const triVal = (tLocal < Tc / 2.0) 
+                            ? (tLocal / (Tc / 2.0)) 
+                            : (1.0 - (tLocal - Tc / 2.0) / (Tc / 2.0));
+                            
+                        const vCarrier = triVal + lOffset;
+                        
+                        const targetDirect = (vMod >= vCarrier) ? 1 : 0;
+                        const targetCompl = (targetDirect === 0) ? 1 : 0;
+
+                        if (integrate && iter === 2) {
+                            if (targetDirect === 1 && stateObj.last_target_direct[idx] === 0) {
+                                stateObj.last_transition_time_direct[idx] = time;
+                            }
+                            if (targetCompl === 1 && stateObj.last_target_compl[idx] === 0) {
+                                stateObj.last_transition_time_compl[idx] = time;
+                            }
+
+                            stateObj.last_target_direct[idx] = targetDirect;
+                            stateObj.last_target_compl[idx] = targetCompl;
+
+                            stateObj.direct_out[idx] = (targetDirect === 1 && (time - stateObj.last_transition_time_direct[idx] >= deadTime)) ? 1 : 0;
+                            stateObj.compl_out[idx] = (targetCompl === 1 && (time - stateObj.last_transition_time_compl[idx] >= deadTime)) ? 1 : 0;
+                        } else {
+                            let transTimeDirect = stateObj.last_transition_time_direct[idx];
+                            if (targetDirect === 1 && stateObj.last_target_direct[idx] === 0) {
+                                transTimeDirect = time;
+                            }
+                            let transTimeCompl = stateObj.last_transition_time_compl[idx];
+                            if (targetCompl === 1 && stateObj.last_target_compl[idx] === 0) {
+                                transTimeCompl = time;
+                            }
+
+                            stateObj.direct_out[idx] = (targetDirect === 1 && (time - transTimeDirect >= deadTime)) ? 1 : 0;
+                            stateObj.compl_out[idx] = (targetCompl === 1 && (time - transTimeCompl >= deadTime)) ? 1 : 0;
+                        }
+
+                        const outDirectChan = b.channels[`OutDirect${idx}`];
+                        const outComplChan = b.channels[`OutCompl${idx}`];
+                        if (outDirectChan) signals[outDirectChan] = stateObj.direct_out[idx];
+                        if (outComplChan) signals[outComplChan] = stateObj.compl_out[idx];
+                    }
                 } else if (b.type === "Comparator" && out) {
                     signals[out] = ((signals[b.channels.Plus] ?? 0) >= (signals[b.channels.Minus] ?? 0)) ? 1 : 0;
                 } else if (b.type === "AND_Gate" && out) {

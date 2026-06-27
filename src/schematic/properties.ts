@@ -304,7 +304,7 @@ export function updatePropertiesPanel(): void {
           // Re-route wires for dynamic pins counts or custom XFMR winders
           if (comp.type === 'XFMR' && ['primary_turns', 'secondary_turns'].includes(key)) {
             cleanDanglingWires(comp.id);
-          } else if (['SCOPE', 'MUX', 'DEMUX', 'CSCRIPT', 'GEN_EBLOCK', 'SUM_ROUND', 'SUM_RECT', 'PRODUCT_RECT', 'MULTIPORT_SWITCH'].includes(comp.type)) {
+          } else if (['SCOPE', 'MUX', 'DEMUX', 'CSCRIPT', 'GEN_EBLOCK', 'SUM_ROUND', 'SUM_RECT', 'PRODUCT_RECT', 'MULTIPORT_SWITCH', 'PWM_MASTER'].includes(comp.type)) {
             cleanDanglingWires(comp.id);
           }
           if (comp.type === 'GEN_EBLOCK' && key === 'terminals') {
@@ -416,6 +416,24 @@ export function updatePropertiesPanel(): void {
       editorBtn.textContent = comp.type === 'GEN_EBLOCK' ? 'Edit Electrical Equations' : 'Edit Python script code';
       editorBtn.addEventListener('click', () => {
         openCodeEditorModal(comp);
+      });
+      card.appendChild(editorBtn);
+    }
+    if (comp.type === 'PWM_MASTER') {
+      const editorBtn = document.createElement('button');
+      editorBtn.className = 'btn btn-primary';
+      editorBtn.style.width = '100%';
+      editorBtn.style.marginTop = '10px';
+      editorBtn.style.padding = '8px';
+      editorBtn.style.backgroundColor = '#10b981';
+      editorBtn.style.color = '#ffffff';
+      editorBtn.style.border = 'none';
+      editorBtn.style.borderRadius = '4px';
+      editorBtn.style.cursor = 'pointer';
+      editorBtn.style.fontWeight = 'bold';
+      editorBtn.textContent = 'Open Master PWM Configurator';
+      editorBtn.addEventListener('click', () => {
+        openPwmMasterModal(comp);
       });
       card.appendChild(editorBtn);
     }
@@ -1620,6 +1638,334 @@ export function openProbeEditorModal(comp: any): void {
   localSelectedTargetId = initialTargets[0] || "";
 
   render();
+  modal.classList.add('show');
+}
+
+export function openPwmMasterModal(comp: any): void {
+  const modal = document.getElementById('pwm-master-modal');
+  const closeBtn = document.getElementById('pwm-master-close-btn');
+  const cancelBtn = document.getElementById('pwm-master-cancel');
+  const saveBtn = document.getElementById('pwm-master-save');
+  
+  const numCarriersInput: any = document.getElementById('pwm-num-carriers');
+  const frequencyInput: any = document.getElementById('pwm-frequency');
+  const deadTimeInput: any = document.getElementById('pwm-dead-time');
+  const previewCyclesSelect: any = document.getElementById('pwm-preview-cycles');
+  const tbody = document.getElementById('pwm-carriers-tbody');
+  const canvas: any = document.getElementById('pwm-preview-canvas');
+
+  if (!modal || !numCarriersInput || !frequencyInput || !deadTimeInput || !previewCyclesSelect || !tbody || !canvas) return;
+
+  // Initialize values
+  let N = parseInt(comp.parameters.num_carriers) || 3;
+  let fc = comp.parameters.fc || "10k";
+  let deadTime = comp.parameters.dead_time || "1u";
+  let cycles = parseInt(comp.parameters.cycles) || 2;
+  
+  let config: any[] = [];
+  try {
+    config = JSON.parse(comp.parameters.config || '[]');
+  } catch (_) {}
+
+  // Fill in gaps or trim config to match N
+  const syncConfig = () => {
+    if (config.length < N) {
+      for (let i = config.length + 1; i <= N; i++) {
+        const defaultPhase = i === 1 ? 0 : Math.round(((i - 1) * 360 / N) * 10) / 10;
+        config.push({
+          id: i,
+          phase_source: 'internal',
+          phase: defaultPhase,
+          level_shift: false,
+          level_offset: 0.0
+        });
+      }
+    } else if (config.length > N) {
+      config = config.slice(0, N);
+    }
+    if (config[0]) {
+      config[0].phase_source = 'internal';
+      config[0].phase = 0.0;
+    }
+  };
+
+  numCarriersInput.value = N;
+  frequencyInput.value = fc;
+  deadTimeInput.value = deadTime;
+  previewCyclesSelect.value = cycles;
+
+  const renderTable = () => {
+    tbody.innerHTML = '';
+    config.forEach((c: any, idx: number) => {
+      const isMaster = idx === 0;
+      const row = document.createElement('tr');
+      row.className = 'border-b border-slate-900 hover:bg-slate-950/20';
+      
+      const tdId = document.createElement('td');
+      tdId.className = 'p-2 font-bold text-slate-400';
+      tdId.textContent = isMaster ? `Carrier ${c.id} (Master)` : `Carrier ${c.id} (Slave)`;
+      row.appendChild(tdId);
+      
+      const tdSource = document.createElement('td');
+      tdSource.className = 'p-2';
+      if (isMaster) {
+        tdSource.textContent = 'Fixed (0°)';
+      } else {
+        const select = document.createElement('select');
+        select.className = 'bg-slate-900 border border-slate-800 rounded px-1 py-0.5 text-slate-200 text-xs w-full';
+        select.innerHTML = `
+          <option value="internal" ${c.phase_source === 'internal' ? 'selected' : ''}>Internal (Static)</option>
+          <option value="external" ${c.phase_source === 'external' ? 'selected' : ''}>External (Port)</option>
+        `;
+        select.addEventListener('change', (e: any) => {
+          c.phase_source = e.target.value;
+          renderTable();
+          drawPreview();
+        });
+        tdSource.appendChild(select);
+      }
+      row.appendChild(tdSource);
+      
+      const tdPhase = document.createElement('td');
+      tdPhase.className = 'p-2';
+      if (isMaster) {
+        tdPhase.textContent = '0';
+      } else {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'bg-slate-900 border border-slate-800 rounded px-1 py-0.5 text-slate-200 text-xs w-full text-center';
+        input.value = c.phase;
+        input.disabled = c.phase_source === 'external';
+        input.addEventListener('input', (e: any) => {
+          c.phase = parseFloat(e.target.value) || 0.0;
+          drawPreview();
+        });
+        tdPhase.appendChild(input);
+      }
+      row.appendChild(tdPhase);
+      
+      const tdLShiftEnable = document.createElement('td');
+      tdLShiftEnable.className = 'p-2 text-center';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'accent-emerald-500 cursor-pointer';
+      checkbox.checked = !!c.level_shift;
+      checkbox.addEventListener('change', (e: any) => {
+        c.level_shift = e.target.checked;
+        renderTable();
+        drawPreview();
+      });
+      tdLShiftEnable.appendChild(checkbox);
+      row.appendChild(tdLShiftEnable);
+      
+      const tdLOffset = document.createElement('td');
+      tdLOffset.className = 'p-2';
+      const inputOffset = document.createElement('input');
+      inputOffset.type = 'text';
+      inputOffset.className = 'bg-slate-900 border border-slate-800 rounded px-1 py-0.5 text-slate-200 text-xs w-full text-center';
+      inputOffset.value = c.level_offset;
+      inputOffset.disabled = !c.level_shift;
+      inputOffset.addEventListener('input', (e: any) => {
+        c.level_offset = parseFloat(e.target.value) || 0.0;
+        drawPreview();
+      });
+      tdLOffset.appendChild(inputOffset);
+      row.appendChild(tdLOffset);
+      
+      tbody.appendChild(row);
+    });
+  };
+
+  const drawPreview = () => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const padL = 50;
+    const padR = 20;
+    const padT = 30;
+    const padB = 30;
+    const W = canvas.width - padL - padR;
+    const H = canvas.height - padT - padB;
+    
+    let minVal = 0.0;
+    let maxVal = 1.0;
+    config.forEach((c: any) => {
+      if (c.level_shift) {
+        minVal = Math.min(minVal, c.level_offset);
+        maxVal = Math.max(maxVal, c.level_offset + 1.0);
+      }
+    });
+    
+    const range = maxVal - minVal;
+    const margin = range * 0.1 || 0.2;
+    const scaleMin = minVal - margin;
+    const scaleMax = maxVal + margin;
+    const scaleRange = scaleMax - scaleMin;
+
+    const toX = (t: number) => padL + (t / cycles) * W;
+    const toY = (v: number) => padT + H - ((v - scaleMin) / scaleRange) * H;
+    
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    ctx.font = '9px monospace';
+    ctx.fillStyle = '#64748b';
+    
+    const stepY = range <= 2 ? 0.5 : 1.0;
+    const startLevel = Math.floor(scaleMin / stepY) * stepY;
+    for (let l = startLevel; l <= scaleMax; l += stepY) {
+      const y = toY(l);
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL + W, y);
+      ctx.stroke();
+      ctx.textAlign = 'right';
+      ctx.fillText(l.toFixed(1), padL - 8, y + 3);
+    }
+    
+    for (let c = 0; c <= cycles; c++) {
+      const x = toX(c);
+      ctx.beginPath();
+      ctx.moveTo(x, padT);
+      ctx.lineTo(x, padT + H);
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillText(`Cycle ${c}`, x, padT + H + 15);
+    }
+    
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    const steps = 200;
+    const vMid = (minVal + maxVal) / 2.0;
+    const vAmp = (maxVal - minVal) / 2.0 * 0.8 || 0.4;
+    for (let s = 0; s <= steps; s++) {
+      const t = (s / steps) * cycles;
+      const vSine = vMid + vAmp * Math.sin(2.0 * Math.PI * t);
+      const x = toX(t);
+      const y = toY(vSine);
+      if (s === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    
+    ctx.fillStyle = '#ef4444';
+    ctx.textAlign = 'left';
+    ctx.fillText('Ref Sine (Modulation)', padL + 10, padT - 10);
+    
+    const colors = ['#38bdf8', '#4ade80', '#fbbf24', '#c084fc', '#fb7185', '#2dd4bf', '#f472b6', '#a78bfa'];
+    const carrierCyclesPerPeriod = 6;
+    const Tc = 1.0 / carrierCyclesPerPeriod;
+    
+    config.forEach((c: any, index: number) => {
+      const color = colors[index % colors.length];
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      
+      if (c.phase_source === 'external') {
+        ctx.setLineDash([4, 4]);
+      } else {
+        ctx.setLineDash([]);
+      }
+      
+      ctx.beginPath();
+      
+      const pSteps = W;
+      const phaseDeg = c.phase;
+      const tOffset = (phaseDeg / 360.0) * Tc;
+      const lOffset = c.level_shift ? c.level_offset : 0.0;
+      
+      for (let s = 0; s <= pSteps; s++) {
+        const x = padL + s;
+        const t = (s / W) * cycles;
+        
+        let tLocal = (t - tOffset) % Tc;
+        if (tLocal < 0) tLocal += Tc;
+        
+        const triVal = (tLocal < Tc / 2.0) 
+          ? (tLocal / (Tc / 2.0)) 
+          : (1.0 - (tLocal - Tc / 2.0) / (Tc / 2.0));
+          
+        const val = triVal + lOffset;
+        const y = toY(val);
+        
+        if (s === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      
+      ctx.fillStyle = color;
+      ctx.fillText(`Cr${c.id}${c.phase_source === 'external' ? ' (Ext)' : ''}`, padL + W - 70 + (index % 4) * 15 - Math.floor(index/4)*60, padT - 10 - Math.floor(index/4)*12);
+    });
+  };
+
+  const onNumCarriersChange = () => {
+    let val = parseInt(numCarriersInput.value);
+    if (isNaN(val) || val < 1) val = 1;
+    if (val > 20) val = 20;
+    numCarriersInput.value = val;
+    N = val;
+    syncConfig();
+    renderTable();
+    drawPreview();
+  };
+  numCarriersInput.addEventListener('change', onNumCarriersChange);
+  
+  const handleFreqChange = (e: any) => {
+    fc = e.target.value.trim() || "10k";
+  };
+  frequencyInput.addEventListener('change', handleFreqChange);
+
+  const handleDeadTimeChange = (e: any) => {
+    deadTime = e.target.value.trim() || "1u";
+  };
+  deadTimeInput.addEventListener('change', handleDeadTimeChange);
+  
+  const handleCyclesChange = (e: any) => {
+    cycles = parseInt(e.target.value) || 2;
+    drawPreview();
+  };
+  previewCyclesSelect.addEventListener('change', handleCyclesChange);
+
+  const cleanupListeners = () => {
+    closeBtn?.replaceWith(closeBtn.cloneNode(true));
+    cancelBtn?.replaceWith(cancelBtn.cloneNode(true));
+    saveBtn?.replaceWith(saveBtn.cloneNode(true));
+    numCarriersInput.removeEventListener('change', onNumCarriersChange);
+    frequencyInput.removeEventListener('change', handleFreqChange);
+    deadTimeInput.removeEventListener('change', handleDeadTimeChange);
+    previewCyclesSelect.removeEventListener('change', handleCyclesChange);
+  };
+
+  const handleSave = () => {
+    saveState();
+    comp.parameters.num_carriers = String(N);
+    comp.parameters.fc = fc;
+    comp.parameters.dead_time = deadTime;
+    comp.parameters.cycles = String(cycles);
+    comp.parameters.config = JSON.stringify(config);
+    
+    cleanDanglingWires(comp.id);
+    modal.classList.remove('show');
+    cleanupListeners();
+    draw();
+    updatePropertiesPanel();
+  };
+
+  const handleCancel = () => {
+    modal.classList.remove('show');
+    cleanupListeners();
+  };
+
+  document.getElementById('pwm-master-close-btn')?.addEventListener('click', handleCancel);
+  document.getElementById('pwm-master-cancel')?.addEventListener('click', handleCancel);
+  document.getElementById('pwm-master-save')?.addEventListener('click', handleSave);
+
+  syncConfig();
+  renderTable();
+  drawPreview();
   modal.classList.add('show');
 }
 

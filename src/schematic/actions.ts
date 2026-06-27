@@ -972,7 +972,8 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
     custom_scripts: [],
     signals_routing: [],
     plls: [],
-    probes: []
+    probes: [],
+    pwm_masters: []
   };
   
   // Parse parameters fields cleanly
@@ -1776,6 +1777,46 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           max: p.max || 1.0
         });
         break;
+      case 'PWM_MASTER': {
+        const N = parseInt(p.num_carriers) || 3;
+        const ext_phases: any[] = [];
+        const outputs_direct: string[] = [];
+        const outputs_compl: string[] = [];
+        
+        let config: any[] = [];
+        try {
+          config = JSON.parse(p.config || '[]');
+        } catch (_) {}
+
+        for (let idx = 1; idx <= N; idx++) {
+          outputs_direct.push(`${comp.id}.OutDirect${idx}`);
+          outputs_compl.push(`${comp.id}.OutCompl${idx}`);
+          
+          if (idx === 1) {
+            ext_phases.push(undefined);
+          } else {
+            const cConf = config.find((c: any) => c.id === idx);
+            if (cConf && cConf.phase_source === 'external') {
+              ext_phases.push(getIncomingControlTerminal(comp.id, `ExtPhase${idx}`));
+            } else {
+              ext_phases.push(undefined);
+            }
+          }
+        }
+
+        control_loops.pwm_masters.push({
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          ext_phases,
+          outputs_direct,
+          outputs_compl,
+          num_carriers: N,
+          fc: p.fc || "10k",
+          dead_time: p.dead_time || "1u",
+          config: p.config || "[]"
+        });
+        break;
+      }
       case 'TRI':
         control_loops.triangle_carriers.push({
           id: comp.id,

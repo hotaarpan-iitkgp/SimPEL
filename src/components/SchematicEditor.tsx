@@ -335,6 +335,7 @@ export default function SchematicEditor({
     { type: 'PID', label: 'PI Controller', desc: 'Closed loop controller gains effort' },
     { type: 'SUM', label: 'Summing Block', desc: 'Sum or difference junction' },
     { type: 'PWM', label: 'PWM Gen', desc: 'Pulse width generator carrier compare' },
+    { type: 'PWM_MASTER', label: 'Master PWM', desc: 'Configurable Master PWM with dead-time and dynamic phase shifts' },
     { type: 'TRI', label: 'Triangle wave', desc: 'High frequency triangle modulation' },
     { type: 'COMP', label: 'Comparator', desc: 'Differential margin switch' },
     { type: 'AND', label: 'AND Logic', desc: 'Boolean AND gate output' },
@@ -1144,6 +1145,80 @@ export default function SchematicEditor({
           <div className="p-4 border-t border-slate-800 flex justify-between bg-slate-900/10">
             <button id="probe-editor-help" className="px-3 py-1.5 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer text-slate-400">Help</button>
             <button id="probe-editor-close" className="px-4 py-2 bg-sky-500 hover:bg-sky-600 font-bold rounded text-xs cursor-pointer text-white">Close</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal 7: Master PWM Configurator Dialog */}
+      <div id="pwm-master-modal" className="modal-overlay animate-fade-in">
+        <div className="modal-content text-slate-200 text-sm max-w-[900px] w-11/12 overflow-hidden flex flex-col transition-all duration-200" style={{ maxHeight: "90vh" }}>
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+            <h3 id="pwm-master-title" className="font-bold flex items-center gap-2">Master PWM Configurator</h3>
+            <button id="pwm-master-close-btn" className="text-slate-450 hover:text-slate-200 cursor-pointer text-xl font-bold">×</button>
+          </div>
+          
+          <div className="p-4 flex flex-col gap-4 overflow-y-auto" style={{ flex: 1 }}>
+            {/* Top Panel */}
+            <div className="grid grid-cols-4 gap-4 p-3 bg-slate-950/40 border border-slate-800 rounded">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-400 font-bold uppercase">Number of Carriers (N)</label>
+                <input id="pwm-num-carriers" type="number" min="1" max="20" className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-400 font-bold uppercase">Carrier Frequency (fc, Hz)</label>
+                <input id="pwm-frequency" type="text" className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-400 font-bold uppercase">Dead Time (s)</label>
+                <input id="pwm-dead-time" type="text" className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-slate-400 font-bold uppercase">Preview Window (Cycles)</label>
+                <select id="pwm-preview-cycles" className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200">
+                  <option value="2">2 Cycles</option>
+                  <option value="3">3 Cycles</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Middle Panel: Configuration Table */}
+            <div className="flex flex-col border border-slate-800 rounded bg-slate-950/40 overflow-hidden">
+              <div className="p-2 border-b border-slate-800 bg-slate-900/30 font-bold text-xs text-slate-400">
+                Carriers Configuration Table
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-slate-950/60">
+                      <th className="p-2">Carrier ID</th>
+                      <th className="p-2">Phase Shift Source</th>
+                      <th className="p-2">Internal Phase (°)</th>
+                      <th className="p-2">Level Shift Enable</th>
+                      <th className="p-2">Internal Level Offset</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pwm-carriers-tbody">
+                    {/* Rows populated dynamically */}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            {/* Bottom Panel: Interactive Preview Plot */}
+            <div className="flex flex-col border border-slate-800 rounded bg-slate-950/40 overflow-hidden">
+              <div className="p-2 border-b border-slate-800 bg-slate-900/30 font-bold text-xs text-slate-400 flex justify-between items-center">
+                <span>Real-Time Carrier Preview Plot</span>
+                <span className="text-[10px] text-slate-500 font-normal">Superimposed carrier waves over fundamental period</span>
+              </div>
+              <div className="p-4 bg-slate-950 flex justify-center items-center">
+                <canvas id="pwm-preview-canvas" width="800" height="240" className="w-full max-w-[800px] border border-slate-900 bg-slate-950/80 rounded"></canvas>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 border-t border-slate-800 flex justify-end gap-2 bg-slate-900/10">
+            <button id="pwm-master-cancel" className="px-4 py-2 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer">Cancel</button>
+            <button id="pwm-master-save" className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 font-bold rounded text-xs cursor-pointer text-white">Save Configuration</button>
           </div>
         </div>
       </div>
