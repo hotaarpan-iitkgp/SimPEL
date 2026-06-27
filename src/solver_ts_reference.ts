@@ -784,7 +784,13 @@ export class CircuitSimulator {
                                 const idxV = this.V_to_idx[tc.id]; i = (idxV !== undefined) ? w_curr[idxV] : 0.0;
                             } else if (["Switch", "Diode", "MOSFET", "vg-FET"].includes(tc.type)) {
                                 const ron = parseScientific(tc.parameters.Ron ?? "1e-3"), roff = parseScientific(tc.parameters.Roff ?? "1e6");
-                                i = v / ((ss[tc.id] ?? "OFF") === "ON" ? ron : roff);
+                                const state = ss[tc.id] ?? "OFF";
+                                if (tc.type === "Diode" && state === "ON") {
+                                    const vd_drop = parseScientific(tc.parameters.Vd ?? "0.7");
+                                    i = (v - vd_drop) / ron;
+                                } else {
+                                    i = v / (state === "ON" ? ron : roff);
+                                }
                             } else if (tc.type === "CurrentSource") {
                                 i = parseScientific(tc.parameters.value ?? "1");
                             }
@@ -1616,7 +1622,13 @@ export class CircuitSimulator {
             }
             else if (["Switch", "Diode", "MOSFET", "vg-FET", "S", "D"].includes(comp.type)) {
                 const ron = parseScientific(comp.parameters.Ron ?? "1e-3"), roff = parseScientific(comp.parameters.Roff ?? "1e6");
-                curr = v / ((ss[comp.id] ?? "OFF") === "ON" ? ron : roff);
+                const state = ss[comp.id] ?? "OFF";
+                if (comp.type === "Diode" && state === "ON") {
+                    const vd_drop = parseScientific(comp.parameters.Vd ?? "0.7");
+                    curr = (v - vd_drop) / ron;
+                } else {
+                    curr = v / (state === "ON" ? ron : roff);
+                }
             } 
             else if (comp.type === "CurrentSource" || comp.type === "I") { 
                 curr = parseScientific(comp.parameters.value ?? "1"); 

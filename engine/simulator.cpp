@@ -447,8 +447,13 @@ std::map<std::string, double> CircuitSimulator::evaluateControls(
                             std::string sw_state = "OFF";
                             auto it = sw_states_curr.find(target_id);
                             if (it != sw_states_curr.end()) sw_state = it->second;
-                            double r_curr = (sw_state == "ON") ? ron : roff;
-                            i_val = v_val / r_curr;
+                            if (target_comp->type == "Diode" && sw_state == "ON") {
+                                double vd_drop = target_comp->getParam("Vd", 0.7);
+                                i_val = (v_val - vd_drop) / ron;
+                            } else {
+                                double r_curr = (sw_state == "ON") ? ron : roff;
+                                i_val = v_val / r_curr;
+                            }
                         } else if (target_comp->type == "CurrentSource") {
                             i_val = target_comp->getParam("value", 1.0);
                         }
@@ -1272,8 +1277,13 @@ void CircuitSimulator::logAcceptedState(double t_val, const Vector& w_val, const
                 double roff = comp.getParam("Roff", 1e6);
                 std::string sw_st = "OFF";
                 if (sw_states_val.count(comp.id)) sw_st = sw_states_val.at(comp.id);
-                double r_curr = (sw_st == "ON") ? ron : roff;
-                i_val = v_val / r_curr;
+                if (comp.type == "Diode" && sw_st == "ON") {
+                    double vd_drop = comp.getParam("Vd", 0.7);
+                    i_val = (v_val - vd_drop) / ron;
+                } else {
+                    double r_curr = (sw_st == "ON") ? ron : roff;
+                    i_val = v_val / r_curr;
+                }
             } else if (comp.type == "CurrentSource") {
                 i_val = comp.getParam("value", 1.0);
             }

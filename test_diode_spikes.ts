@@ -111,8 +111,12 @@ try {
   // Let's sample the switch states
   console.log("Control signals and probe values in first 20 steps:");
   for (let i = 0; i < Math.min(20, result.time.length); i++) {
-    console.log(`t = ${result.time[i].toFixed(6)} s, v2 = ${result.voltages["node_2"][i].toFixed(4)} V, PI_Reg: ${result.signals["PI_Reg.Out"]?.[i]?.toFixed(4)}, Carrier: ${result.signals["PWM_Modulator.Out"]?.[i]?.toFixed(4)}, Comp Out: ${result.signals["PWM_Comp.Out"]?.[i]}, D1 Cond: ${result.signals["PROBE1.Conducting_D1"]?.[i]}, D1 V: ${result.signals["PROBE1.V_D1"]?.[i]?.toFixed(4)} V`);
+    console.log(`t = ${result.time[i].toFixed(6)} s, v2 = ${result.voltages["node_2"][i].toFixed(4)} V, PI_Reg: ${result.signals["PI_Reg.Out"]?.[i]?.toFixed(4)}, Carrier: ${result.signals["PWM_Modulator.Out"]?.[i]?.toFixed(4)}, Comp Out: ${result.signals["PWM_Comp.Out"]?.[i]}, D1 Cond: ${result.signals["PROBE1.Conducting_D1"]?.[i]}, D1 V: ${result.signals["PROBE1.V_D1"]?.[i]?.toFixed(4)} V, D1 I: ${result.custom_plots["I_D1"]?.[i]?.toFixed(4)} A`);
   }
+
+  let max_id = -Infinity;
+  let min_id = Infinity;
+  let current_spike_count = 0;
 
   for (let i = 0; i < node2_voltages.length; i++) {
     const vd = -node2_voltages[i];
@@ -123,17 +127,28 @@ try {
     if (vd > 5.0 || vd < -35.0) {
       spike_count++;
     }
+
+    const id = result.custom_plots["I_D1"]?.[i] ?? 0.0;
+    if (id > max_id) max_id = id;
+    if (id < min_id) min_id = id;
+
+    // Check if there are any non-physical current spikes (e.g. greater than 20A, Buck inductor current starts at 0A and maxes out at ~3A in this configuration)
+    if (id > 20.0 || id < -5.0) {
+      current_spike_count++;
+    }
   }
 
   console.log(`\n=== RESULTS ===`);
   console.log(`Diode Voltage range: [${min_vd.toFixed(4)} V, ${max_vd.toFixed(4)} V]`);
+  console.log(`Diode Current range: [${min_id.toFixed(4)} A, ${max_id.toFixed(4)} A]`);
   console.log(`Number of out-of-bounds voltage spikes: ${spike_count}`);
+  console.log(`Number of out-of-bounds current spikes: ${current_spike_count}`);
 
-  if (spike_count === 0 && max_vd > 0.0 && max_vd < 1.5 && min_vd > -26.0) {
-    console.log("\n✅ SUCCESS: Diode voltage is stable, physically accurate (Vd drop is ~0.7V), and completely free of numerical spikes!");
+  if (spike_count === 0 && current_spike_count === 0 && max_vd > 0.0 && max_vd < 1.5 && min_vd > -26.0) {
+    console.log("\n✅ SUCCESS: Diode voltage and current are stable, physically accurate, and completely free of numerical spikes!");
     process.exit(0);
   } else {
-    console.error(`\n❌ FAILURE: Diode voltage is unstable or incorrect. Out of bounds count: ${spike_count}`);
+    console.error(`\n❌ FAILURE: Diode simulation is unstable or incorrect. Out of bounds counts - V: ${spike_count}, I: ${current_spike_count}`);
     process.exit(1);
   }
 } catch (err: any) {
