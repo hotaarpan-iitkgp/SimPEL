@@ -106,3 +106,32 @@ export function parseScientific(valStr: string | number): number {
   const val = parseFloat(valStr);
   return isNaN(val) ? 0.0 : val;
 }
+
+export function getNextGateSignalLabel(baseLabel: string, existingComps: any[]): string {
+  const parseLabel = (label: string): { base: string; num: number | null } => {
+    const match = label.match(/^(.*?)([0-9]+)$/);
+    if (match) {
+      return { base: match[1], num: parseInt(match[2], 10) };
+    }
+    return { base: label, num: null };
+  };
+
+  const { base } = parseLabel(baseLabel);
+  const takenNums = new Set<number>();
+
+  existingComps.forEach((c: any) => {
+    if (c.type === 'vg-FET') {
+      const label = c.parameters?.Gate_Signal_Label || 'S1';
+      const parsed = parseLabel(label);
+      if (parsed.base === base && parsed.num !== null) {
+        takenNums.add(parsed.num);
+      }
+    }
+  });
+
+  let nextNum = 1;
+  while (takenNums.has(nextNum)) {
+    nextNum++;
+  }
+  return `${base}${nextNum}`;
+}

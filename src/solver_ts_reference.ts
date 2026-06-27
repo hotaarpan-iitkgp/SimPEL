@@ -617,7 +617,7 @@ export class CircuitSimulator {
             else if (c.type === "Capacitor") this.capacitors.push(c);
             else if (c.type === "Inductor") this.inductors.push(c);
             else if (["VoltageSource", "ACVoltageSource", "Ammeter"].includes(c.type)) this.voltage_sources.push(c);
-            else if (["Switch", "Diode", "MOSFET"].includes(c.type)) this.switches.push(c);
+            else if (["Switch", "Diode", "MOSFET", "vg-FET"].includes(c.type)) this.switches.push(c);
             else if (c.type === "Voltmeter") this.voltmeters.push(c);
         }
         this.num_L = this.inductors.length; this.num_V = this.voltage_sources.length;
@@ -757,7 +757,7 @@ export class CircuitSimulator {
                                 if (!first && this.cap_history[tc.id]) i = cv / this.cap_history[tc.id].dt_prev * (v - this.cap_history[tc.id].v_prev);
                             } else if (["VoltageSource", "ACVoltageSource", "Ammeter"].includes(tc.type)) {
                                 const idxV = this.V_to_idx[tc.id]; i = (idxV !== undefined) ? w_curr[idxV] : 0.0;
-                            } else if (["Switch", "Diode", "MOSFET"].includes(tc.type)) {
+                            } else if (["Switch", "Diode", "MOSFET", "vg-FET"].includes(tc.type)) {
                                 const ron = parseScientific(tc.parameters.Ron ?? "1e-3"), roff = parseScientific(tc.parameters.Roff ?? "1e6");
                                 i = v / ((ss[tc.id] ?? "OFF") === "ON" ? ron : roff);
                             } else if (tc.type === "CurrentSource") {
@@ -1254,7 +1254,7 @@ export class CircuitSimulator {
                 const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                 const vd = ((i1 >= 0) ? wl[i1] : 0.0) - ((i2 >= 0) ? wl[i2] : 0.0);
                 const old = ss[sw.id] ?? "OFF"; let swn = "OFF";
-                if (sw.type === "MOSFET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
+                if (sw.type === "MOSFET" || sw.type === "vg-FET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
                 else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
                 else if (sw.type === "Switch") swn = parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
                 if (swn !== old) { ss[sw.id] = swn; any_ch = true; }
@@ -1327,7 +1327,7 @@ export class CircuitSimulator {
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                     const vd = ((i1 >= 0) ? wn[i1] : 0.0) - ((i2 >= 0) ? wn[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; let swn = "OFF";
-                    if (sw.type === "MOSFET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
+                    if (sw.type === "MOSFET" || sw.type === "vg-FET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
                     else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
                     else if (sw.type === "Switch") swn = parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
                     next_sw[sw.id] = swn; if (swn !== old) any_ch = true;
@@ -1361,7 +1361,7 @@ export class CircuitSimulator {
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                     const vd = ((i1 >= 0) ? w_con[i1] : 0.0) - ((i2 >= 0) ? w_con[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; let swn = "OFF";
-                    if (sw.type === "MOSFET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
+                    if (sw.type === "MOSFET" || sw.type === "vg-FET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
                     else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
                     else if (sw.type === "Switch") swn = parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
                     next_sw[sw.id] = swn; if (swn !== old) any_ch = true;
@@ -1440,7 +1440,7 @@ export class CircuitSimulator {
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                     const vd = ((i1 >= 0) ? wn[i1] : 0.0) - ((i2 >= 0) ? wn[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; let swn = "OFF";
-                    if (sw.type === "MOSFET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
+                    if (sw.type === "MOSFET" || sw.type === "vg-FET") swn = (sigs[sw.channels.G] ?? 0) > 0.5 ? "ON" : "OFF";
                     else if (sw.type === "Diode") swn = vd > (old === "ON" ? 0.0 : 0.7) ? "ON" : "OFF";
                     else if (sw.type === "Switch") swn = parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
                     next_sw[sw.id] = swn; if (swn !== old) any_ch = true;
@@ -1509,7 +1509,7 @@ export class CircuitSimulator {
                 const idx = this.V_to_idx[comp.id]; 
                 curr = (idx !== undefined) ? w_val[idx] : 0.0; 
             }
-            else if (["Switch", "Diode", "MOSFET", "S", "D"].includes(comp.type)) {
+            else if (["Switch", "Diode", "MOSFET", "vg-FET", "S", "D"].includes(comp.type)) {
                 const ron = parseScientific(comp.parameters.Ron ?? "1e-3"), roff = parseScientific(comp.parameters.Roff ?? "1e6");
                 curr = v / ((ss[comp.id] ?? "OFF") === "ON" ? ron : roff);
             } 

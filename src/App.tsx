@@ -42,6 +42,38 @@ export default function App() {
         
         const c = state.components.find(comp => comp.id === curr.compId);
 
+        if (c && c.type === 'vg-FET') {
+          const fromTag = String(c.parameters?.Gate_Signal_Label || 'S1').trim().toLowerCase();
+          
+          // Find subsystem prefix of the current vg-FET
+          const compIdParts = c.id.split('.');
+          const subsystemPrefix = compIdParts.slice(0, -1).join('.'); // Empty if at root
+          
+          // Find all GOTO_SIGs with matching tag
+          const matchingGotos = state.components.filter((other: any) => 
+            other.type === 'GOTO_SIG' && String(other.parameters?.tag || 'A').trim().toLowerCase() === fromTag
+          );
+          
+          let matchingGoto = matchingGotos.find((other: any) => {
+            const parts = other.id.split('.');
+            const prefix = parts.slice(0, -1).join('.');
+            return prefix === subsystemPrefix;
+          });
+          
+          if (!matchingGoto) {
+            matchingGoto = matchingGotos.find((other: any) => !other.id.includes('.'));
+          }
+          
+          if (!matchingGoto && matchingGotos.length > 0) {
+            matchingGoto = matchingGotos[0];
+          }
+
+          if (matchingGoto) {
+            queue.push({ type: 'pin', compId: matchingGoto.id, terminal: 'In' });
+            continue;
+          }
+        }
+        
         // Wireless signal routing: if we hit a FROM_SIG, jump to the matching GOTO_SIG's input terminal
         if (c && c.type === 'FROM_SIG') {
           const fromTag = String(c.parameters?.tag || 'A').trim().toLowerCase();

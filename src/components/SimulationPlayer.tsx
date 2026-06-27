@@ -95,7 +95,10 @@ function getSegmentsForWire(wire: any, allWires: any[]): { segmentId: string; pa
 }
 
 // Helper code to resolve the controller terminal that connects to a MOSFET's Gate terminal
-function getGateSignalName(compId: string, wires: any[]): string {
+function getGateSignalName(compId: string, wires: any[], compType?: string): string {
+  if (compType === 'vg-FET') {
+    return `${compId}.G`;
+  }
   if (!wires) return "0.0";
   // Try finding where G is the 'to' of a wire
   let rootWire = wires.find((w: any) => 
@@ -211,6 +214,38 @@ const resolveInputPinToSource = (trace: string): string => {
       visitedPins.add(pinKey);
       
       const c = state.components.find(comp => comp.id === curr.compId);
+
+      if (c && c.type === 'vg-FET') {
+        const fromTag = String(c.parameters?.Gate_Signal_Label || 'S1').trim().toLowerCase();
+        
+        // Find subsystem prefix of the current vg-FET
+        const compIdParts = c.id.split('.');
+        const subsystemPrefix = compIdParts.slice(0, -1).join('.'); // Empty if at root
+        
+        // Find all GOTO_SIGs with matching tag
+        const matchingGotos = state.components.filter((other: any) => 
+          other.type === 'GOTO_SIG' && String(other.parameters?.tag || 'A').trim().toLowerCase() === fromTag
+        );
+        
+        let matchingGoto = matchingGotos.find((other: any) => {
+          const parts = other.id.split('.');
+          const prefix = parts.slice(0, -1).join('.');
+          return prefix === subsystemPrefix;
+        });
+        
+        if (!matchingGoto) {
+          matchingGoto = matchingGotos.find((other: any) => !other.id.includes('.'));
+        }
+        
+        if (!matchingGoto && matchingGotos.length > 0) {
+          matchingGoto = matchingGotos[0];
+        }
+
+        if (matchingGoto) {
+          queue.push({ type: 'pin', compId: matchingGoto.id, terminal: 'In' });
+          continue;
+        }
+      }
 
       // Wireless signal routing: if we hit a FROM_SIG, jump to the matching GOTO_SIG's input terminal
       if (c && c.type === 'FROM_SIG') {
@@ -632,7 +667,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
     const endpointCoords: Record<string, { x: number; y: number }> = {};
 
     const physicalComponents = state.components.filter((c: any) => 
-      ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM'].includes(c.type)
+      ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'vg-FET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM'].includes(c.type)
     );
 
     physicalComponents.forEach((comp: any) => {
@@ -1001,7 +1036,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
 
     const initialScopes: Record<string, any> = {};
     state.components.forEach((comp: any) => {
-      if (comp.type?.toLowerCase() === 'mosfet') {
+      if (comp.type?.toLowerCase() === 'mosfet' || comp.type === 'vg-FET') {
         const scopeId = `gate_${comp.id}`;
         
         const rot = comp.rotation || 0;
@@ -1018,7 +1053,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
         
         const boxCenterX = globalGateX - 50;
         const boxCenterY = globalGateY - 30;
-        const gateSig = getGateSignalName(comp.id, state.wires);
+        const gateSig = getGateSignalName(comp.id, state.wires, comp.type);
         
         initialScopes[scopeId] = {
           x: boxCenterX,
@@ -1043,7 +1078,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
         const p2Local = pinMap['B'] || { x: 0, y: 40 };
         return { p1: { x: p1Local.x, y: p1Local.y }, p2: { x: p2Local.x, y: p2Local.y } };
       }
-      if (comp.type === 'MOSFET') {
+      if (comp.type === 'MOSFET' || comp.type === 'vg-FET') {
         const p1Local = pinMap['D'] || { x: 0, y: -40 };
         const p2Local = pinMap['S'] || { x: 0, y: 40 };
         return { p1: { x: p1Local.x, y: p1Local.y }, p2: { x: p2Local.x, y: p2Local.y } };
@@ -1089,7 +1124,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
 
     const uf = new LocalUnionFind();
     const physicalComponents = state.components.filter((c: any) => 
-      ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM'].includes(c.type)
+      ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'vg-FET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM'].includes(c.type)
     );
 
     physicalComponents.forEach((comp: any) => {
@@ -1125,7 +1160,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
 
     const getComponentNodes = (comp: any): { u: string, v: string } | null => {
       const pinLabels = Object.keys(getComponentPins(comp));
-      if (comp.type === 'MOSFET') {
+      if (comp.type === 'MOSFET' || comp.type === 'vg-FET') {
         const u = pinToNode[`${comp.id}.D`] || uf.find(`${comp.id}.D`);
         const v = pinToNode[`${comp.id}.S`] || uf.find(`${comp.id}.S`);
         return { u, v };

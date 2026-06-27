@@ -9,7 +9,7 @@ import { state, saveState } from '../schematic/state';
 import { draw, updateAllWirePathsInDOM } from '../schematic/renderer';
 import { initInteractions } from '../schematic/interaction';
 import { updatePropertiesPanel } from '../schematic/properties';
-import { generateNextId, showToast } from '../schematic/utils';
+import { generateNextId, showToast, getNextGateSignalLabel } from '../schematic/utils';
 import { DEFAULT_PARAMETERS, getComponentPins } from '../schematic/config';
 import { openSimSettings, saveSimSettings, closeSimSettings } from '../schematic/simSettings';
 import { openPlotConfig, savePlotConfig, closePlotConfig, setAvailableVariables } from '../schematic/plotConfig';
@@ -222,6 +222,9 @@ export default function SchematicEditor({
     
     const id = generateNextId(type);
     const parameters = JSON.parse(JSON.stringify(DEFAULT_PARAMETERS[type] || {}));
+    if (type === 'vg-FET') {
+      parameters.Gate_Signal_Label = getNextGateSignalLabel("S1", state.components);
+    }
 
 
     
@@ -316,6 +319,7 @@ export default function SchematicEditor({
     { type: 'S', label: 'Ideal Switch', desc: 'Controllable physical switch' },
     { type: 'D', label: 'Diode', desc: 'Unidirectional clamping diode' },
     { type: 'MOSFET', label: 'MOSFET', desc: 'Active semiconductor device' },
+    { type: 'vg-FET', label: 'vg-FET', desc: 'MOSFET with wireless gate control' },
     { type: 'V', label: 'DC Voltage Source', desc: 'Constant DC battery input' },
     { type: 'I', label: 'DC Current Source', desc: 'Ideal constant current gen' },
     { type: 'AC_V', label: 'AC Voltage Source', desc: 'Sinusoidal grid voltage source' },

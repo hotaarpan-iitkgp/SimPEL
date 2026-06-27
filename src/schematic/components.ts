@@ -89,6 +89,20 @@ export function getComponentSVG(comp: any): string {
         <path class="comp-fill" d="M 7,6 L 17,6 L 12,-6 Z" fill="currentColor" opacity="0.12"/>
       `;
       break;
+    case 'vg-FET': { // Wireless MOSFET switch with internal signal listener
+      const label = comp.parameters && comp.parameters.Gate_Signal_Label || "S1";
+      shape = `
+        <path class="comp-path" d="M 0,-40 L 0,-15 M 0,15 L 0,40" fill="none" stroke="currentColor" stroke-width="2" />
+        <path class="comp-path" d="M -5,-15 L -5,15 M -5,0 L 0,0 M 0,-15 L 0,-10 M 0,15 L 0,10" fill="none" stroke="currentColor" stroke-width="2" />
+        <path class="comp-path" d="M -10,-15 L -10,15 M -14,0 L -10,0 M -12,-3 L -10,0 L -12,3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <path class="comp-path" d="M -5,0 L -1,2 M -5,0 L -1,-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <!-- Antiparallel body diode -->
+        <path class="comp-path" d="M 0,-15 L 12,-15 L 12,-6 M 7,-6 L 17,-6 M 7,6 L 17,6 L 12,-6 Z M 12,6 L 12,15 L 0,15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter" stroke-linecap="round" />
+        <path class="comp-fill" d="M 7,6 L 17,6 L 12,-6 Z" fill="currentColor" opacity="0.12"/>
+        <text x="-16" y="3" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="currentColor" text-anchor="end" stroke="none">${label}</text>
+      `;
+      break;
+    }
     case 'AC_V': // AC Voltage Source
       shape = `
         <circle cx="0" cy="0" r="16" class="comp-path" fill="none" stroke="currentColor" stroke-width="2" />

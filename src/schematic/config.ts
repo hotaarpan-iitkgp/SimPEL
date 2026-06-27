@@ -13,6 +13,7 @@ export const COMPONENT_PINS: Record<string, any> = {
   AM:  { A: {x: 0, y: -40, dx: 0, dy: -1}, B: {x: 0, y: 40, dx: 0, dy: 1}, Out: {x: 20, y: 0, dx: 1, dy: 0} },
   
   MOSFET: { D: {x: 0, y: -40, dx: 0, dy: -1}, S: {x: 0, y: 40, dx: 0, dy: 1}, G: {x: -20, y: 0, dx: -1, dy: 0} },
+  'vg-FET': { D: {x: 0, y: -40, dx: 0, dy: -1}, S: {x: 0, y: 40, dx: 0, dy: 1} },
   AC_V:   { A: {x: 0, y: -40, dx: 0, dy: -1}, B: {x: 0, y: 40, dx: 0, dy: 1} },
   GND:    { Gnd: {x: 0, y: -20, dx: 0, dy: -1} },
   XFMR:   {}, // Pins dynamically computed in getComponentPins
@@ -321,6 +322,7 @@ export const DEFAULT_PARAMETERS: Record<string, any> = {
   S:      { Ron: "1m", Roff: "1M" },
   D:      { Vd: "0.7", Ron: "1m", Roff: "1M" },
   MOSFET: { Ron: "10m", Roff: "1M" },
+  'vg-FET': { Ron: "10m", Roff: "1M", Gate_Signal_Label: "S1" },
   V:      { value: "24" },
   I:      { value: "1" },
   AC_V:   { amplitude: "12", frequency: "50" },
@@ -413,6 +415,7 @@ export const EXPORT_TYPE_NAMES: Record<string, string> = {
   S:      "Switch",
   D:      "Diode",
   MOSFET: "MOSFET",
+  'vg-FET': "vg-FET",
   V:      "VoltageSource",
   I:      "CurrentSource",
   AC_V:   "ACVoltageSource",

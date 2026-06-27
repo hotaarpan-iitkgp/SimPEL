@@ -1,6 +1,6 @@
 import { state, saveState } from './state';
 import { draw } from './renderer';
-import { showToast, generateNextId, parseScientific } from './utils';
+import { showToast, generateNextId, parseScientific, getNextGateSignalLabel } from './utils';
 import { 
   getWireEndpointCoords, 
   getWireEndpointDir, 
@@ -393,6 +393,14 @@ export function pasteSelected(): void {
     c.x += 60; // Paste displacement offset
     c.y += 60;
     
+    if (c.type === 'vg-FET') {
+      const currentLabel = c.parameters?.Gate_Signal_Label || 'S1';
+      c.parameters = {
+        ...(c.parameters || {}),
+        Gate_Signal_Label: getNextGateSignalLabel(currentLabel, [...state.components, ...newComps])
+      };
+    }
+    
     state.components.push(c);
     newComps.push(c);
   });
@@ -693,7 +701,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
   
   // 1. Map all physical power-stage component pins to unique strings
   const physicalComponents = state.components.filter((c: any) => {
-    const isBasicPhys = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM'].includes(c.type);
+     const isBasicPhys = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'vg-FET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM'].includes(c.type);
     const isDetailedPhys = DETAILED_COMPONENTS.some(dc => dc.type === c.type && dc.category === 'electrical');
     return isBasicPhys || isDetailedPhys;
   });
@@ -1244,8 +1252,9 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           Roff: p.Roff || 1e6
         });
         break;
-      case 'MOSFET':
+       case 'MOSFET':
       case 'MOSFET_DIODE':
+      case 'vg-FET':
       case 'IGBT':
       case 'IGBT_DIODE':
       case 'IGCT':
@@ -2012,7 +2021,39 @@ function getIncomingControlTerminal(compId: string, destTerminalName: string): s
       // Port boundary bypass: if we hit an INPORT, jump to the external subsystem boundary pin
       const comp = state.components.find((c: any) => c.id === curr.compId);
       
-      // Wireless signal routing: if we hit a FROM_SIG, jump to the matching GOTO_SIG's input terminal
+      // Wireless signal routing: if we hit a vg-FET, jump to the matching GOTO_SIG's input terminal
+       if (comp && comp.type === 'vg-FET') {
+        const fromTag = String(comp.parameters?.Gate_Signal_Label || 'S1').trim().toLowerCase();
+        
+        // Find subsystem prefix of the current vg-FET
+        const compIdParts = comp.id.split('.');
+        const subsystemPrefix = compIdParts.slice(0, -1).join('.'); // Empty if at root
+        
+        // Find all GOTO_SIGs with matching tag
+        const matchingGotos = state.components.filter((c: any) => 
+          c.type === 'GOTO_SIG' && String(c.parameters?.tag || 'A').trim().toLowerCase() === fromTag
+        );
+        
+        let matchingGoto = matchingGotos.find((c: any) => {
+          const parts = c.id.split('.');
+          const prefix = parts.slice(0, -1).join('.');
+          return prefix === subsystemPrefix;
+        });
+        
+        if (!matchingGoto) {
+          matchingGoto = matchingGotos.find((c: any) => !c.id.includes('.'));
+        }
+        
+        if (!matchingGoto && matchingGotos.length > 0) {
+          matchingGoto = matchingGotos[0];
+        }
+
+        if (matchingGoto) {
+          queue.push({ type: 'pin', compId: matchingGoto.id, terminal: 'In' });
+          continue;
+        }
+      }
+      
       if (comp && comp.type === 'FROM_SIG') {
         const fromTag = String(comp.parameters?.tag || 'A').trim().toLowerCase();
         
