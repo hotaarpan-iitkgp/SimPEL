@@ -216,6 +216,7 @@ export function getComponentPins(comp: any): Record<string, any> {
   }
   if (comp.type === 'PWM_MASTER') {
     const n = parseInt(comp.parameters && comp.parameters.num_carriers) || 3;
+    const isCommon = (comp.parameters && comp.parameters.common_modulation) === 'true';
     let config: any[] = [];
     try {
       config = JSON.parse(comp.parameters && comp.parameters.config || '[]');
@@ -226,15 +227,18 @@ export function getComponentPins(comp: any): Record<string, any> {
     const halfW = width / 2;
     const halfH = height / 2;
 
-    pins['In'] = { x: -halfW, y: -halfH + 20, dx: -1, dy: 0 };
+    if (isCommon) {
+      pins['In'] = { x: -halfW, y: -halfH + 15, dx: -1, dy: 0 };
+    } else {
+      for (let i = 1; i <= n; i++) {
+        pins[`In${i}`] = { x: -halfW, y: -halfH + 15 + 40 * (i - 1), dx: -1, dy: 0 };
+      }
+    }
 
-    let leftPinIndex = 1;
     for (let i = 2; i <= n; i++) {
       const cConf = config.find((c: any) => c.id === i);
       if (cConf && cConf.phase_source === 'external') {
-        const yVal = -halfH + 20 + 30 * leftPinIndex;
-        pins[`ExtPhase${i}`] = { x: -halfW, y: yVal, dx: -1, dy: 0 };
-        leftPinIndex++;
+        pins[`ExtPhase${i}`] = { x: -halfW, y: -halfH + 30 + 40 * (i - 1), dx: -1, dy: 0 };
       }
     }
 
@@ -363,7 +367,7 @@ export const DEFAULT_PARAMETERS: Record<string, any> = {
   GAIN:   { K: "2.5" },
   PID:    { Kp: "2.5", Ki: "50.0", Kd: "0" },
   PWM:    { frequency: "10k", min: "0", max: "1" },
-  PWM_MASTER: { num_carriers: "3", fc: "10k", dead_time: "1u", cycles: "2", config: "[]" },
+  PWM_MASTER: { num_carriers: "3", fc: "10k", dead_time: "1u", cycles: "2", config: "[]", common_modulation: "false" },
   TRI:    { frequency: "10k", min: "0", max: "1" },
   COMP:   { hysteresis: "0" },
   FCN:    { expr: "u[0] * 2" },

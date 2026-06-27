@@ -755,6 +755,11 @@ export class CircuitSimulator {
                         } else if (cat.type === "PWM_MASTER") {
                             const chs: Record<string, string> = {};
                             if (item.input) chs.In = item.input;
+                            if (Array.isArray(item.inputs)) {
+                                item.inputs.forEach((inp: string, index: number) => {
+                                    if (inp) chs[`In${index + 1}`] = inp;
+                                });
+                            }
                             if (Array.isArray(item.ext_phases)) {
                                 item.ext_phases.forEach((ep: string, index: number) => {
                                     if (ep) chs[`ExtPhase${index + 1}`] = ep;
@@ -2237,10 +2242,14 @@ export class CircuitSimulator {
                     }
 
                     const stateObj = cs[b.id];
-                    const vMod = signals[b.channels.In] ?? 0.0;
+                    const isCommon = b.parameters.common_modulation === 'true';
                     const Tc = 1.0 / fc;
 
                     for (let idx = 1; idx <= N; idx++) {
+                        const vMod = isCommon 
+                            ? (signals[b.channels.In] ?? 0.0) 
+                            : (signals[b.channels[`In${idx}`]] ?? 0.0);
+
                         const cConf = config.find((c: any) => c.id === idx);
                         let phaseDeg = 0.0;
                         let lOffset = 0.0;

@@ -21,24 +21,52 @@ const control_loops = {
     {
       id: "REF",
       type: "Constant",
-      original_type: "SINE_WAVE",
-      amplitude: "2.5",
-      frequency: "50",
-      phase: "0",
+      value: "0.5",
       output: "REF.Out"
+    },
+    {
+      id: "REF1",
+      type: "Constant",
+      value: "0.2",
+      output: "REF1.Out"
+    },
+    {
+      id: "REF2",
+      type: "Constant",
+      value: "1.2",
+      output: "REF2.Out"
+    },
+    {
+      id: "REF3",
+      type: "Constant",
+      value: "2.2",
+      output: "REF3.Out"
+    },
+    {
+      id: "REF4",
+      type: "Constant",
+      value: "3.2",
+      output: "REF4.Out"
+    },
+    {
+      id: "REF5",
+      type: "Constant",
+      value: "4.2",
+      output: "REF5.Out"
     }
   ],
   pwm_masters: [
     {
       id: "PWM5",
       type: "PWM_MASTER",
-      input: "REF.Out",
+      inputs: ["REF1.Out", "REF2.Out", "REF3.Out", "REF4.Out", "REF5.Out"],
       ext_phases: [undefined, undefined, undefined, undefined, undefined],
       outputs_direct: ["PWM5.OutDirect1", "PWM5.OutDirect2", "PWM5.OutDirect3", "PWM5.OutDirect4", "PWM5.OutDirect5"],
       outputs_compl: ["PWM5.OutCompl1", "PWM5.OutCompl2", "PWM5.OutCompl3", "PWM5.OutCompl4", "PWM5.OutCompl5"],
       num_carriers: 5,
       fc: "10k",
       dead_time: "1u",
+      common_modulation: "false",
       config: JSON.stringify(config5)
     },
     {
@@ -51,6 +79,7 @@ const control_loops = {
       num_carriers: 3,
       fc: "10k",
       dead_time: "2u",
+      common_modulation: "true",
       config: JSON.stringify(config3)
     }
   ]
@@ -72,6 +101,10 @@ try {
   let deadTimeViolations = 0;
   
   const refSigs = result.signals["REF.Out"] || [];
+  const ref1Sigs = result.signals["REF1.Out"] || [];
+  const ref3Sigs = result.signals["REF3.Out"] || [];
+  const ref5Sigs = result.signals["REF5.Out"] || [];
+  
   const p3d1 = result.signals["PWM3.OutDirect1"] || [];
   const p3c1 = result.signals["PWM3.OutCompl1"] || [];
   const p3d2 = result.signals["PWM3.OutDirect2"] || [];
@@ -99,16 +132,16 @@ try {
     console.log("FAIL: Dead time overlap detected!");
   }
   
-  console.log("\nSample timeline signals (PWM3 - 3-Carrier Phase-Shifted):");
+  console.log("\nSample timeline signals (PWM3 - 3-Carrier Phase-Shifted Common Input):");
   for (let stepIdx = 100; stepIdx < 120; stepIdx++) {
     const t = result.time[stepIdx];
     console.log(`t = ${t.toFixed(6)} s | Mod = ${(refSigs[stepIdx] ?? 0).toFixed(4)} | Cr1_Direct = ${p3d1[stepIdx]} | Cr1_Compl = ${p3c1[stepIdx]} | Cr2_Direct = ${p3d2[stepIdx]} | Cr3_Direct = ${p3d3[stepIdx]}`);
   }
 
-  console.log("\nSample timeline signals (PWM5 - 5-Carrier Level-Shifted):");
+  console.log("\nSample timeline signals (PWM5 - 5-Carrier Level-Shifted Independent Inputs):");
   for (let stepIdx = 200; stepIdx < 210; stepIdx++) {
     const t = result.time[stepIdx];
-    console.log(`t = ${t.toFixed(6)} s | Mod = ${(refSigs[stepIdx] ?? 0).toFixed(4)} | Cr1_Direct = ${p5d1[stepIdx]} | Cr3_Direct = ${p5d3[stepIdx]} | Cr5_Direct = ${p5d5[stepIdx]}`);
+    console.log(`t = ${t.toFixed(6)} s | Mod1 = ${(ref1Sigs[stepIdx] ?? 0).toFixed(4)} | Cr1_Direct = ${p5d1[stepIdx]} | Mod3 = ${(ref3Sigs[stepIdx] ?? 0).toFixed(4)} | Cr3_Direct = ${p5d3[stepIdx]} | Mod5 = ${(ref5Sigs[stepIdx] ?? 0).toFixed(4)} | Cr5_Direct = ${p5d5[stepIdx]}`);
   }
   
 } catch (e) {

@@ -214,18 +214,25 @@ export function getComponentSVG(comp: any): string {
         <text x="0" y="-${halfH - 24}" font-family="JetBrains Mono, monospace" font-size="7" fill="#64748b" text-anchor="middle" stroke="none">fc=${comp.parameters.fc || '10k'}</text>
       `;
 
-      // Draw In (Modulation reference)
-      svg += `<path class="comp-path" d="M -${halfW + 4},-${halfH - 20} L -${halfW},-${halfH - 20}" stroke="currentColor" stroke-width="2" />`;
-      svg += `<text x="-${halfW - 4}" y="-${halfH - 17}" font-family="Inter, sans-serif" font-size="7" fill="#94a3b8" text-anchor="start" stroke="none">Mod</text>`;
+      const isCommon = (comp.parameters && comp.parameters.common_modulation) === 'true';
 
-      let leftPinIndex = 1;
+      if (isCommon) {
+        svg += `<path class="comp-path" d="M -${halfW + 4},-${halfH - 15} L -${halfW},-${halfH - 15}" stroke="currentColor" stroke-width="2" />`;
+        svg += `<text x="-${halfW - 4}" y="-${halfH - 12}" font-family="Inter, sans-serif" font-size="7" fill="#94a3b8" text-anchor="start" stroke="none">Mod</text>`;
+      } else {
+        for (let i = 1; i <= n; i++) {
+          const yVal = -halfH + 15 + 40 * (i - 1);
+          svg += `<path class="comp-path" d="M -${halfW + 4},${yVal} L -${halfW},${yVal}" stroke="currentColor" stroke-width="2" />`;
+          svg += `<text x="-${halfW - 4}" y="${yVal + 3}" font-family="Inter, sans-serif" font-size="7" fill="#94a3b8" text-anchor="start" stroke="none">M${i}</text>`;
+        }
+      }
+
       for (let i = 2; i <= n; i++) {
         const cConf = config.find((c: any) => c.id === i);
         if (cConf && cConf.phase_source === 'external') {
-          const yVal = -halfH + 20 + 30 * leftPinIndex;
+          const yVal = -halfH + 30 + 40 * (i - 1);
           svg += `<path class="comp-path" d="M -${halfW + 4},${yVal} L -${halfW},${yVal}" stroke="currentColor" stroke-width="2" />`;
           svg += `<text x="-${halfW - 4}" y="${yVal + 3}" font-family="Inter, sans-serif" font-size="7" fill="#94a3b8" text-anchor="start" stroke="none">EP${i}</text>`;
-          leftPinIndex++;
         }
       }
 

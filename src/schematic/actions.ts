@@ -1779,9 +1779,11 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
         break;
       case 'PWM_MASTER': {
         const N = parseInt(p.num_carriers) || 3;
+        const isCommon = p.common_modulation === 'true';
         const ext_phases: any[] = [];
         const outputs_direct: string[] = [];
         const outputs_compl: string[] = [];
+        const inputs: any[] = [];
         
         let config: any[] = [];
         try {
@@ -1792,6 +1794,12 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           outputs_direct.push(`${comp.id}.OutDirect${idx}`);
           outputs_compl.push(`${comp.id}.OutCompl${idx}`);
           
+          if (isCommon) {
+            inputs.push(undefined);
+          } else {
+            inputs.push(getIncomingControlTerminal(comp.id, `In${idx}`));
+          }
+
           if (idx === 1) {
             ext_phases.push(undefined);
           } else {
@@ -1806,13 +1814,15 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
 
         control_loops.pwm_masters.push({
           id: comp.id,
-          input: getIncomingControlTerminal(comp.id, 'In'),
+          input: isCommon ? getIncomingControlTerminal(comp.id, 'In') : undefined,
+          inputs: isCommon ? undefined : inputs,
           ext_phases,
           outputs_direct,
           outputs_compl,
           num_carriers: N,
           fc: p.fc || "10k",
           dead_time: p.dead_time || "1u",
+          common_modulation: isCommon ? "true" : "false",
           config: p.config || "[]"
         });
         break;

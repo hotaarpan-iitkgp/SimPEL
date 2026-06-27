@@ -1158,26 +1158,31 @@ export default function SchematicEditor({
           </div>
           
           <div className="p-4 flex flex-col gap-4 overflow-y-auto" style={{ flex: 1 }}>
-            {/* Top Panel */}
-            <div className="grid grid-cols-4 gap-4 p-3 bg-slate-950/40 border border-slate-800 rounded">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-slate-400 font-bold uppercase">Number of Carriers (N)</label>
-                <input id="pwm-num-carriers" type="number" min="1" max="20" className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200" />
+            <div className="flex flex-col gap-3 p-3 bg-slate-950/40 border border-slate-800 rounded">
+              <div className="grid grid-cols-4 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase">Number of Carriers (N)</label>
+                  <input id="pwm-num-carriers" type="number" min="1" max="20" className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase">Carrier Frequency (fc, Hz)</label>
+                  <input id="pwm-frequency" type="text" className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase">Dead Time (s)</label>
+                  <input id="pwm-dead-time" type="text" className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase">Preview Window (Cycles)</label>
+                  <select id="pwm-preview-cycles" className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200">
+                    <option value="2">2 Cycles</option>
+                    <option value="3">3 Cycles</option>
+                  </select>
+                </div>
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-slate-400 font-bold uppercase">Carrier Frequency (fc, Hz)</label>
-                <input id="pwm-frequency" type="text" className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-slate-400 font-bold uppercase">Dead Time (s)</label>
-                <input id="pwm-dead-time" type="text" className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-slate-400 font-bold uppercase">Preview Window (Cycles)</label>
-                <select id="pwm-preview-cycles" className="bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200">
-                  <option value="2">2 Cycles</option>
-                  <option value="3">3 Cycles</option>
-                </select>
+              <div className="flex items-center gap-2 pt-1">
+                <input id="pwm-common-modulation" type="checkbox" className="accent-emerald-500 cursor-pointer h-3.5 w-3.5 rounded border-slate-800 bg-slate-900" />
+                <label htmlFor="pwm-common-modulation" className="text-[10px] text-slate-400 font-bold uppercase cursor-pointer select-none">Use Common Modulator Input (If unchecked, each carrier has its own Mod input)</label>
               </div>
             </div>
             

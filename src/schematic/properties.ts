@@ -1651,17 +1651,21 @@ export function openPwmMasterModal(comp: any): void {
   const frequencyInput: any = document.getElementById('pwm-frequency');
   const deadTimeInput: any = document.getElementById('pwm-dead-time');
   const previewCyclesSelect: any = document.getElementById('pwm-preview-cycles');
+  const commonModulationInput: any = document.getElementById('pwm-common-modulation');
   const tbody = document.getElementById('pwm-carriers-tbody');
   const canvas: any = document.getElementById('pwm-preview-canvas');
 
-  if (!modal || !numCarriersInput || !frequencyInput || !deadTimeInput || !previewCyclesSelect || !tbody || !canvas) return;
+  if (!modal || !numCarriersInput || !frequencyInput || !deadTimeInput || !previewCyclesSelect || !tbody || !canvas || !commonModulationInput) return;
 
   // Initialize values
   let N = parseInt(comp.parameters.num_carriers) || 3;
   let fc = comp.parameters.fc || "10k";
   let deadTime = comp.parameters.dead_time || "1u";
   let cycles = parseInt(comp.parameters.cycles) || 2;
+  let commonModulation = comp.parameters.common_modulation === "true";
   
+  commonModulationInput.checked = commonModulation;
+
   let config: any[] = [];
   try {
     config = JSON.parse(comp.parameters.config || '[]');
@@ -1929,6 +1933,11 @@ export function openPwmMasterModal(comp: any): void {
   };
   previewCyclesSelect.addEventListener('change', handleCyclesChange);
 
+  const handleCommonModulationChange = (e: any) => {
+    commonModulation = e.target.checked;
+  };
+  commonModulationInput.addEventListener('change', handleCommonModulationChange);
+
   const cleanupListeners = () => {
     closeBtn?.replaceWith(closeBtn.cloneNode(true));
     cancelBtn?.replaceWith(cancelBtn.cloneNode(true));
@@ -1937,6 +1946,7 @@ export function openPwmMasterModal(comp: any): void {
     frequencyInput.removeEventListener('change', handleFreqChange);
     deadTimeInput.removeEventListener('change', handleDeadTimeChange);
     previewCyclesSelect.removeEventListener('change', handleCyclesChange);
+    commonModulationInput.removeEventListener('change', handleCommonModulationChange);
   };
 
   const handleSave = () => {
@@ -1945,6 +1955,7 @@ export function openPwmMasterModal(comp: any): void {
     comp.parameters.fc = fc;
     comp.parameters.dead_time = deadTime;
     comp.parameters.cycles = String(cycles);
+    comp.parameters.common_modulation = String(commonModulation);
     comp.parameters.config = JSON.stringify(config);
     
     cleanDanglingWires(comp.id);

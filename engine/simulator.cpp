@@ -475,11 +475,18 @@ std::map<std::string, double> CircuitSimulator::evaluateControls(
                 
                 auto config = parse_pwm_config(config_str, N);
                 
-                std::string in_chan = block.getChannelRef("In");
-                double v_mod = in_chan.empty() ? 0.0 : signals_local[in_chan];
+                bool is_common = (block.getParamStr("common_modulation", "false") == "true");
                 double Tc = 1.0 / fc;
 
                 for (int idx = 1; idx <= N; idx++) {
+                    double v_mod = 0.0;
+                    if (is_common) {
+                        std::string in_chan = block.getChannelRef("In");
+                        v_mod = in_chan.empty() ? 0.0 : signals_local[in_chan];
+                    } else {
+                        std::string in_chan = block.getChannelRef("In" + std::to_string(idx));
+                        v_mod = in_chan.empty() ? 0.0 : signals_local[in_chan];
+                    }
                     double phase_deg = 0.0;
                     double l_offset = 0.0;
 
