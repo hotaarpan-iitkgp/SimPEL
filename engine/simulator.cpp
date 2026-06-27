@@ -681,6 +681,9 @@ Vector CircuitSimulator::compute_k(
     Vector w_local = w_stage;
     Matrix K = K_static;
 
+    auto stage_ctrl_start = ctrl_states;
+    auto signals_start = evaluateControls(t_stage, w_stage, stage_ctrl_start, dt_val, sw_states_curr);
+
     // Stamp active switch states
     for (const auto& sw : switches) {
         std::string sw_st = sw_states_curr.count(sw.id) ? sw_states_curr.at(sw.id) : "OFF";
@@ -747,7 +750,7 @@ Vector CircuitSimulator::compute_k(
             std::string new_state = "OFF";
 
             if (sw_type == "MOSFET") {
-                double gate_val = signals_local[sw.getChannelRef("G")];
+                double gate_val = signals_start[sw.getChannelRef("G")];
                 bool gate_on = gate_val > 0.5;
                 double vd_drop = sw.getParam("Vd", 0.7);
                 bool diode_on = -vd > ((old_state == "ON") ? vd_drop - 0.1 : vd_drop);
@@ -827,6 +830,9 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
     auto ctrl_new = ctrl_states;
     auto sw_new = sw_states_curr;
 
+    auto temp_ctrl_states_start = ctrl_states;
+    auto signals_start = evaluateControls(t_curr + dt_val, w_curr, temp_ctrl_states_start, dt_val, sw_states_curr);
+
     if (solver_type == "euler") {
         // --- Backward Euler implicit solver step ---
         std::map<std::string, std::string> sw_stage_states = sw_states_curr;
@@ -894,7 +900,7 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
                 std::string new_state = "OFF";
 
                 if (sw_type == "MOSFET") {
-                    double gate_val = signals_local[sw.getChannelRef("G")];
+                    double gate_val = signals_start[sw.getChannelRef("G")];
                     bool gate_on = gate_val > 0.5;
                     double vd_drop = sw.getParam("Vd", 0.7);
                     bool diode_on = -vd > ((old_state == "ON") ? vd_drop - 0.1 : vd_drop);
@@ -988,7 +994,7 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
                 std::string new_state = "OFF";
 
                 if (sw_type == "MOSFET") {
-                    double gate_val = signals_local[sw.getChannelRef("G")];
+                    double gate_val = signals_start[sw.getChannelRef("G")];
                     bool gate_on = gate_val > 0.5;
                     double vd_drop = sw.getParam("Vd", 0.7);
                     bool diode_on = -vd > ((old_state == "ON") ? vd_drop - 0.1 : vd_drop);
@@ -1161,7 +1167,7 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
                 std::string new_state = "OFF";
 
                 if (sw_type == "MOSFET") {
-                    double gate_val = signals_local[sw.getChannelRef("G")];
+                    double gate_val = signals_start[sw.getChannelRef("G")];
                     bool gate_on = gate_val > 0.5;
                     double vd_drop = sw.getParam("Vd", 0.7);
                     bool diode_on = -vd > ((old_state == "ON") ? vd_drop - 0.1 : vd_drop);
