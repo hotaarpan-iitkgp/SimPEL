@@ -12,6 +12,9 @@ import SimulationPlayer from './components/SimulationPlayer';
 import { state } from './schematic/state';
 import { getWireDomain } from './schematic/routing';
 import { triggerImport, exportDualGraphJSON } from './schematic/actions';
+import { CircuitSimulator } from './solver_ts';
+
+const localSimState = { cancelled: false, paused: false };
 
 export default function App() {
   const resolveInputPinToSource = (trace: string): string => {
@@ -392,17 +395,37 @@ export default function App() {
 
       parsed.sessionId = sessionId;
 
-      const response = await fetch('/api/simulate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(parsed)
-      });
+      let results: SimulationResults;
+      try {
+        const response = await fetch('/api/simulate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(parsed)
+        });
 
-      if (!response.ok) {
-        throw new Error(await response.text());
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        results = await response.json();
+      } catch (err: any) {
+        console.warn("Express server simulation failed or unreachable. Running locally in browser...", err);
+        
+        localSimState.cancelled = false;
+        localSimState.paused = false;
+        
+        const sim = new CircuitSimulator(
+          parsed.physical_stage || [],
+          parsed.control_loops || [],
+          parsed.simulation_parameters || {}
+        );
+        
+        results = await sim.runAsync(
+          () => localSimState.cancelled,
+          () => localSimState.paused
+        );
       }
 
-      const results: SimulationResults = await response.json();
       setSimResults(results);
       setServerStatus('ready');
 
@@ -930,9 +953,13 @@ export default function App() {
       if (response.ok) {
         const data = await response.json();
         setIsPaused(data.paused);
+      } else {
+        throw new Error();
       }
     } catch (err) {
-      console.error("Failed to pause/resume simulation", err);
+      console.warn("Failed to pause/resume via server, using local fallback");
+      localSimState.paused = !localSimState.paused;
+      setIsPaused(localSimState.paused);
     }
   };
 
@@ -945,7 +972,8 @@ export default function App() {
         body: JSON.stringify({ sessionId: activeSessionId })
       });
     } catch (err) {
-      console.error("Failed to terminate simulation", err);
+      console.warn("Failed to terminate via server, using local fallback");
+      localSimState.cancelled = true;
     }
   };
 
