@@ -353,6 +353,7 @@ class JsExpressionCompiler {
                 if (name === "pow") return `Math.pow(${arg1}, ${arg2})`;
             }
             
+            if (this.localVars.has(name)) return name;
             if (name in this.block.state) return `state["${name}"]`;
             if (name in this.block.params) return `params["${name}"]`;
             if (name === "time") return `time`;
