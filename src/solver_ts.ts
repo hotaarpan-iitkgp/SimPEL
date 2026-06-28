@@ -242,7 +242,7 @@ class Parser {
 }
 
 export interface Statement {
-    type?: "assign" | "for";
+    type?: "assign" | "for" | "if";
     lhs_type?: "state" | "outputs" | "state_array" | "local";
     lhs_key?: string;
     lhs_idx_expr?: string;
@@ -252,6 +252,10 @@ export interface Statement {
     loop_start_expr?: string;
     loop_limit_expr?: string;
     body?: Statement[];
+    // if/else if/else fields
+    condition_expr?: string;
+    else_if_branches?: { condition_expr: string; body: Statement[] }[];
+    else_body?: Statement[];
 }
 
 class JsExpressionCompiler {
@@ -494,6 +498,32 @@ function compile_statement_to_js(s: Statement, block: CustomScriptBlock, localVa
         }
         js += `}\n`;
         return js;
+    } else if (s.type === "if") {
+        const cond = new JsExpressionCompiler(s.condition_expr!, block, localVars).parse();
+        let js = `if (${cond}) {\n`;
+        for (const child of s.body!) {
+            js += compile_statement_to_js(child, block, localVars);
+        }
+        js += `}`;
+        if (s.else_if_branches) {
+            for (const branch of s.else_if_branches) {
+                const branchCond = new JsExpressionCompiler(branch.condition_expr, block, localVars).parse();
+                js += ` else if (${branchCond}) {\n`;
+                for (const child of branch.body) {
+                    js += compile_statement_to_js(child, block, localVars);
+                }
+                js += `}`;
+            }
+        }
+        if (s.else_body && s.else_body.length > 0) {
+            js += ` else {\n`;
+            for (const child of s.else_body) {
+                js += compile_statement_to_js(child, block, localVars);
+            }
+            js += `}`;
+        }
+        js += `\n`;
+        return js;
     } else {
         const rhs = new JsExpressionCompiler(s.rhs_expr!, block, localVars).parse();
         const cleanLhsKey = s.lhs_key!.replace(/['"`]/g, '').trim();
@@ -601,6 +631,12 @@ export class CustomScriptBlock {
             if (line === "}") {
                 break;
             }
+            // Handle "} else if (...)" and "} else {" — break and rewind
+            // so the parent if-parser's look-ahead picks them up
+            if (line.startsWith("}") && /^}\s*else\b/.test(line)) {
+                startIndex.pos--;
+                break;
+            }
             
             const forMatch = line.match(/^for\s*\(\s*(?:int|double|auto)?\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([^;]+)\s*;\s*\1\s*<\s*([^;]+)\s*;\s*[^)]+\)/);
             if (forMatch) {
@@ -615,6 +651,49 @@ export class CustomScriptBlock {
                     loop_start_expr,
                     loop_limit_expr,
                     body
+                });
+                continue;
+            }
+            
+            // if / else if / else support
+            const ifMatch = line.match(/^if\s*\((.+)\)\s*\{?\s*$/);
+            if (ifMatch) {
+                const condition_expr = this.normalize_expression(ifMatch[1].trim());
+                const body = this.parse_block(lines, startIndex);
+                const else_if_branches: { condition_expr: string; body: Statement[] }[] = [];
+                let else_body: Statement[] | undefined;
+                
+                // Look ahead for else if / else
+                while (startIndex.pos < lines.length) {
+                    const nextLine = lines[startIndex.pos].trim();
+                    // Remove comments
+                    const nextClean = nextLine.includes("//") ? nextLine.substring(0, nextLine.indexOf("//")).trim() : nextLine;
+                    
+                    const elseIfMatch = nextClean.match(/^}?\s*else\s+if\s*\((.+)\)\s*\{?\s*$/);
+                    if (elseIfMatch) {
+                        startIndex.pos++;
+                        const branchCond = this.normalize_expression(elseIfMatch[1].trim());
+                        const branchBody = this.parse_block(lines, startIndex);
+                        else_if_branches.push({ condition_expr: branchCond, body: branchBody });
+                        continue;
+                    }
+                    
+                    const elseMatch = nextClean.match(/^}?\s*else\s*\{?\s*$/);
+                    if (elseMatch) {
+                        startIndex.pos++;
+                        else_body = this.parse_block(lines, startIndex);
+                        break;
+                    }
+                    
+                    break; // No more else branches
+                }
+                
+                statements.push({
+                    type: "if",
+                    condition_expr,
+                    body,
+                    else_if_branches: else_if_branches.length > 0 ? else_if_branches : undefined,
+                    else_body
                 });
                 continue;
             }
@@ -847,6 +926,26 @@ export class CustomScriptBlock {
                 for (let val = start; val < limit; val++) {
                     vars[loop_var] = val;
                     this.execute_statements(s.body!, vars, run_outputs, ev);
+                }
+            } else if (s.type === "if") {
+                const condVal = ev.evaluate(s.condition_expr!, vars, this);
+                if (condVal !== 0.0) {
+                    this.execute_statements(s.body!, vars, run_outputs, ev);
+                } else {
+                    let branchTaken = false;
+                    if (s.else_if_branches) {
+                        for (const branch of s.else_if_branches) {
+                            const branchVal = ev.evaluate(branch.condition_expr, vars, this);
+                            if (branchVal !== 0.0) {
+                                this.execute_statements(branch.body, vars, run_outputs, ev);
+                                branchTaken = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!branchTaken && s.else_body) {
+                        this.execute_statements(s.else_body, vars, run_outputs, ev);
+                    }
                 }
             } else if (s.type === "assign") {
                 const rhs = ev.evaluate(s.rhs_expr!, vars, this);
