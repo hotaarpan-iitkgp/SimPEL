@@ -173,7 +173,7 @@ void CircuitSimulator::initializeNetwork() {
         } else if (block.type == "CustomScript") {
             std::map<std::string, double> blk_params;
             for (const auto& p : block.parameters) {
-                if (p.first != "code") {
+                if (p.first != "code" && p.first != "timestep" && p.first != "plot_inputs" && p.first != "plot_outputs" && p.first != "plot_custom_vars") {
                     blk_params[p.first] = parse_scientific(p.second);
                 }
             }

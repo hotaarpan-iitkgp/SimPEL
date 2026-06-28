@@ -700,7 +700,11 @@ export class CircuitSimulator {
             else if (["PWM_Generator", "Triangle_Carrier", "PWM_MASTER"].includes(b.type)) this.control_states[b.id] = { time: 0.0 };
             else if (b.type === "CustomScript") {
                 const bp: Record<string, number> = {};
-                for (const [k, v] of Object.entries(b.parameters)) { if (k !== "code") bp[k] = parseScientific(v); }
+                for (const [k, v] of Object.entries(b.parameters)) {
+                    if (!["code", "timestep", "plot_inputs", "plot_outputs", "plot_custom_vars"].includes(k)) {
+                        bp[k] = parseScientific(v);
+                    }
+                }
                 const inst = new CustomScriptBlock(b.parameters.code ?? "", bp);
                 this.custom_blocks[b.id] = inst; this.control_states[b.id] = inst.state;
             }

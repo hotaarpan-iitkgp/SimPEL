@@ -345,8 +345,8 @@ export function updatePropertiesPanel(): void {
     
     card.appendChild(propGroup);
 
-    // Add Custom Parameters Editor for GEN_EBLOCK components
-    if (comp.type === 'GEN_EBLOCK') {
+    // Add Custom Parameters Editor for GEN_EBLOCK and CSCRIPT components
+    if (comp.type === 'GEN_EBLOCK' || comp.type === 'CSCRIPT') {
       const customParamsGroup = document.createElement('div');
       customParamsGroup.className = 'prop-group';
       customParamsGroup.style.marginTop = '15px';
@@ -989,7 +989,7 @@ export function openCodeEditorModal(comp: any): void {
   }
   
   if (toggleParamsBtn) {
-    if (comp.type === 'GEN_EBLOCK') {
+    if (comp.type === 'GEN_EBLOCK' || comp.type === 'CSCRIPT') {
       toggleParamsBtn.classList.remove('hidden');
       const newToggleParamsBtn = toggleParamsBtn.cloneNode(true);
       toggleParamsBtn.parentNode?.replaceChild(newToggleParamsBtn, toggleParamsBtn);
@@ -1020,9 +1020,11 @@ export function openCodeEditorModal(comp: any): void {
     saveState();
     comp.parameters.code = textarea.value;
     
-    if (comp.type === 'GEN_EBLOCK') {
-      const sensed = senseTerminalsFromCode(textarea.value);
-      comp.parameters.terminals = String(sensed);
+    if (comp.type === 'GEN_EBLOCK' || comp.type === 'CSCRIPT') {
+      if (comp.type === 'GEN_EBLOCK') {
+        const sensed = senseTerminalsFromCode(textarea.value);
+        comp.parameters.terminals = String(sensed);
+      }
       
       // Discover and sync parameters to comp.parameters
       const codeParams = discoverParamsFromCode(textarea.value);

@@ -1923,6 +1923,14 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
         });
         const outs = ports.outputs.map(pOut => `${comp.id}.${pOut}`);
         
+        const codeParams: Record<string, string> = {};
+        if (comp.parameters && comp.parameters.code) {
+          const parsed = discoverParamsFromCode(comp.parameters.code);
+          parsed.forEach(p => {
+            codeParams[p.name] = p.value;
+          });
+        }
+
         control_loops.custom_scripts.push({
           id: comp.id,
           inputs: ins,
@@ -1931,7 +1939,8 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           timestep: comp.parameters.timestep || "0",
           plot_inputs: comp.parameters.plot_inputs || "true",
           plot_outputs: comp.parameters.plot_outputs || "true",
-          plot_custom_vars: comp.parameters.plot_custom_vars || ""
+          plot_custom_vars: comp.parameters.plot_custom_vars || "",
+          ...codeParams
         });
         break;
       }
