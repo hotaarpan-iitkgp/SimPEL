@@ -280,7 +280,7 @@ class JsExpressionCompiler {
         const c = this.peek();
         if (c === '-') { this.get(); return `(-${this.parsePrimary()})`; }
         if (c === '+') { this.get(); return `(+${this.parsePrimary()})`; }
-        if (c === '!') { this.get(); return `(!${this.parsePrimary()})`; }
+        if (c === '!') { this.get(); return `((${this.parsePrimary()} === 0.0) ? 1.0 : 0.0)`; }
         if (c === '(') {
             this.get();
             const val = this.parseTernary();
