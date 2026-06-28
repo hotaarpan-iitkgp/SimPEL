@@ -39,14 +39,25 @@ class Parser {
     peek() { return this.pos < this.expr.length ? this.expr[this.pos] : '\0'; }
     get() { return this.pos < this.expr.length ? this.expr[this.pos++] : '\0'; }
     skipWhitespace() { while (this.pos < this.expr.length && /\s/.test(this.expr[this.pos])) this.pos++; }
+    
+    matchString(s: string): boolean {
+        this.skipWhitespace();
+        if (this.pos + s.length <= this.expr.length && this.expr.substring(this.pos, this.pos + s.length) === s) {
+            this.pos += s.length;
+            return true;
+        }
+        return false;
+    }
+
     parsePrimary(): number {
         this.skipWhitespace();
         const c = this.peek();
         if (c === '-') { this.get(); return -this.parsePrimary(); }
         if (c === '+') { this.get(); return this.parsePrimary(); }
+        if (c === '!') { this.get(); return (this.parsePrimary() === 0.0) ? 1.0 : 0.0; }
         if (c === '(') {
             this.get();
-            const val = this.parseExpression();
+            const val = this.parseTernary();
             this.skipWhitespace();
             if (this.peek() === ')') this.get();
             return val;
@@ -67,10 +78,10 @@ class Parser {
             this.skipWhitespace();
             if (this.peek() === '(') {
                 this.get();
-                const arg1 = this.parseExpression();
+                const arg1 = this.parseTernary();
                 this.skipWhitespace();
                 let arg2 = 0.0;
-                if (this.peek() === ',') { this.get(); arg2 = this.parseExpression(); }
+                if (this.peek() === ',') { this.get(); arg2 = this.parseTernary(); }
                 this.skipWhitespace();
                 if (this.peek() === ')') this.get();
                 if (name === "sin") return Math.sin(arg1);
@@ -118,7 +129,74 @@ class Parser {
         }
         return val;
     }
-    parse() { try { return this.parseExpression(); } catch (_) { return 0.0; } }
+    parseComparison(): number {
+        let val = this.parseExpression();
+        while (true) {
+            if (this.matchString(">=")) {
+                const r = this.parseExpression();
+                val = (val >= r) ? 1.0 : 0.0;
+            } else if (this.matchString("<=")) {
+                const r = this.parseExpression();
+                val = (val <= r) ? 1.0 : 0.0;
+            } else if (this.matchString(">")) {
+                const r = this.parseExpression();
+                val = (val > r) ? 1.0 : 0.0;
+            } else if (this.matchString("<")) {
+                const r = this.parseExpression();
+                val = (val < r) ? 1.0 : 0.0;
+            } else {
+                break;
+            }
+        }
+        return val;
+    }
+    parseEquality(): number {
+        let val = this.parseComparison();
+        while (true) {
+            if (this.matchString("==")) {
+                const r = this.parseComparison();
+                val = (val === r) ? 1.0 : 0.0;
+            } else if (this.matchString("!=")) {
+                const r = this.parseComparison();
+                val = (val !== r) ? 1.0 : 0.0;
+            } else {
+                break;
+            }
+        }
+        return val;
+    }
+    parseLogicalAnd(): number {
+        let val = this.parseEquality();
+        while (this.matchString("&&")) {
+            const r = this.parseEquality();
+            val = (val !== 0.0 && r !== 0.0) ? 1.0 : 0.0;
+        }
+        return val;
+    }
+    parseLogicalOr(): number {
+        let val = this.parseLogicalAnd();
+        while (this.matchString("||")) {
+            const r = this.parseLogicalAnd();
+            val = (val !== 0.0 || r !== 0.0) ? 1.0 : 0.0;
+        }
+        return val;
+    }
+    parseTernary(): number {
+        const cond = this.parseLogicalOr();
+        this.skipWhitespace();
+        if (this.peek() === '?') {
+            this.get();
+            const val1 = this.parseTernary();
+            this.skipWhitespace();
+            if (this.peek() === ':') {
+                this.get();
+            }
+            const val2 = this.parseTernary();
+            return (cond !== 0.0) ? val1 : val2;
+        }
+        return cond;
+    }
+    parse() { try { return this.parseTernary(); } catch (_) { return 0.0; } }
 }
 
 interface Statement { lhs_type: "state" | "outputs"; lhs_key: string; op: string; rhs_expr: string; }

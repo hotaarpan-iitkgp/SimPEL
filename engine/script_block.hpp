@@ -34,11 +34,20 @@ private:
         }
     }
 
+    bool matchString(const std::string& s) {
+        skipWhitespace();
+        if (pos_ + s.size() <= expr_.size() && expr_.substr(pos_, s.size()) == s) {
+            pos_ += s.size();
+            return true;
+        }
+        return false;
+    }
+
     double parsePrimary() {
         skipWhitespace();
         char c = peek();
 
-        // Handle unary minus
+        // Handle unary minus/plus/logical NOT
         if (c == '-') {
             get();
             return -parsePrimary();
@@ -47,11 +56,15 @@ private:
             get();
             return parsePrimary();
         }
+        if (c == '!') {
+            get();
+            return (parsePrimary() == 0.0) ? 1.0 : 0.0;
+        }
 
         // Handle parentheses
         if (c == '(') {
             get(); // consume '('
-            double val = parseExpression();
+            double val = parseTernary();
             skipWhitespace();
             if (peek() == ')') get(); // consume ')'
             return val;
@@ -61,7 +74,6 @@ private:
         if (std::isdigit(c) || c == '.') {
             std::string num;
             while (pos_ < expr_.size() && (std::isdigit(expr_[pos_]) || expr_[pos_] == '.' || expr_[pos_] == 'e' || expr_[pos_] == 'E' || expr_[pos_] == '-' || expr_[pos_] == '+')) {
-                // Ensure proper scientific notation matching
                 char current = expr_[pos_];
                 if ((current == '-' || current == '+') && (num.back() != 'e' && num.back() != 'E')) {
                     break;
@@ -86,12 +98,12 @@ private:
             skipWhitespace();
             if (peek() == '(') {
                 get(); // consume '('
-                double arg1 = parseExpression();
+                double arg1 = parseTernary();
                 skipWhitespace();
                 double arg2 = 0.0;
                 if (peek() == ',') {
                     get(); // consume ','
-                    arg2 = parseExpression();
+                    arg2 = parseTernary();
                 }
                 skipWhitespace();
                 if (peek() == ')') get(); // consume ')'
@@ -164,13 +176,85 @@ private:
         return val;
     }
 
+    double parseComparison() {
+        double val = parseExpression();
+        while (true) {
+            if (matchString(">=")) {
+                double r = parseExpression();
+                val = (val >= r) ? 1.0 : 0.0;
+            } else if (matchString("<=")) {
+                double r = parseExpression();
+                val = (val <= r) ? 1.0 : 0.0;
+            } else if (matchString(">")) {
+                double r = parseExpression();
+                val = (val > r) ? 1.0 : 0.0;
+            } else if (matchString("<")) {
+                double r = parseExpression();
+                val = (val < r) ? 1.0 : 0.0;
+            } else {
+                break;
+            }
+        }
+        return val;
+    }
+
+    double parseEquality() {
+        double val = parseComparison();
+        while (true) {
+            if (matchString("==")) {
+                double r = parseComparison();
+                val = (val == r) ? 1.0 : 0.0;
+            } else if (matchString("!=")) {
+                double r = parseComparison();
+                val = (val != r) ? 1.0 : 0.0;
+            } else {
+                break;
+            }
+        }
+        return val;
+    }
+
+    double parseLogicalAnd() {
+        double val = parseEquality();
+        while (matchString("&&")) {
+            double r = parseEquality();
+            val = (val != 0.0 && r != 0.0) ? 1.0 : 0.0;
+        }
+        return val;
+    }
+
+    double parseLogicalOr() {
+        double val = parseLogicalAnd();
+        while (matchString("||")) {
+            double r = parseLogicalAnd();
+            val = (val != 0.0 || r != 0.0) ? 1.0 : 0.0;
+        }
+        return val;
+    }
+
+    double parseTernary() {
+        double cond = parseLogicalOr();
+        skipWhitespace();
+        if (peek() == '?') {
+            get();
+            double val1 = parseTernary();
+            skipWhitespace();
+            if (peek() == ':') {
+                get();
+            }
+            double val2 = parseTernary();
+            return (cond != 0.0) ? val1 : val2;
+        }
+        return cond;
+    }
+
 public:
     double evaluate(const std::string& expression, const std::map<std::string, double>& variables) {
         expr_ = expression;
         pos_ = 0;
         vars_ = variables;
         try {
-            return parseExpression();
+            return parseTernary();
         } catch (...) {
             return 0.0;
         }
