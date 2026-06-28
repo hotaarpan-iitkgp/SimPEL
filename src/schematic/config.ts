@@ -318,9 +318,47 @@ export function discoverPortsJS(code: string): { inputs: string[]; outputs: stri
     if (port) outputs.add(port);
   }
   
+  const cInputRegex = /inputs\s*\[\s*(\d+)\s*\]/g;
+  const cOutputRegex = /outputs\s*\[\s*(\d+)\s*\]/g;
+  cInputRegex.lastIndex = 0;
+  cOutputRegex.lastIndex = 0;
+  
+  while ((match = cInputRegex.exec(code)) !== null) {
+    const idx = parseInt(match[1]);
+    inputs.add(`In${idx + 1}`);
+  }
+  while ((match = cOutputRegex.exec(code)) !== null) {
+    const idx = parseInt(match[1]);
+    outputs.add(`Out${idx + 1}`);
+  }
+  
+  const loopRegex = /for\s*\(\s*(?:int|double|auto)?\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*0\s*;\s*\1\s*<\s*(\d+)\s*;/g;
+  loopRegex.lastIndex = 0;
+  while ((match = loopRegex.exec(code)) !== null) {
+    const limit = parseInt(match[2]);
+    if (limit > 0) {
+      if (code.includes("inputs[")) {
+        for (let i = 0; i < limit; i++) inputs.add(`In${i + 1}`);
+      }
+      if (code.includes("outputs[")) {
+        for (let i = 0; i < limit; i++) outputs.add(`Out${i + 1}`);
+      }
+    }
+  }
+  
   return {
-    inputs: Array.from(inputs).sort(),
-    outputs: Array.from(outputs).sort()
+    inputs: Array.from(inputs).sort((a, b) => {
+      const ma = a.match(/^In(\d+)$/);
+      const mb = b.match(/^In(\d+)$/);
+      if (ma && mb) return parseInt(ma[1]) - parseInt(mb[1]);
+      return a.localeCompare(b);
+    }),
+    outputs: Array.from(outputs).sort((a, b) => {
+      const ma = a.match(/^Out(\d+)$/);
+      const mb = b.match(/^Out(\d+)$/);
+      if (ma && mb) return parseInt(ma[1]) - parseInt(mb[1]);
+      return a.localeCompare(b);
+    })
   };
 }
 
@@ -496,7 +534,9 @@ export function discoverParamsFromCode(code: string): { name: string; value: str
   if (!code) return [];
   const params: { name: string; value: string }[] = [];
   const seen = new Set<string>();
-  const regex = /^[ \t]*([a-zA-Z_][a-zA-Z0-9_]*)[ \t]*=[ \t]*([+-]?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?))[ \t]*;/gm;
+  
+  // Matches optional const/double type prefix before parameter name assignment
+  const regex = /^[ \t]*(?:(?:const\s+)?(?:double|float|int|auto)\s+)?([a-zA-Z_][a-zA-Z0-9_]*)[ \t]*=[ \t]*([+-]?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?))[ \t]*;/gm;
   
   let match;
   regex.lastIndex = 0;
@@ -514,6 +554,6 @@ export function discoverParamsFromCode(code: string): { name: string; value: str
 export function updateParamInCode(code: string, name: string, value: string): string {
   if (!code) return code;
   const escapedName = name.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-  const regex = new RegExp(`^([ \\t]*${escapedName}[ \\t]*=[ \\t]*)[+-]?(?:(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)([ \\t]*;)`, 'gm');
+  const regex = new RegExp(`^([ \\t]*(?:(?:const\\s+)?(?:double|float|int|auto)\\s+)?${escapedName}[ \\t]*=[ \\t]*)[+-]?(?:(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?)([ \\t]*;)`, 'gm');
   return code.replace(regex, `$1${value}$2`);
 }

@@ -1,3 +1,5 @@
+import { discoverPortsJS } from "./schematic/config";
+
 export function parseScientific(str: any): number {
     if (typeof str === 'number') return str;
     if (str === undefined || str === null || str === '') return 0.0;
@@ -34,17 +36,17 @@ export function parseScientific(str: any): number {
 }
 
 export class ExpressionEvaluator {
-    evaluate(expression: string, variables: Record<string, number>): number {
+    evaluate(expression: string, variables: Record<string, number>, block?: CustomScriptBlock): number {
         const expr = expression.trim();
         if (!expr) return 0.0;
-        return new Parser(expr, variables).parse();
+        return new Parser(expr, variables, block).parse();
     }
 }
 
 class Parser {
-    expr: string; pos = 0; vars: Record<string, number>;
-    constructor(expr: string, vars: Record<string, number>) {
-        this.expr = expr; this.vars = vars;
+    expr: string; pos = 0; vars: Record<string, number>; block?: CustomScriptBlock;
+    constructor(expr: string, vars: Record<string, number>, block?: CustomScriptBlock) {
+        this.expr = expr; this.vars = vars; this.block = block;
     }
     peek() { return this.pos < this.expr.length ? this.expr[this.pos] : '\0'; }
     get() { return this.pos < this.expr.length ? this.expr[this.pos++] : '\0'; }
@@ -86,6 +88,31 @@ class Parser {
             let name = "";
             while (this.pos < this.expr.length && /[a-zA-Z0-9_]/.test(this.expr[this.pos])) name += this.get();
             this.skipWhitespace();
+            
+            // Check for array syntax: name[idx_expr]
+            if (this.peek() === '[') {
+                this.get(); // consume '['
+                const idx = this.parseTernary();
+                this.skipWhitespace();
+                if (this.peek() === ']') this.get(); // consume ']'
+                
+                if (name === "inputs" && this.block) {
+                    const port_name = this.block.inputs[Math.round(idx)];
+                    return port_name ? (this.vars["inputs_" + port_name] ?? 0.0) : 0.0;
+                }
+                if (name === "outputs" && this.block) {
+                    const port_name = this.block.outputs[Math.round(idx)];
+                    return port_name ? (this.vars["outputs_" + port_name] ?? 0.0) : 0.0;
+                }
+                // Check if it's a state array element
+                const state_key = `${name}_${Math.round(idx)}`;
+                if (("state_" + state_key) in this.vars) {
+                    return this.vars["state_" + state_key];
+                }
+                return 0.0;
+            }
+            
+            // Check if it's a math function
             if (this.peek() === '(') {
                 this.get();
                 const arg1 = this.parseTernary();
@@ -105,6 +132,9 @@ class Parser {
                 if (name === "min") return Math.min(arg1, arg2);
                 if (name === "pow") return Math.pow(arg1, arg2);
             }
+            
+            if (("state_" + name) in this.vars) return this.vars["state_" + name];
+            if (("params_" + name) in this.vars) return this.vars["params_" + name];
             if (name in this.vars) return this.vars[name];
             if (name === "pi" || name === "M_PI") return Math.PI;
             return 0.0;
@@ -211,87 +241,304 @@ class Parser {
     parse() { try { return this.parseTernary(); } catch (_) { return 0.0; } }
 }
 
-interface Statement { lhs_type: "state" | "outputs" | "local"; lhs_key: string; op: string; rhs_expr: string; }
+export interface Statement {
+    type?: "assign" | "for";
+    lhs_type?: "state" | "outputs" | "state_array" | "local";
+    lhs_key?: string;
+    lhs_idx_expr?: string;
+    op?: string;
+    rhs_expr?: string;
+    loop_var?: string;
+    loop_start_expr?: string;
+    loop_limit_expr?: string;
+    body?: Statement[];
+}
+
+class JsExpressionCompiler {
+    expr: string; pos = 0; block: CustomScriptBlock; localVars: Set<string>;
+    constructor(expr: string, block: CustomScriptBlock, localVars: Set<string>) {
+        this.expr = expr; this.block = block; this.localVars = localVars;
+    }
+    peek() { return this.pos < this.expr.length ? this.expr[this.pos] : '\0'; }
+    get() { return this.pos < this.expr.length ? this.expr[this.pos++] : '\0'; }
+    skipWhitespace() { while (this.pos < this.expr.length && /\s/.test(this.expr[this.pos])) this.pos++; }
+    
+    matchString(s: string): boolean {
+        this.skipWhitespace();
+        if (this.pos + s.length <= this.expr.length && this.expr.substring(this.pos, this.pos + s.length) === s) {
+            this.pos += s.length;
+            return true;
+        }
+        return false;
+    }
+    parsePrimary(): string {
+        this.skipWhitespace();
+        const c = this.peek();
+        if (c === '-') { this.get(); return `(-${this.parsePrimary()})`; }
+        if (c === '+') { this.get(); return `(+${this.parsePrimary()})`; }
+        if (c === '!') { this.get(); return `(!${this.parsePrimary()})`; }
+        if (c === '(') {
+            this.get();
+            const val = this.parseTernary();
+            this.skipWhitespace();
+            if (this.peek() === ')') this.get();
+            return `(${val})`;
+        }
+        if (c === '"' || c === '\'') {
+            this.get();
+            let str = c;
+            while (this.pos < this.expr.length && this.expr[this.pos] !== c) {
+                str += this.get();
+            }
+            if (this.pos < this.expr.length) str += this.get();
+            return str;
+        }
+        if (/[0-9.]/.test(c)) {
+            let num = "";
+            while (this.pos < this.expr.length && /[0-9.eE+-]/.test(this.expr[this.pos])) {
+                const curr = this.expr[this.pos];
+                if ((curr === '-' || curr === '+') && num.length > 0 && !/[eE]/.test(num[num.length - 1])) break;
+                num += this.get();
+            }
+            return num;
+        }
+        if (/[a-zA-Z_]/.test(c)) {
+            let name = "";
+            while (this.pos < this.expr.length && /[a-zA-Z0-9_]/.test(this.expr[this.pos])) name += this.get();
+            this.skipWhitespace();
+            
+            // Check for array syntax: name[idx_expr]
+            if (this.peek() === '[') {
+                this.get(); // consume '['
+                const idx = this.parseTernary();
+                this.skipWhitespace();
+                if (this.peek() === ']') this.get(); // consume ']'
+                
+                if (name === "inputs") {
+                    const portIdx = resolve_port_index(idx, this.block.inputs);
+                    if (portIdx !== -1) {
+                        return `(inputs[${portIdx}])`;
+                    }
+                    return `(inputs[Math.round(${idx})])`;
+                }
+                if (name === "outputs") {
+                    const portIdx = resolve_port_index(idx, this.block.outputs);
+                    if (portIdx !== -1) {
+                        return `(outputs[${portIdx}])`;
+                    }
+                    return `(outputs[Math.round(${idx})])`;
+                }
+                if (name === "state" || name === "params") {
+                    const cleanKey = idx.replace(/['"`]/g, '').trim();
+                    return `${name}["${cleanKey}"]`;
+                }
+                // Check if it's a state array element
+                if (this.block.state_arrays[name] !== undefined) {
+                    return `(state_arrays["${name}"][Math.round(${idx})])`;
+                }
+                return `0.0`;
+            }
+            
+            // Check if it's a math function
+            if (this.peek() === '(') {
+                this.get();
+                const arg1 = this.parseTernary();
+                this.skipWhitespace();
+                let arg2 = "";
+                if (this.peek() === ',') { this.get(); arg2 = this.parseTernary(); }
+                this.skipWhitespace();
+                if (this.peek() === ')') this.get();
+                
+                if (name === "sin") return `Math.sin(${arg1})`;
+                if (name === "cos") return `Math.cos(${arg1})`;
+                if (name === "tan") return `Math.tan(${arg1})`;
+                if (name === "abs") return `Math.abs(${arg1})`;
+                if (name === "sqrt") return `Math.sqrt(Math.abs(${arg1}))`;
+                if (name === "exp") return `Math.exp(${arg1})`;
+                if (name === "log") return `Math.log(Math.abs(${arg1}) + 1e-15)`;
+                if (name === "max") return `Math.max(${arg1}, ${arg2})`;
+                if (name === "min") return `Math.min(${arg1}, ${arg2})`;
+                if (name === "pow") return `Math.pow(${arg1}, ${arg2})`;
+            }
+            
+            if (name in this.block.state) return `state["${name}"]`;
+            if (name in this.block.params) return `params["${name}"]`;
+            if (name === "time") return `time`;
+            if (name === "pi" || name === "M_PI") return `Math.PI`;
+            if (name in this.block.state_arrays) {
+                return `state_arrays["${name}"]`;
+            }
+            this.localVars.add(name);
+            return name;
+        }
+        return "0.0";
+    }
+    parsePower(): string {
+        let val = this.parsePrimary();
+        this.skipWhitespace();
+        while (this.peek() === '^') {
+            this.get();
+            val = `Math.pow(${val}, ${this.parsePrimary()})`;
+            this.skipWhitespace();
+        }
+        return val;
+    }
+    parseFactor(): string {
+        let val = this.parsePower();
+        this.skipWhitespace();
+        while (this.peek() === '*' || this.peek() === '/' || this.peek() === '%') {
+            const op = this.get();
+            const r = this.parsePower();
+            if (op === '*') val = `(${val} * ${r})`;
+            else if (op === '/') val = `(Math.abs(${r}) > 1e-30 ? ${val} / ${r} : 0.0)`;
+            else if (op === '%') val = `(Math.abs(${r}) > 1e-30 ? ${val} % ${r} : 0.0)`;
+            this.skipWhitespace();
+        }
+        return val;
+    }
+    parseExpression(): string {
+        let val = this.parseFactor();
+        this.skipWhitespace();
+        while (this.peek() === '+' || this.peek() === '-') {
+            const op = this.get();
+            const r = this.parseFactor();
+            val = `(${val} ${op} ${r})`;
+            this.skipWhitespace();
+        }
+        return val;
+    }
+    parseComparison(): string {
+        let val = this.parseExpression();
+        while (true) {
+            if (this.matchString(">=")) {
+                val = `(${val} >= ${this.parseExpression()} ? 1.0 : 0.0)`;
+            } else if (this.matchString("<=")) {
+                val = `(${val} <= ${this.parseExpression()} ? 1.0 : 0.0)`;
+            } else if (this.matchString(">")) {
+                val = `(${val} > ${this.parseExpression()} ? 1.0 : 0.0)`;
+            } else if (this.matchString("<")) {
+                val = `(${val} < ${this.parseExpression()} ? 1.0 : 0.0)`;
+            } else {
+                break;
+            }
+        }
+        return val;
+    }
+    parseEquality(): string {
+        let val = this.parseComparison();
+        while (true) {
+            if (this.matchString("==")) {
+                val = `(${val} === ${this.parseComparison()} ? 1.0 : 0.0)`;
+            } else if (this.matchString("!=")) {
+                val = `(${val} !== ${this.parseComparison()} ? 1.0 : 0.0)`;
+            } else {
+                break;
+            }
+        }
+        return val;
+    }
+    parseLogicalAnd(): string {
+        let val = this.parseEquality();
+        while (this.matchString("&&")) {
+            val = `((${val} !== 0.0 && ${this.parseEquality()} !== 0.0) ? 1.0 : 0.0)`;
+        }
+        return val;
+    }
+    parseLogicalOr(): string {
+        let val = this.parseLogicalAnd();
+        while (this.matchString("||")) {
+            val = `((${val} !== 0.0 || ${this.parseLogicalAnd()} !== 0.0) ? 1.0 : 0.0)`;
+        }
+        return val;
+    }
+    parseTernary(): string {
+        const cond = this.parseLogicalOr();
+        this.skipWhitespace();
+        if (this.peek() === '?') {
+            this.get();
+            const val1 = this.parseTernary();
+            this.skipWhitespace();
+            if (this.peek() === ':') {
+                this.get();
+            }
+            const val2 = this.parseTernary();
+            return `(${cond} !== 0.0 ? ${val1} : ${val2})`;
+        }
+        return cond;
+    }
+    parse() { try { return this.parseTernary(); } catch (_) { return "0.0"; } }
+}
+
+function resolve_port_index(key: string, ports: string[]): number {
+    const cleanKey = key.replace(/['"`]/g, '').trim();
+    let idx = ports.indexOf(cleanKey);
+    if (idx !== -1) return idx;
+    for (let i = 0; i < ports.length; i++) {
+        if (ports[i].endsWith("." + cleanKey)) return i;
+    }
+    const num = parseInt(cleanKey);
+    if (!isNaN(num)) return num;
+    return -1;
+}
+
+function compile_statement_to_js(s: Statement, block: CustomScriptBlock, localVars: Set<string>): string {
+    if (s.type === "for") {
+        const start = new JsExpressionCompiler(s.loop_start_expr!, block, localVars).parse();
+        const limit = new JsExpressionCompiler(s.loop_limit_expr!, block, localVars).parse();
+        const loop_var = s.loop_var!;
+        localVars.add(loop_var);
+        
+        let js = `for (${loop_var} = Math.round(${start}); ${loop_var} < Math.round(${limit}); ${loop_var}++) {\n`;
+        for (const child of s.body!) {
+            js += compile_statement_to_js(child, block, localVars);
+        }
+        js += `}\n`;
+        return js;
+    } else {
+        const rhs = new JsExpressionCompiler(s.rhs_expr!, block, localVars).parse();
+        const cleanLhsKey = s.lhs_key!.replace(/['"`]/g, '').trim();
+        if (s.lhs_type === "state") {
+            return `state["${cleanLhsKey}"] ${s.op} ${rhs};\n`;
+        } else if (s.lhs_type === "state_array") {
+            const idx = new JsExpressionCompiler(s.lhs_idx_expr!, block, localVars).parse();
+            return `state_arrays["${cleanLhsKey}"][Math.round(${idx})] ${s.op} ${rhs};\n`;
+        } else if (s.lhs_type === "outputs") {
+            const portIdx = resolve_port_index(s.lhs_key!, block.outputs);
+            if (portIdx !== -1) {
+                return `outputs[${portIdx}] ${s.op} ${rhs};\n`;
+            } else {
+                const idx = new JsExpressionCompiler(s.lhs_key!, block, localVars).parse();
+                return `outputs[Math.round(${idx})] ${s.op} ${rhs};\n`;
+            }
+        } else {
+            localVars.add(cleanLhsKey);
+            return `${cleanLhsKey} ${s.op} ${rhs};\n`;
+        }
+    }
+}
 
 export class CustomScriptBlock {
     code_str: string; params: Record<string, number>;
     state: Record<string, number> = {}; inputs: string[] = []; outputs: string[] = [];
     init_statements: Statement[] = []; step_statements: Statement[] = [];
+    state_arrays: Record<string, number> = {};
     last_vars: Record<string, number> = {};
+    compiled_step_fn: Function | null = null;
+    compiled_step_code: string | null = null;
 
     constructor(code: string, inputParams: Record<string, number>) {
         this.code_str = code; this.params = inputParams;
         this.discover_ports(); this.compile_code(); this.reset();
     }
     discover_ports() {
-        const parsePorts = (kw: string, set: Set<string>) => {
-            let pos = 0;
-            while (true) {
-                const p = this.code_str.indexOf(kw, pos);
-                if (p === -1) break;
-                pos = p + kw.length;
-                if (p + kw.length < this.code_str.length && (this.code_str[p + kw.length] === '[' || this.code_str.substring(p + kw.length, p + kw.length + 5) === ".get(")) {
-                    const is_get = this.code_str.substring(p + kw.length, p + kw.length + 5) === ".get(";
-                    let sp = p + kw.length + (is_get ? 5 : 1);
-                    if (this.code_str[sp] === '"' || this.code_str[sp] === '\'') sp++;
-                    let key = "";
-                    while (sp < this.code_str.length && !/[\]\)\,\"\']/.test(this.code_str[sp])) {
-                        if (/[a-zA-Z0-9_]/.test(this.code_str[sp])) key += this.code_str[sp];
-                        sp++;
-                    }
-                    if (key) set.add(key);
-                }
-            }
-        };
-        const in_set = new Set<string>(); const out_set = new Set<string>();
-        parsePorts("inputs", in_set); parsePorts("outputs", out_set);
-        this.inputs = Array.from(in_set).sort(); this.outputs = Array.from(out_set).sort();
+        const ports = discoverPortsJS(this.code_str);
+        this.inputs = ports.inputs;
+        this.outputs = ports.outputs;
     }
     normalize_expression(raw: string): string {
-        let clean = raw.replace(/\bstd::/g, '').replace(/\bMath\./g, '');
-        let norm = ""; let i = 0;
-        while (i < clean.length) {
-            if (i + 7 < clean.length && (clean.substring(i, i + 7) === "inputs[" || clean.substring(i, i + 11) === "inputs.get(")) {
-                const is_get = clean.substring(i, i + 11) === "inputs.get(";
-                i += is_get ? 11 : 7; norm += "inputs_";
-                if (clean[i] === '"' || clean[i] === '\'') i++;
-                while (i < clean.length && !/[\]\)\,\"\']/.test(clean[i])) { if (/[a-zA-Z0-9_]/.test(clean[i])) norm += clean[i]; i++; }
-                while (i < clean.length && clean[i] !== ']' && clean[i] !== ')') i++;
-                if (i < clean.length) i++;
-            } else if (i + 8 < clean.length && (clean.substring(i, i + 8) === "outputs[" || clean.substring(i, i + 12) === "outputs.get(")) {
-                const is_get = clean.substring(i, i + 12) === "outputs.get(";
-                i += is_get ? 12 : 8; norm += "outputs_";
-                if (clean[i] === '"' || clean[i] === '\'') i++;
-                while (i < clean.length && !/[\]\)\,\"\']/.test(clean[i])) { if (/[a-zA-Z0-9_]/.test(clean[i])) norm += clean[i]; i++; }
-                while (i < clean.length && clean[i] !== ']' && clean[i] !== ')') i++;
-                if (i < clean.length) i++;
-            } else if (i + 6 < clean.length && clean.substring(i, i + 6) === "state[") {
-                i += 6; norm += "state_";
-                if (clean[i] === '"' || clean[i] === '\'') i++;
-                while (i < clean.length && !/[\]\"\']/.test(clean[i])) { if (/[a-zA-Z0-9_]/.test(clean[i])) norm += clean[i]; i++; }
-                while (i < clean.length && clean[i] !== ']') i++;
-                if (i < clean.length) i++;
-            } else if (i + 7 < clean.length && clean.substring(i, i + 7) === "params[") {
-                i += 7; norm += "params_";
-                if (clean[i] === '"' || clean[i] === '\'') i++;
-                while (i < clean.length && !/[\]\"\']/.test(clean[i])) { if (/[a-zA-Z0-9_]/.test(clean[i])) norm += clean[i]; i++; }
-                while (i < clean.length && clean[i] !== ']') i++;
-                if (i < clean.length) i++;
-            } else if (i + 11 < clean.length && clean.substring(i, i + 11) === "params.get(") {
-                i += 11; norm += "params_";
-                if (clean[i] === '"' || clean[i] === '\'') i++;
-                while (i < clean.length && !/[\]\)\,\"\']/.test(clean[i])) { if (/[a-zA-Z0-9_]/.test(clean[i])) norm += clean[i]; i++; }
-                while (i < clean.length && clean[i] !== ']' && clean[i] !== ')') i++;
-                if (i < clean.length) i++;
-            } else if (i + 5 < clean.length && clean.substring(i, i + 5) === "math.") {
-                i += 5;
-            } else {
-                norm += clean[i++];
-            }
-        }
-        return norm;
+        return raw.replace(/\bstd::/g, '').replace(/\bMath\./g, '').replace(/\bmath\./g, '');
     }
-    parse_statement(line: string, target: Statement[]) {
+    parse_legacy_statement(line: string, target: Statement[]) {
         if (!line) return;
         let cleanLine = line.trim();
         if (cleanLine.endsWith(';')) cleanLine = cleanLine.slice(0, -1).trim();
@@ -316,57 +563,343 @@ export class CustomScriptBlock {
         let lhs_type: "state" | "outputs" | "local" = "local"; 
         let lhs_key = lhs;
         
-        if (lhs.startsWith("state[") || lhs.startsWith("state_")) {
+        if (lhs.startsWith("state[")) {
             lhs_type = "state";
-            if (lhs.startsWith("state[")) {
-                let p1 = lhs.indexOf('"'); if (p1 === -1) p1 = lhs.indexOf('\'');
-                if (p1 !== -1) { const p2 = lhs.indexOf(lhs[p1], p1 + 1); if (p2 !== -1) lhs_key = lhs.substring(p1 + 1, p2); }
-            } else lhs_key = lhs.substring(6);
-        } else if (lhs.startsWith("outputs[") || lhs.startsWith("outputs_")) {
+            lhs_key = lhs.substring(6, lhs.length - 1).trim();
+        } else if (lhs.startsWith("state_")) {
+            lhs_type = "state";
+            lhs_key = lhs.substring(6);
+        } else if (lhs.startsWith("outputs[")) {
             lhs_type = "outputs";
-            if (lhs.startsWith("outputs[")) {
-                let p1 = lhs.indexOf('"'); if (p1 === -1) p1 = lhs.indexOf('\'');
-                if (p1 !== -1) { const p2 = lhs.indexOf(lhs[p1], p1 + 1); if (p2 !== -1) lhs_key = lhs.substring(p1 + 1, p2); }
-            } else lhs_key = lhs.substring(8);
+            lhs_key = lhs.substring(8, lhs.length - 1).trim();
+        } else if (lhs.startsWith("outputs_")) {
+            lhs_type = "outputs";
+            lhs_key = lhs.substring(8);
         }
         
         if (!lhs_key) return;
-        target.push({ lhs_type, lhs_key, op, rhs_expr: this.normalize_expression(rhs) });
+        target.push({
+            type: "assign",
+            lhs_type,
+            lhs_key,
+            op,
+            rhs_expr: this.normalize_expression(rhs)
+        });
+    }
+    parse_block(lines: string[], startIndex: { pos: number }): Statement[] {
+        const statements: Statement[] = [];
+        
+        while (startIndex.pos < lines.length) {
+            let line = lines[startIndex.pos].trim();
+            startIndex.pos++;
+            
+            if (line.includes("//")) {
+                line = line.substring(0, line.indexOf("//")).trim();
+            }
+            if (!line || line === "{" || line === "pass;") continue;
+            
+            if (line === "}") {
+                break;
+            }
+            
+            const forMatch = line.match(/^for\s*\(\s*(?:int|double|auto)?\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([^;]+)\s*;\s*\1\s*<\s*([^;]+)\s*;\s*[^)]+\)/);
+            if (forMatch) {
+                const loop_var = forMatch[1];
+                const loop_start_expr = forMatch[2].trim();
+                const loop_limit_expr = forMatch[3].trim();
+                
+                const body = this.parse_block(lines, startIndex);
+                statements.push({
+                    type: "for",
+                    loop_var,
+                    loop_start_expr,
+                    loop_limit_expr,
+                    body
+                });
+                continue;
+            }
+            
+            if (line.endsWith(';')) line = line.slice(0, -1).trim();
+            const eq = line.indexOf('=');
+            if (eq === -1) continue;
+            
+            let lhs = line.substring(0, eq).trim();
+            let rhs = line.substring(eq + 1).trim();
+            
+            let op = "=";
+            if (lhs.endsWith('+')) { op = "+="; lhs = lhs.slice(0, -1).trim(); }
+            else if (lhs.endsWith('-')) { op = "-="; lhs = lhs.slice(0, -1).trim(); }
+            else if (lhs.endsWith('*')) { op = "*="; lhs = lhs.slice(0, -1).trim(); }
+            
+            const typePrefixes = ["double", "float", "int", "auto", "double&", "float&", "int&"];
+            for (const pref of typePrefixes) {
+                if (lhs.startsWith(pref + " ")) {
+                    lhs = lhs.substring(pref.length + 1).trim();
+                    break;
+                }
+            }
+            
+            const outMatch = lhs.match(/^outputs\s*\[\s*([^\]]+)\s*\]/);
+            if (outMatch) {
+                statements.push({
+                    type: "assign",
+                    lhs_type: "outputs",
+                    lhs_key: outMatch[1].trim(),
+                    op,
+                    rhs_expr: this.normalize_expression(rhs)
+                });
+                continue;
+            }
+            
+            const arrayMatch = lhs.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*\[\s*([^\]]+)\s*\]/);
+            if (arrayMatch && this.state_arrays[arrayMatch[1]]) {
+                statements.push({
+                    type: "assign",
+                    lhs_type: "state_array",
+                    lhs_key: arrayMatch[1],
+                    lhs_idx_expr: arrayMatch[2].trim(),
+                    op,
+                    rhs_expr: this.normalize_expression(rhs)
+                });
+                continue;
+            }
+            
+            const lhs_type = (lhs in this.state) ? "state" : "local";
+            statements.push({
+                type: "assign",
+                lhs_type,
+                lhs_key: lhs,
+                op,
+                rhs_expr: this.normalize_expression(rhs)
+            });
+        }
+        
+        return statements;
     }
     compile_code() {
-        this.init_statements = []; this.step_statements = [];
+        this.init_statements = []; this.step_statements = []; this.state_arrays = {};
+        
+        const isStandardC = this.code_str.includes("void step(");
+        if (!isStandardC) {
+            const lines = this.code_str.split('\n');
+            let in_init = false, in_step = false;
+            for (const line of lines) {
+                let clean = line.trim();
+                if (clean.includes("//")) {
+                    clean = clean.substring(0, clean.indexOf("//")).trim();
+                }
+                if (!clean || clean === "{" || clean === "}") continue;
+                
+                if (clean.includes("initialize(")) { in_init = true; in_step = false; continue; }
+                if (clean.includes("step(")) { in_init = false; in_step = true; continue; }
+                
+                if (in_init) this.parse_legacy_statement(clean, this.init_statements);
+                else if (in_step) this.parse_legacy_statement(clean, this.step_statements);
+            }
+            return;
+        }
+        
         const lines = this.code_str.split('\n');
-        let in_init = false, in_step = false;
         for (const line of lines) {
             let clean = line.trim();
-            if (clean.includes("//")) {
-                clean = clean.substring(0, clean.indexOf("//")).trim();
+            if (clean.includes("//")) clean = clean.substring(0, clean.indexOf("//")).trim();
+            if (!clean) continue;
+            if (clean.startsWith("void step")) break;
+            
+            const constMatch = clean.match(/^(?:const\s+double\s+)([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*;/);
+            if (constMatch) {
+                this.params[constMatch[1]] = parseFloat(constMatch[2]);
+                continue;
             }
-            if (!clean || clean === "{" || clean === "}") continue;
+            const arrayMatch = clean.match(/^(?:double\s+)([a-zA-Z_][a-zA-Z0-9_]*)\s*\[\s*(\d+)\s*\](?:\s*=\s*\{([^}]*)\})?\s*;/);
+            if (arrayMatch) {
+                const name = arrayMatch[1];
+                const size = parseInt(arrayMatch[2]);
+                const defaultValsStr = arrayMatch[3];
+                const defaultVals = defaultValsStr ? defaultValsStr.split(',').map(s => parseFloat(s.trim())) : [];
+                for (let i = 0; i < size; i++) {
+                    this.state[`${name}_${i}`] = defaultVals[i] ?? 0.0;
+                }
+                this.state_arrays[name] = size;
+                continue;
+            }
+            const scalarMatch = clean.match(/^(?:double\s+)([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*;/);
+            if (scalarMatch) {
+                this.state[scalarMatch[1]] = parseFloat(scalarMatch[2]);
+                continue;
+            }
             
-            if (clean.includes("initialize(")) { in_init = true; in_step = false; continue; }
-            if (clean.includes("step(")) { in_init = false; in_step = true; continue; }
+            const legacyMatch = clean.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*;/);
+            if (legacyMatch) {
+                const name = legacyMatch[1];
+                const val = parseFloat(legacyMatch[2]);
+                if (!(name in this.state) && !(name in this.params)) {
+                    this.params[name] = val;
+                }
+            }
+        }
+        
+        let in_step = false;
+        const stepLines: string[] = [];
+        for (const line of lines) {
+            let clean = line.trim();
+            if (clean.includes("void step(")) {
+                in_step = true;
+                continue;
+            }
+            if (in_step) {
+                stepLines.push(line);
+            }
+        }
+        
+        const pos = { pos: 0 };
+        this.step_statements = this.parse_block(stepLines, pos);
+    }
+    build_compiled_step() {
+        try {
+            const localVars = new Set<string>();
+            let bodyJs = "";
+            for (const s of this.step_statements) {
+                bodyJs += compile_statement_to_js(s, this, localVars);
+            }
             
-            if (in_init) this.parse_statement(clean, this.init_statements);
-            else if (in_step) this.parse_statement(clean, this.step_statements);
+            let headerJs = "";
+            if (localVars.size > 0) {
+                headerJs += `let ${Array.from(localVars).join(', ')};\n`;
+            }
+            
+            headerJs += `const inputs = [];\n`;
+            headerJs += `for (let i = 0; i < input_names.length; i++) {\n`;
+            headerJs += `  inputs[i] = inputs_dict[input_names[i]] ?? 0.0;\n`;
+            headerJs += `}\n`;
+            
+            headerJs += `const state_arrays = {};\n`;
+            for (const [name, size] of Object.entries(this.state_arrays)) {
+                headerJs += `state_arrays["${name}"] = [];\n`;
+                for (let i = 0; i < size; i++) {
+                    headerJs += `state_arrays["${name}"][${i}] = state["${name}_${i}"] ?? 0.0;\n`;
+                }
+            }
+            
+            headerJs += `const outputs = [];\n`;
+            for (let i = 0; i < this.outputs.length; i++) {
+                headerJs += `outputs[${i}] = 0.0;\n`;
+            }
+            
+            let footerJs = "";
+            for (const [name, size] of Object.entries(this.state_arrays)) {
+                for (let i = 0; i < size; i++) {
+                    footerJs += `state["${name}_${i}"] = state_arrays["${name}"][${i}] ?? 0.0;\n`;
+                }
+            }
+            
+            footerJs += `const run_outputs = {};\n`;
+            footerJs += `for (let i = 0; i < output_names.length; i++) {\n`;
+            footerJs += `  run_outputs[output_names[i]] = outputs[i] ?? 0.0;\n`;
+            footerJs += `}\n`;
+            
+            footerJs += `const last_vars = { time };\n`;
+            footerJs += `for (const [k, v] of Object.entries(params)) last_vars["params_" + k] = v;\n`;
+            footerJs += `for (const [k, v] of Object.entries(state)) last_vars["state_" + k] = v;\n`;
+            footerJs += `for (let i = 0; i < input_names.length; i++) last_vars["inputs_" + input_names[i]] = inputs[i] ?? 0.0;\n`;
+            footerJs += `for (let i = 0; i < output_names.length; i++) last_vars["outputs_" + output_names[i]] = outputs[i] ?? 0.0;\n`;
+            
+            for (const v of localVars) {
+                footerJs += `last_vars["${v}"] = (typeof ${v} !== 'undefined') ? ${v} : 0.0;\n`;
+            }
+            
+            footerJs += `block.last_vars = last_vars;\n`;
+            footerJs += `return run_outputs;\n`;
+            
+            const fullCode = headerJs + bodyJs + footerJs;
+            this.compiled_step_code = fullCode;
+            this.compiled_step_fn = new Function("time", "inputs_dict", "state", "params", "input_names", "output_names", "block", fullCode);
+        } catch (err) {
+            console.error("Failed to precompile CustomScriptBlock step function:", err);
+            this.compiled_step_fn = null;
         }
     }
     reset() {
         this.state = {};
+        this.compile_code();
+        this.build_compiled_step();
+        
         const ev = new ExpressionEvaluator();
         const vars: Record<string, number> = {};
         for (const [k, v] of Object.entries(this.params)) vars["params_" + k] = v;
+        
         for (const s of this.init_statements) {
             if (s.lhs_type === "state") {
-                const val = ev.evaluate(s.rhs_expr, vars);
-                this.state[s.lhs_key] = val; vars["state_" + s.lhs_key] = val;
+                const val = ev.evaluate(s.rhs_expr!, vars, this);
+                const cleanKey = s.lhs_key!.replace(/['"`]/g, '').trim();
+                this.state[cleanKey] = val; vars["state_" + cleanKey] = val;
             }
         }
         this.last_vars = { ...vars };
     }
+    execute_statements(statements: Statement[], vars: Record<string, number>, run_outputs: Record<string, number>, ev: ExpressionEvaluator) {
+        for (const s of statements) {
+            if (s.type === "for") {
+                const start = Math.round(ev.evaluate(s.loop_start_expr!, vars, this));
+                const limit = Math.round(ev.evaluate(s.loop_limit_expr!, vars, this));
+                const loop_var = s.loop_var!;
+                
+                for (let val = start; val < limit; val++) {
+                    vars[loop_var] = val;
+                    this.execute_statements(s.body!, vars, run_outputs, ev);
+                }
+            } else if (s.type === "assign") {
+                const rhs = ev.evaluate(s.rhs_expr!, vars, this);
+                if (s.lhs_type === "state") {
+                    if (s.op === "=") this.state[s.lhs_key!] = rhs;
+                    else if (s.op === "+=") this.state[s.lhs_key!] = (this.state[s.lhs_key!] ?? 0.0) + rhs;
+                    else if (s.op === "-=") this.state[s.lhs_key!] = (this.state[s.lhs_key!] ?? 0.0) - rhs;
+                    else if (s.op === "*=") this.state[s.lhs_key!] = (this.state[s.lhs_key!] ?? 0.0) * rhs;
+                    vars["state_" + s.lhs_key!] = this.state[s.lhs_key!];
+                } else if (s.lhs_type === "state_array") {
+                    const idx = Math.round(ev.evaluate(s.lhs_idx_expr!, vars, this));
+                    const array_name = s.lhs_key!;
+                    const state_key = `${array_name}_${idx}`;
+                    
+                    if (s.op === "=") this.state[state_key] = rhs;
+                    else if (s.op === "+=") this.state[state_key] = (this.state[state_key] ?? 0.0) + rhs;
+                    else if (s.op === "-=") this.state[state_key] = (this.state[state_key] ?? 0.0) - rhs;
+                    else if (s.op === "*=") this.state[state_key] = (this.state[state_key] ?? 0.0) * rhs;
+                    vars["state_" + state_key] = this.state[state_key];
+                } else if (s.lhs_type === "outputs") {
+                    const idx = Math.round(ev.evaluate(s.lhs_key!, vars, this));
+                    const port_name = this.outputs[idx];
+                    if (port_name) {
+                        if (s.op === "=") run_outputs[port_name] = rhs;
+                        else if (s.op === "+=") run_outputs[port_name] = (run_outputs[port_name] ?? 0.0) + rhs;
+                        else if (s.op === "-=") run_outputs[port_name] = (run_outputs[port_name] ?? 0.0) - rhs;
+                        else if (s.op === "*=") run_outputs[port_name] = (run_outputs[port_name] ?? 0.0) * rhs;
+                        vars["outputs_" + port_name] = run_outputs[port_name];
+                    }
+                } else if (s.lhs_type === "local") {
+                    if (s.op === "=") vars[s.lhs_key!] = rhs;
+                    else if (s.op === "+=") vars[s.lhs_key!] = (vars[s.lhs_key!] ?? 0.0) + rhs;
+                    else if (s.op === "-=") vars[s.lhs_key!] = (vars[s.lhs_key!] ?? 0.0) - rhs;
+                    else if (s.op === "*=") vars[s.lhs_key!] = (vars[s.lhs_key!] ?? 0.0) * rhs;
+                }
+            }
+        }
+    }
     step(time: number, inputs_dict: Record<string, number>): Record<string, number> {
+        if (this.compiled_step_fn) {
+            try {
+                return this.compiled_step_fn(time, inputs_dict, this.state, this.params, this.inputs, this.outputs, this);
+            } catch (err) {
+                console.error("Compiled step execution failed, falling back to interpreter:", err);
+                if (this.compiled_step_code) {
+                    console.log("COMPILED JS CODE:\n", this.compiled_step_code);
+                }
+            }
+        }
+
         const run_outputs: Record<string, number> = {};
         for (const out of this.outputs) run_outputs[out] = 0.0;
+        
         const vars: Record<string, number> = { time };
         for (const [k, v] of Object.entries(this.params)) vars["params_" + k] = v;
         for (const [k, v] of Object.entries(this.state)) vars["state_" + k] = v;
@@ -374,24 +907,8 @@ export class CustomScriptBlock {
         for (const out of this.outputs) vars["outputs_" + out] = 0.0;
         
         const ev = new ExpressionEvaluator();
-        for (const s of this.step_statements) {
-            const rhs = ev.evaluate(s.rhs_expr, vars);
-            if (s.lhs_type === "state") {
-                if (s.op === "=") this.state[s.lhs_key] = rhs;
-                else if (s.op === "+=") this.state[s.lhs_key] = (this.state[s.lhs_key] ?? 0.0) + rhs;
-                else if (s.op === "-=") this.state[s.lhs_key] = (this.state[s.lhs_key] ?? 0.0) - rhs;
-                else if (s.op === "*=") this.state[s.lhs_key] = (this.state[s.lhs_key] ?? 0.0) * rhs;
-                vars["state_" + s.lhs_key] = this.state[s.lhs_key];
-            } else if (s.lhs_type === "outputs") {
-                if (s.op === "=") run_outputs[s.lhs_key] = rhs;
-                else if (s.op === "+=") run_outputs[s.lhs_key] = (run_outputs[s.lhs_key] ?? 0.0) + rhs;
-                else if (s.op === "-=") run_outputs[s.lhs_key] = (run_outputs[s.lhs_key] ?? 0.0) - rhs;
-                else if (s.op === "*=") run_outputs[s.lhs_key] = (run_outputs[s.lhs_key] ?? 0.0) * rhs;
-                vars["outputs_" + s.lhs_key] = run_outputs[s.lhs_key];
-            } else if (s.lhs_type === "local") {
-                vars[s.lhs_key] = rhs;
-            }
-        }
+        this.execute_statements(this.step_statements, vars, run_outputs, ev);
+        
         this.last_vars = { ...vars };
         return run_outputs;
     }
@@ -2517,20 +3034,23 @@ export class CircuitSimulator {
                             // Save outputs for sample-and-hold
                             stateObj.last_outputs = { ...od };
                             
-                            // Update states from execution
-                            for (const [sk, sv] of Object.entries(inst.state)) {
-                                stateObj[sk] = sv;
-                            }
-                            
-                            // Update next trigger time
-                            if (dt_block > 0.0) {
-                                if (first && time === 0.0) {
-                                    stateObj.next_trigger_time = dt_block;
-                                } else {
+                            const is_state_update_step = (integrate && iter === 2);
+                            if (is_state_update_step) {
+                                // Update states from execution
+                                for (const [sk, sv] of Object.entries(inst.state)) {
+                                    stateObj[sk] = sv;
+                                }
+                                
+                                // Update next trigger time
+                                if (dt_block > 0.0) {
                                     stateObj.next_trigger_time = Math.floor(time / dt_block) * dt_block + dt_block;
                                     if (stateObj.next_trigger_time <= time + 1e-15) {
                                         stateObj.next_trigger_time += dt_block;
                                     }
+                                }
+                            } else if (first && iter === 2) {
+                                if (dt_block > 0.0 && stateObj.next_trigger_time === undefined) {
+                                    stateObj.next_trigger_time = dt_block;
                                 }
                             }
                         }

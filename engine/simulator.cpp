@@ -3,6 +3,10 @@
 #include <cmath>
 #include <iostream>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 void split_into_nodes(const std::vector<std::string>& nodes, std::string& n1, std::string& n2) {
     n1 = (nodes.size() > 0) ? nodes[0] : "node_0";
     n2 = (nodes.size() > 1) ? nodes[1] : "node_0";
