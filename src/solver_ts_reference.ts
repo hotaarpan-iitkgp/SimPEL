@@ -1190,7 +1190,11 @@ export class CircuitSimulator {
                                             if (/[a-zA-Z0-9_]/.test(codeStr[sp])) key += codeStr[sp];
                                             sp++;
                                         }
-                                        if (key) set.add(key);
+                                        if (key) {
+                                            const isNum = /^\d+$/.test(key);
+                                            const portName = isNum ? (kw === "inputs" ? "In" + (parseInt(key) + 1) : "Out" + (parseInt(key) + 1)) : key;
+                                            set.add(portName);
+                                        }
                                     }
                                 }
                             };
