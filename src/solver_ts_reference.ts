@@ -603,7 +603,7 @@ export class CustomScriptBlock {
             rhs_expr: this.normalize_expression(rhs)
         });
     }
-    parse_block(lines: string[], startIndex: { pos: number }): Statement[] {
+    parse_block(lines: string[], startIndex: { pos: number; closedByElse?: boolean }): Statement[] {
         const statements: Statement[] = [];
         
         while (startIndex.pos < lines.length) {
@@ -616,12 +616,14 @@ export class CustomScriptBlock {
             if (!line || line === "{" || line === "pass;") continue;
             
             if (line === "}") {
+                startIndex.closedByElse = false;
                 break;
             }
             // Handle "} else if (...)" and "} else {" — break and rewind
             // so the parent if-parser's look-ahead picks them up
             if (line.startsWith("}") && /^}\s*else\b/.test(line)) {
                 startIndex.pos--;
+                startIndex.closedByElse = true;
                 break;
             }
             
@@ -643,37 +645,44 @@ export class CustomScriptBlock {
             }
             
             // if / else if / else support
-            const ifMatch = line.match(/^if\s*\((.+)\)\s*\{?\s*$/);
-            if (ifMatch) {
-                const condition_expr = this.normalize_expression(ifMatch[1].trim());
-                const body = this.parse_block(lines, startIndex);
-                const else_if_branches: { condition_expr: string; body: Statement[] }[] = [];
-                let else_body: Statement[] | undefined;
-                
-                // Look ahead for else if / else
-                while (startIndex.pos < lines.length) {
-                    const nextLine = lines[startIndex.pos].trim();
-                    // Remove comments
-                    const nextClean = nextLine.includes("//") ? nextLine.substring(0, nextLine.indexOf("//")).trim() : nextLine;
-                    
-                    const elseIfMatch = nextClean.match(/^}?\s*else\s+if\s*\((.+)\)\s*\{?\s*$/);
-                    if (elseIfMatch) {
-                        startIndex.pos++;
-                        const branchCond = this.normalize_expression(elseIfMatch[1].trim());
-                        const branchBody = this.parse_block(lines, startIndex);
-                        else_if_branches.push({ condition_expr: branchCond, body: branchBody });
-                        continue;
-                    }
-                    
-                    const elseMatch = nextClean.match(/^}?\s*else\s*\{?\s*$/);
-                    if (elseMatch) {
-                        startIndex.pos++;
-                        else_body = this.parse_block(lines, startIndex);
-                        break;
-                    }
-                    
-                    break; // No more else branches
-                }
+             const ifMatch = line.match(/^if\s*\((.+)\)\s*\{?\s*$/);
+             if (ifMatch) {
+                 const condition_expr = this.normalize_expression(ifMatch[1].trim());
+                 const body = this.parse_block(lines, startIndex);
+                 const else_if_branches: { condition_expr: string; body: Statement[] }[] = [];
+                 let else_body: Statement[] | undefined;
+                 
+                 // Look ahead for else if / else
+                 while (startIndex.pos < lines.length) {
+                     const nextLine = lines[startIndex.pos].trim();
+                     // Remove comments
+                     const nextClean = nextLine.includes("//") ? nextLine.substring(0, nextLine.indexOf("//")).trim() : nextLine;
+                     
+                     // If next line starts with '}', it only belongs to us if it was the line that closed this if block's body
+                     if (nextClean.startsWith("}")) {
+                         if (startIndex.closedByElse === false) {
+                             break; // Closes an outer block, stop look-ahead!
+                         }
+                     }
+                     
+                     const elseIfMatch = nextClean.match(/^}?\s*else\s+if\s*\((.+)\)\s*\{?\s*$/);
+                     if (elseIfMatch) {
+                         startIndex.pos++;
+                         const branchCond = this.normalize_expression(elseIfMatch[1].trim());
+                         const branchBody = this.parse_block(lines, startIndex);
+                         else_if_branches.push({ condition_expr: branchCond, body: branchBody });
+                         continue;
+                     }
+                     
+                     const elseMatch = nextClean.match(/^}?\s*else\s*\{?\s*$/);
+                     if (elseMatch) {
+                         startIndex.pos++;
+                         else_body = this.parse_block(lines, startIndex);
+                         break;
+                     }
+                     
+                     break; // No more else branches
+                 }
                 
                 statements.push({
                     type: "if",
