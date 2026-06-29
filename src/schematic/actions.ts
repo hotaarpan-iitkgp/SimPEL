@@ -2422,9 +2422,13 @@ export function compileHierarchicalNetlist(
             const stringKeys = [
               'tag', 'label', 'code', 'plot_custom_vars', 'method', 'operator', 
               'signs', 'edge', 'trigger_edge', 'datatype', 'retriggerable', 'type',
-              'target', 'selected_signals'
+              'target', 'selected_signals', 'num', 'den', 'A', 'B', 'C', 'D', 'x0',
+              'config', 'primary_turns', 'secondary_turns', 'indices'
             ];
-            const isStringParam = stringKeys.includes(k) || k.startsWith('plot_') || k.startsWith('trigger_');
+            const isStringParam = stringKeys.includes(k) || 
+                                  k.startsWith('plot_') || 
+                                  k.startsWith('trigger_') ||
+                                  (typeof val === 'string' && val.trim().startsWith('[') && val.trim().endsWith(']'));
             
             if (typeof val === 'string' && val.trim() !== '' && !isStringParam) {
               const hasDigits = /\d/.test(val);
