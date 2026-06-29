@@ -2265,12 +2265,19 @@ export class CircuitSimulator {
                     } else if (orig === "TRANSFER_FCN") {
                         const numStr = b.parameters.num ?? "[1]";
                         const denStr = b.parameters.den ?? "[1 1]";
-                        const parseVector = (s: string) => {
-                            let clean = s.replace(/[\[\]]/g, '');
+                        const parseVector = (s: any) => {
+                            if (s === null || s === undefined) return [];
+                            let str = String(s).trim();
+                            let clean = str.replace(/[\[\]]/g, '');
                             return clean.split(/[\s,;]+/).filter(x => x.trim() !== '').map(x => parseFloat(x) || 0.0);
                         };
-                        const num = parseVector(numStr);
-                        const den = parseVector(denStr);
+                        let num = parseVector(numStr);
+                        let den = parseVector(denStr);
+                        if (num.length === 0) num = [1.0];
+                        if (den.length === 0) den = [1.0];
+                        if (den.every(x => x === 0.0)) {
+                            den = [1.0];
+                        }
                         const n = den.length - 1;
                         if (n < 1) {
                             signals[out] = (num[0] ?? 1.0) / (den[0] ?? 1.0) * val;
