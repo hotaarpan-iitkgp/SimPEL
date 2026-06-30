@@ -368,18 +368,74 @@ export function copySelected(): void {
     components: copiedComps,
     wires: copiedWires
   };
+
+  // 1. Save to localStorage for robust, synchronous same-origin cross-tab copy/paste
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('circuitsim_clipboard', JSON.stringify(state.copypasteClipboard));
+    } catch (err) {
+      console.error('LocalStorage write failed:', err);
+    }
+  }
+
+  // 2. Save to system clipboard for cross-origin / cross-browser copy/paste
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    const envelope = {
+      type: 'circuitsim_schematic',
+      data: state.copypasteClipboard
+    };
+    navigator.clipboard.writeText(JSON.stringify(envelope))
+      .catch(err => {
+        console.warn('System clipboard write failed (expected if not in focused/secure context):', err);
+      });
+  }
+
   showToast(`Copied ${copiedComps.length} components.`);
 }
 
 // Paste Elements from Clipboard
-export function pasteSelected(): void {
-  if (!state.copypasteClipboard) {
+export async function pasteSelected(): Promise<void> {
+  let clipboardData: any = null;
+
+  // 1. Try to read from System Clipboard
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (clipboardText) {
+        const envelope = JSON.parse(clipboardText);
+        if (envelope && envelope.type === 'circuitsim_schematic' && envelope.data) {
+          clipboardData = envelope.data;
+        }
+      }
+    } catch (err) {
+      console.warn('System clipboard read failed or not permitted, falling back to localStorage:', err);
+    }
+  }
+
+  // 2. Fallback to localStorage if system clipboard is empty or failed
+  if (!clipboardData && typeof localStorage !== 'undefined') {
+    try {
+      const localData = localStorage.getItem('circuitsim_clipboard');
+      if (localData) {
+        clipboardData = JSON.parse(localData);
+      }
+    } catch (err) {
+      console.error('LocalStorage read failed:', err);
+    }
+  }
+
+  // 3. Fallback to in-memory state
+  if (!clipboardData) {
+    clipboardData = state.copypasteClipboard;
+  }
+
+  if (!clipboardData) {
     showToast('Clipboard empty.');
     return;
   }
   
   saveState();
-  const clipboard = JSON.parse(JSON.stringify(state.copypasteClipboard));
+  const clipboard = JSON.parse(JSON.stringify(clipboardData));
   const idMap: Record<string, string> = {};
   const newComps: any[] = [];
   

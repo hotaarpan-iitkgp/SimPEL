@@ -136,7 +136,7 @@ class Parser {
             if (("state_" + name) in this.vars) return this.vars["state_" + name];
             if (("params_" + name) in this.vars) return this.vars["params_" + name];
             if (name in this.vars) return this.vars[name];
-            if (name === "pi" || name === "M_PI") return Math.PI;
+            if (name === "pi" || name === "PI" || name === "M_PI") return Math.PI;
             return 0.0;
         }
         return 0.0;
@@ -369,7 +369,7 @@ class JsExpressionCompiler {
             if (name in this.block.state) return `state["${name}"]`;
             if (name in this.block.params) return `params["${name}"]`;
             if (name === "time") return `time`;
-            if (name === "pi" || name === "M_PI") return `Math.PI`;
+            if (name === "pi" || name === "PI" || name === "M_PI") return `Math.PI`;
             if (name in this.block.state_arrays) {
                 return `state_arrays["${name}"]`;
             }

@@ -399,7 +399,7 @@ export const DEFAULT_PARAMETERS: Record<string, any> = {
   'vg-FET': { Ron: "10m", Roff: "1M", Gate_Signal_Label: "S1" },
   V:      { value: "24" },
   I:      { value: "1" },
-  AC_V:   { amplitude: "12", frequency: "50" },
+  AC_V:   { amplitude: "12", frequency: "50", phase: "0" },
   XFMR:   { primary_turns: "[100]", secondary_turns: "[100]" },
   CONST:  { value: "1.0" },
   GAIN:   { K: "2.5" },

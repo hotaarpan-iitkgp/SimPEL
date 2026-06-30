@@ -642,7 +642,8 @@ Vector CircuitSimulator::buildRHS(double t_stage, const std::map<std::string, st
         } else if (src.type == "ACVoltageSource") {
             double amp = src.getParam("amplitude", 12.0);
             double freq = src.getParam("frequency", 50.0);
-            b[idx_V] = amp * std::sin(2.0 * M_PI * freq * t_stage);
+            double phase = src.getParam("phase", 0.0);
+            b[idx_V] = amp * std::sin(2.0 * M_PI * freq * t_stage + phase * M_PI / 180.0);
         } else if (src.type == "Ammeter") {
             b[idx_V] = 0.0;
         }

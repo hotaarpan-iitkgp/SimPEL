@@ -249,7 +249,7 @@ export const CIRCUITS_TEMPLATES: Record<string, Template> = {
         y: 350,
         rotation: 0,
         nodes: ["node_ac", "node_0"],
-        parameters: { amplitude: "120.0", frequency: "60.0" },
+        parameters: { amplitude: "120.0", frequency: "60.0", phase: "0.0" },
         channels: {}
       },
       {

@@ -1085,7 +1085,7 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     category: 'electrical',
     subcategory: 'Sources',
     symbol: 'AC_V',
-    defaultParameters: { amplitude: '12', frequency: '50' }
+    defaultParameters: { amplitude: '12', frequency: '50', phase: '0' }
   },
   {
     type: 'AC_I',
@@ -1094,7 +1094,7 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     category: 'electrical',
     subcategory: 'Sources',
     symbol: 'AC_I',
-    defaultParameters: { amplitude: '1', frequency: '50' }
+    defaultParameters: { amplitude: '1', frequency: '50', phase: '0' }
   },
   {
     type: 'CTRL_V',

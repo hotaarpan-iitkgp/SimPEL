@@ -126,7 +126,7 @@ class Parser {
             if (("state_" + name) in this.vars) return this.vars["state_" + name];
             if (("params_" + name) in this.vars) return this.vars["params_" + name];
             if (name in this.vars) return this.vars[name];
-            if (name === "pi" || name === "M_PI") return Math.PI;
+            if (name === "pi" || name === "PI" || name === "M_PI") return Math.PI;
             return 0.0;
         }
         return 0.0;
@@ -357,7 +357,7 @@ class JsExpressionCompiler {
             if (name in this.block.state) return `state["${name}"]`;
             if (name in this.block.params) return `params["${name}"]`;
             if (name === "time") return `time`;
-            if (name === "pi" || name === "M_PI") return `Math.PI`;
+            if (name === "pi" || name === "PI" || name === "M_PI") return `Math.PI`;
             if (name in this.block.state_arrays) {
                 return `state_arrays["${name}"]`;
             }
@@ -2134,7 +2134,8 @@ export class CircuitSimulator {
             if (src.type === "VoltageSource") b[idx] = parseScientific(src.parameters.value ?? "24");
             else if (src.type === "ACVoltageSource") {
                 const amp = parseScientific(src.parameters.amplitude ?? "12"), freq = parseScientific(src.parameters.frequency ?? "50");
-                b[idx] = amp * Math.sin(2.0 * Math.PI * freq * t_stage);
+                const phase = parseScientific(src.parameters.phase ?? "0");
+                b[idx] = amp * Math.sin(2.0 * Math.PI * freq * t_stage + phase * Math.PI / 180.0);
             }
         }
         for (const c of this.physical_stage) {
