@@ -758,11 +758,11 @@ Vector CircuitSimulator::compute_k(
                 double gate_val = signals_start[sw.getChannelRef("G")];
                 bool gate_on = gate_val > 0.5;
                 double vd_drop = sw.getParam("Vd", 0.7);
-                bool diode_on = -vd > ((old_state == "ON") ? vd_drop - 0.1 : vd_drop);
+                bool diode_on = -vd > vd_drop;
                 new_state = (gate_on || diode_on) ? "ON" : "OFF";
             } else if (sw_type == "Diode") {
                 double vd_drop = sw.getParam("Vd", 0.7);
-                double threshold = (old_state == "ON") ? vd_drop - 0.1 : vd_drop;
+                double threshold = vd_drop;
                 new_state = (vd > threshold) ? "ON" : "OFF";
             } else if (sw_type == "Switch") {
                 double sw_val = sw.getParam("state", 0.0);
@@ -908,11 +908,11 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
                     double gate_val = signals_start[sw.getChannelRef("G")];
                     bool gate_on = gate_val > 0.5;
                     double vd_drop = sw.getParam("Vd", 0.7);
-                    bool diode_on = -vd > ((old_state == "ON") ? vd_drop - 0.1 : vd_drop);
+                    bool diode_on = -vd > vd_drop;
                     new_state = (gate_on || diode_on) ? "ON" : "OFF";
                 } else if (sw_type == "Diode") {
                     double vd_drop = sw.getParam("Vd", 0.7);
-                    double threshold = (old_state == "ON") ? vd_drop - 0.1 : vd_drop;
+                    double threshold = vd_drop;
                     new_state = (vd > threshold) ? "ON" : "OFF";
                 } else if (sw_type == "Switch") {
                     double sw_val = sw.getParam("state", 0.0);
@@ -1002,11 +1002,11 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
                     double gate_val = signals_start[sw.getChannelRef("G")];
                     bool gate_on = gate_val > 0.5;
                     double vd_drop = sw.getParam("Vd", 0.7);
-                    bool diode_on = -vd > ((old_state == "ON") ? vd_drop - 0.1 : vd_drop);
+                    bool diode_on = -vd > vd_drop;
                     new_state = (gate_on || diode_on) ? "ON" : "OFF";
                 } else if (sw_type == "Diode") {
                     double vd_drop = sw.getParam("Vd", 0.7);
-                    double threshold = (old_state == "ON") ? vd_drop - 0.1 : vd_drop;
+                    double threshold = vd_drop;
                     new_state = (vd > threshold) ? "ON" : "OFF";
                 } else if (sw_type == "Switch") {
                     double sw_val = sw.getParam("state", 0.0);
@@ -1175,11 +1175,11 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
                     double gate_val = signals_start[sw.getChannelRef("G")];
                     bool gate_on = gate_val > 0.5;
                     double vd_drop = sw.getParam("Vd", 0.7);
-                    bool diode_on = -vd > ((old_state == "ON") ? vd_drop - 0.1 : vd_drop);
+                    bool diode_on = -vd > vd_drop;
                     new_state = (gate_on || diode_on) ? "ON" : "OFF";
                 } else if (sw_type == "Diode") {
                     double vd_drop = sw.getParam("Vd", 0.7);
-                    double threshold = (old_state == "ON") ? vd_drop - 0.1 : vd_drop;
+                    double threshold = vd_drop;
                     new_state = (vd > threshold) ? "ON" : "OFF";
                 } else if (sw_type == "Switch") {
                     double sw_val = sw.getParam("state", 0.0);

@@ -3532,12 +3532,12 @@ export class CircuitSimulator {
                 if (sw.type === "MOSFET" || sw.type === "vg-FET") {
                     const gate_on = (sigs_start[sw.channels.G] ?? 0) > 0.5;
                     const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                    const diode_on = -vd > (old === "ON" ? vd_drop - 0.1 : vd_drop);
+                    const diode_on = -vd > vd_drop;
                     swn = (gate_on || diode_on) ? "ON" : "OFF";
                 }
                 else if (sw.type === "Diode") {
                     const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                    swn = vd > (old === "ON" ? vd_drop - 0.1 : vd_drop) ? "ON" : "OFF";
+                    swn = vd > vd_drop ? "ON" : "OFF";
                 }
                 else if (sw.type === "Switch") {
                     const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
@@ -3633,12 +3633,12 @@ export class CircuitSimulator {
                     if (sw.type === "MOSFET" || sw.type === "vg-FET") {
                         const gate_on = (sigs_start[sw.channels.G] ?? 0) > 0.5;
                         const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                        const diode_on = -vd > (old === "ON" ? vd_drop - 0.1 : vd_drop);
+                        const diode_on = -vd > vd_drop;
                         swn = (gate_on || diode_on) ? "ON" : "OFF";
                     }
                     else if (sw.type === "Diode") {
                         const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                        swn = vd > (old === "ON" ? vd_drop - 0.1 : vd_drop) ? "ON" : "OFF";
+                        swn = vd > vd_drop ? "ON" : "OFF";
                     }
                     else if (sw.type === "Switch") {
                         const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
@@ -3681,12 +3681,12 @@ export class CircuitSimulator {
                     if (sw.type === "MOSFET" || sw.type === "vg-FET") {
                         const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
                         const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                        const diode_on = -vd > (old === "ON" ? vd_drop - 0.1 : vd_drop);
+                        const diode_on = -vd > vd_drop;
                         swn = (gate_on || diode_on) ? "ON" : "OFF";
                     }
                     else if (sw.type === "Diode") {
                         const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                        swn = vd > (old === "ON" ? vd_drop - 0.1 : vd_drop) ? "ON" : "OFF";
+                        swn = vd > vd_drop ? "ON" : "OFF";
                     }
                     else if (sw.type === "Switch") {
                         const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
@@ -3766,12 +3766,12 @@ export class CircuitSimulator {
                     if (sw.type === "MOSFET" || sw.type === "vg-FET") {
                         const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
                         const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                        const diode_on = -vd > (old === "ON" ? vd_drop - 0.1 : vd_drop);
+                        const diode_on = -vd > vd_drop;
                         swn = (gate_on || diode_on) ? "ON" : "OFF";
                     }
                     else if (sw.type === "Diode") {
                         const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                        swn = vd > (old === "ON" ? vd_drop - 0.1 : vd_drop) ? "ON" : "OFF";
+                        swn = vd > vd_drop ? "ON" : "OFF";
                     }
                     else if (sw.type === "Switch") {
                         const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
