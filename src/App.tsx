@@ -898,17 +898,37 @@ export default function App() {
     };
 
     try {
-      const response = await fetch('/api/simulate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(netlistPayload)
-      });
+      let results: SimulationResults;
+      try {
+        const response = await fetch('/api/simulate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(netlistPayload)
+        });
 
-      if (!response.ok) {
-        throw new Error(await response.text());
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        results = await response.json();
+      } catch (err: any) {
+        console.warn("Express server simulation failed or unreachable. Running locally in browser...", err);
+        
+        localSimState.cancelled = false;
+        localSimState.paused = false;
+        
+        const sim = new CircuitSimulator(
+          netlistPayload.physical_stage || [],
+          netlistPayload.control_loops || [],
+          netlistPayload.simulation_parameters || {}
+        );
+        
+        results = await sim.runAsync(
+          () => localSimState.cancelled,
+          () => localSimState.paused
+        );
       }
 
-      const results: SimulationResults = await response.json();
       setSimResults(results);
       setServerStatus('ready');
 
