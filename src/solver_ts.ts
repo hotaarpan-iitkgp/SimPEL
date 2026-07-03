@@ -2672,6 +2672,12 @@ export class CircuitSimulator {
                                 held_D: 0.0,
                                 last_sample_k: k
                             };
+                        } else {
+                            if (cs[b.id].held_out === undefined) cs[b.id].held_out = 0.0;
+                            if (cs[b.id].prev_error === undefined) cs[b.id].prev_error = 0.0;
+                            if (cs[b.id].held_I === undefined) cs[b.id].held_I = 0.0;
+                            if (cs[b.id].held_D === undefined) cs[b.id].held_D = 0.0;
+                            if (cs[b.id].last_sample_k === undefined) cs[b.id].last_sample_k = k;
                         }
                         
                         let prev_err = cs[b.id].prev_error;
@@ -2907,6 +2913,10 @@ export class CircuitSimulator {
                     const error = signals[b.channels.In] ?? 0.0;
                     if (!cs[b.id]) {
                         cs[b.id] = { integral: 0.0, prev_error: error, prev_deriv: 0.0 };
+                    } else {
+                        if (cs[b.id].integral === undefined) cs[b.id].integral = 0.0;
+                        if (cs[b.id].prev_error === undefined) cs[b.id].prev_error = error;
+                        if (cs[b.id].prev_deriv === undefined) cs[b.id].prev_deriv = 0.0;
                     }
                     const Kp = parseScientific(b.parameters.Kp ?? "2.5");
                     const Ki = parseScientific(b.parameters.Ki ?? "50.0");
@@ -2953,6 +2963,10 @@ export class CircuitSimulator {
                     const error = signals[b.channels.In] ?? 0.0;
                     if (!cs[b.id]) {
                         cs[b.id] = { integral: 0.0, prev_error: error, prev_deriv: 0.0 };
+                    } else {
+                        if (cs[b.id].integral === undefined) cs[b.id].integral = 0.0;
+                        if (cs[b.id].prev_error === undefined) cs[b.id].prev_error = error;
+                        if (cs[b.id].prev_deriv === undefined) cs[b.id].prev_deriv = 0.0;
                     }
                     const Kp = parseScientific(b.parameters.Kp ?? "1.0");
                     const Ki = parseScientific(b.parameters.Ki ?? "0.0");
