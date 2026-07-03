@@ -1176,7 +1176,7 @@ export class CircuitSimulator {
                             type: cat.type === "logic" 
                                 ? (item.type === "and" ? "AND_Gate" : item.type === "or" ? "OR_Gate" : "NOT_Gate") 
                                 : cat.type === "routing"
-                                    ? (item.type === "mux" ? "Mux" : "Demux")
+                                    ? (item.type === "mux" ? "Mux" : item.type === "demux" ? "Demux" : "INTERNAL_VAR")
                                     : cat.type,
                             nodes: [],
                             parameters: {},
@@ -1344,6 +1344,9 @@ export class CircuitSimulator {
                                     comp.channels[`Out${idx + 1}`] = outValue;
                                 });
                             }
+                        } else if (cat.type === "routing" && item.type === "internal_var") {
+                            comp.channels = { Out: item.output };
+                            comp.parameters.probe_target = item.probe_target || "";
                         }
 
                         controlArray.push(comp);
@@ -2053,6 +2056,86 @@ export class CircuitSimulator {
                     const iv = signals[b.channels.In] ?? 0;
                     if (b.channels.Out1) signals[b.channels.Out1] = iv;
                     if (b.channels.Out2) signals[b.channels.Out2] = 0.0;
+                } else if (b.type === "INTERNAL_VAR" && out) {
+                    const target = b.parameters.probe_target;
+                    let val = 0.0;
+                    if (target) {
+                        if (target.startsWith("V_") || target.startsWith("I_") || target.startsWith("Ctrl_") || target.startsWith("Power_") || target.startsWith("Conducting_")) {
+                            const parts = target.split("_");
+                            const prefix = parts[0];
+                            const compId = parts.slice(1).join("_");
+                            
+                            const tc = this.physical_stage.find(x => x.id === compId);
+                            if (tc) {
+                                const n1 = tc.nodes[0] ?? "node_0", n2 = tc.nodes[1] ?? "node_0";
+                                const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1;
+                                const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
+                                const v = ((i1 >= 0) ? w_curr[i1] : 0.0) - ((i2 >= 0) ? w_curr[i2] : 0.0);
+                                
+                                let i = 0.0;
+                                if (tc.type === "Resistor" || tc.type === "R") {
+                                    let rv = parseScientific(tc.parameters.value ?? "10");
+                                    if (rv < 1e-6) rv = 1e-6;
+                                    i = v / rv;
+                                } else if (tc.type === "VariableResistor") {
+                                    const ctrlSig = tc.channels.Ctrl;
+                                    const baseVal = parseScientific(tc.parameters.value ?? "10");
+                                    const ctrlVal = (ctrlSig && signals[ctrlSig] !== undefined) ? signals[ctrlSig] : baseVal;
+                                    let r_val = ctrlVal;
+                                    if (r_val < 1e-6) r_val = 1e-6;
+                                    i = v / r_val;
+                                } else if (tc.type === "Inductor" || tc.type === "L") {
+                                    const idxL = this.L_to_idx[tc.id];
+                                    i = (idxL !== undefined) ? w_curr[idxL] : 0.0;
+                                } else if (tc.type === "Capacitor" || tc.type === "C") {
+                                    const cv = parseScientific(tc.parameters.C ?? "100u");
+                                    if (!first && this.cap_history[tc.id]) {
+                                        i = cv / this.cap_history[tc.id].dt_prev * (v - this.cap_history[tc.id].v_prev);
+                                    }
+                                } else if (["VoltageSource", "ACVoltageSource", "Ammeter", "V", "AC_V", "AM", "ControlledVoltageSource", "OPAMP", "E_COMP"].includes(tc.type)) {
+                                    const idxV = this.V_to_idx[tc.id];
+                                    i = (idxV !== undefined) ? w_curr[idxV] : 0.0;
+                                } else if (["Switch", "Diode", "MOSFET", "vg-FET", "S", "D", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"].some(t => tc.type.includes(t))) {
+                                    const ron = parseScientific(tc.parameters.Ron ?? "1e-3"), roff = parseScientific(tc.parameters.Roff ?? "1e6");
+                                    const state = ss[tc.id] ?? "OFF";
+                                    if (tc.type === "Diode" && state === "ON") {
+                                        const vd_drop = parseScientific(tc.parameters.Vd ?? "0.7");
+                                        i = (v - vd_drop) / ron;
+                                    } else {
+                                        i = v / (state === "ON" ? ron : roff);
+                                    }
+                                } else if (tc.type === "CurrentSource" || tc.type === "I" || tc.type === "ControlledCurrentSource" || tc.type === "ACCurrentSource") {
+                                    const srcType = tc.parameters.src_type;
+                                    if (tc.type === "ControlledCurrentSource" || srcType === "controlled") {
+                                        const gain = parseScientific(tc.parameters.value ?? "1.0");
+                                        const ctrlSig = tc.channels.Ctrl;
+                                        const ctrlVal = (ctrlSig && signals[ctrlSig] !== undefined) ? signals[ctrlSig] : 0.0;
+                                        i = ctrlVal * gain;
+                                    } else if (tc.type === "ACCurrentSource" || srcType === "ac") {
+                                        const amp = parseScientific(tc.parameters.amplitude ?? "1.0");
+                                        const freq = parseScientific(tc.parameters.frequency ?? "50.0");
+                                        const phase = parseScientific(tc.parameters.phase ?? "0.0");
+                                        i = amp * Math.sin(2.0 * Math.PI * freq * time + phase * Math.PI / 180.0);
+                                    } else {
+                                        i = parseScientific(tc.parameters.value ?? "1.0");
+                                    }
+                                }
+                                
+                                if (prefix === "V") val = v;
+                                else if (prefix === "I") val = i;
+                                else if (prefix === "Ctrl") {
+                                    const ctrlChan = tc.channels.Ctrl || tc.channels.Switch || tc.channels.G;
+                                    if (ctrlChan !== undefined) {
+                                        val = signals[ctrlChan] !== undefined ? signals[ctrlChan] : 0.0;
+                                    }
+                                } else if (prefix === "Power") val = v * i;
+                                else if (prefix === "Conducting") val = (ss[tc.id] ?? "OFF") === "ON" ? 1.0 : 0.0;
+                            }
+                        } else {
+                            val = signals[target] ?? 0.0;
+                        }
+                    }
+                    signals[out] = val;
                 } else if (b.type === "CustomScript") {
                     const inst = this.custom_blocks[b.id];
                     if (inst) {

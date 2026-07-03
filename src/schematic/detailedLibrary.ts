@@ -132,6 +132,15 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     symbol: 'Goto',
     defaultParameters: { tag: 'A' }
   },
+  {
+    type: 'INTERNAL_VAR',
+    label: 'Internal Variable',
+    desc: 'Receive an actively probed schematic variable as a control signal wirelessly.',
+    category: 'general',
+    subcategory: 'Signal Routing',
+    symbol: 'InternalVar',
+    defaultParameters: { probe_target: 'None' }
+  },
 
   // Visualization & Logging
   {
@@ -1588,6 +1597,12 @@ export function getDetailedComponentPins(type: string): Record<string, any> | nu
     };
   }
 
+  if (type === 'INTERNAL_VAR') {
+    return {
+      Out: { x: 15, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
   if (type === 'INPORT') {
     return {
       Out: { x: 16, y: 0, dx: 1, dy: 0 }
@@ -2110,6 +2125,22 @@ export function getDetailedComponentSVG(comp: any): string | null {
       <polygon points="-5,-10 15,0 -5,10" class="comp-path" fill="${fillColor}" />
       <g transform="translate(-10, 0) rotate(${-rotation})">
         <text x="0" y="3.5" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="currentColor" text-anchor="end">${tag}</text>
+      </g>
+    `;
+  }
+
+  if (type === 'INTERNAL_VAR') {
+    const target = comp.parameters?.probe_target ?? 'None';
+    const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
+    let fillColor = isLightMode ? '#ffffff' : '#090d16';
+    const textWidth = Math.max(20, target.length * 6);
+    const boundsW = 25 + textWidth;
+    const boundsX = -boundsW + 18;
+    return `
+      <rect class="comp-bounds" x="${boundsX}" y="-15" width="${boundsW}" height="30" rx="4" />
+      <polygon points="-5,-10 15,0 -5,10" class="comp-path" fill="${fillColor}" stroke="#6366f1" stroke-width="1.5" />
+      <g transform="translate(-10, 0) rotate(${-rotation})">
+        <text x="0" y="3.5" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700" fill="#818cf8" text-anchor="end">${target}</text>
       </g>
     `;
   }

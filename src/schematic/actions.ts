@@ -515,6 +515,57 @@ export function deleteSelected(): void {
   
   if (state.selectedComponentIds.length > 0) {
     const toDelete = new Set(state.selectedComponentIds);
+    
+    // Cascading delete: if a CSCRIPT is deleted, also delete all its mapped GOTO_SIG and INTERNAL_VAR components
+    state.components.forEach((c: any) => {
+      if (toDelete.has(c.id) && c.type === 'CSCRIPT') {
+        if (c.parameters && c.parameters.goto_mappings) {
+          Object.values(c.parameters.goto_mappings).forEach((gotoId: any) => {
+            if (gotoId) {
+              toDelete.add(gotoId);
+            }
+          });
+        }
+        // Delete connected INTERNAL_VAR components
+        state.wires.forEach((w: any) => {
+          if (w.to && w.to.compId === c.id) {
+            const fromComp = state.components.find((other: any) => other.id === w.from.compId);
+            if (fromComp && fromComp.type === 'INTERNAL_VAR') {
+              toDelete.add(fromComp.id);
+            }
+          }
+        });
+      }
+    });
+
+    // Revert mapping to unassigned: if a GOTO_SIG is deleted, delete its reference in CSCRIPT goto_mappings.
+    // If an INTERNAL_VAR is deleted, delete its reference in CSCRIPT input_mappings.
+    state.components.forEach((c: any) => {
+      if (c.type === 'CSCRIPT') {
+        if (c.parameters && c.parameters.goto_mappings) {
+          Object.keys(c.parameters.goto_mappings).forEach(varName => {
+            const gotoId = c.parameters.goto_mappings[varName];
+            if (toDelete.has(gotoId)) {
+              delete c.parameters.goto_mappings[varName];
+            }
+          });
+        }
+        if (c.parameters && c.parameters.input_mappings) {
+          Object.keys(c.parameters.input_mappings).forEach(varName => {
+            const hasDeletedSource = state.wires.some((w: any) => {
+              if (w.to && w.to.compId === c.id && w.to.terminal === varName) {
+                return toDelete.has(w.from.compId);
+              }
+              return false;
+            });
+            if (hasDeletedSource) {
+              delete c.parameters.input_mappings[varName];
+            }
+          });
+        }
+      }
+    });
+
     state.components = state.components.filter((c: any) => !toDelete.has(c.id));
     
     // Prune connected dangling wires
@@ -525,6 +576,10 @@ export function deleteSelected(): void {
     });
     
     state.selectedComponentIds = [];
+
+    if ((window as any).refreshSignalRouterPanel) {
+      (window as any).refreshSignalRouterPanel();
+    }
   }
   
   if (state.selectedWireIds.length > 0) {
@@ -741,6 +796,33 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
   state.wires = flat.wires;
 
   try {
+    // Validate and clean up dynamic probe mappings
+    const compiledActiveProbes = new Set<string>();
+    if (state.plotConfiguration && Array.isArray(state.plotConfiguration.plots)) {
+      state.plotConfiguration.plots.forEach((p: any) => {
+        if (Array.isArray(p.variables)) {
+          p.variables.forEach((v: string) => {
+            if (v) compiledActiveProbes.add(v);
+          });
+        }
+      });
+    }
+    state.components.forEach((c: any) => {
+      if (c.type === 'CSCRIPT' && c.parameters && c.parameters.input_mappings) {
+        Object.keys(c.parameters.input_mappings).forEach(u => {
+          const target = c.parameters.input_mappings[u];
+          if (target && !compiledActiveProbes.has(target)) {
+            delete c.parameters.input_mappings[u];
+          }
+        });
+      }
+      if (c.type === 'INTERNAL_VAR' && c.parameters) {
+        const target = c.parameters.probe_target;
+        if (target && target !== 'None' && !compiledActiveProbes.has(target)) {
+          c.parameters.probe_target = 'None';
+        }
+      }
+    });
     // 0. GOTO and FROM blocks matching tag labels validation
     const fromBlocks = state.components.filter((c: any) => c.type === 'FROM_SIG');
     const gotoBlocks = state.components.filter((c: any) => c.type === 'GOTO_SIG');
@@ -2028,6 +2110,14 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
         });
         break;
       }
+      case 'INTERNAL_VAR':
+        control_loops.signals_routing.push({
+          id: comp.id,
+          type: 'internal_var',
+          output: `${comp.id}.Out`,
+          probe_target: comp.parameters?.probe_target || ""
+        });
+        break;
       case 'PROBE':
         control_loops.probes.push({
           id: comp.id,

@@ -274,7 +274,41 @@ export function updatePropertiesPanel(): void {
         label.style.textTransform = 'capitalize';
         
         let inputField: any;
-        if (['inputs', 'outputs', 'channels'].includes(key)) {
+        if (comp.type === 'INTERNAL_VAR' && key === 'probe_target') {
+          inputField = document.createElement('select');
+          inputField.className = 'prop-input';
+          
+          const activeProbes: string[] = [];
+          if (state.plotConfiguration && Array.isArray(state.plotConfiguration.plots)) {
+            const probesSet = new Set<string>();
+            state.plotConfiguration.plots.forEach((p: any) => {
+              if (Array.isArray(p.variables)) {
+                p.variables.forEach((v: string) => {
+                  if (v) probesSet.add(v);
+                });
+              }
+            });
+            activeProbes.push(...Array.from(probesSet).sort());
+          }
+
+          if (activeProbes.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = 'None';
+            opt.textContent = 'None';
+            opt.selected = true;
+            inputField.appendChild(opt);
+          } else {
+            activeProbes.forEach(probe => {
+              const opt = document.createElement('option');
+              opt.value = probe;
+              opt.textContent = probe;
+              if (String(comp.parameters[key]) === probe) {
+                opt.selected = true;
+              }
+              inputField.appendChild(opt);
+            });
+          }
+        } else if (['inputs', 'outputs', 'channels'].includes(key)) {
           // Number dropdown selectors
           inputField = document.createElement('select');
           inputField.className = 'prop-input';
@@ -300,6 +334,33 @@ export function updatePropertiesPanel(): void {
           saveState();
           const val = e.target.value;
           comp.parameters[key] = val;
+
+          // Refresh the Signal Router panel if tag/label is changed
+          if ((comp.type === 'GOTO_SIG' || comp.type === 'FROM_SIG') && key === 'tag') {
+            if ((window as any).refreshSignalRouterPanel) {
+              (window as any).refreshSignalRouterPanel();
+            }
+          }
+          if (comp.type === 'INTERNAL_VAR' && key === 'probe_target') {
+            state.components.forEach((c: any) => {
+              if (c.type === 'CSCRIPT' && c.parameters && c.parameters.input_mappings) {
+                state.wires.forEach((w: any) => {
+                  if (w.from && w.from.compId === comp.id && w.to && w.to.compId === c.id) {
+                    const inputVar = w.to.terminal;
+                    c.parameters.input_mappings[inputVar] = val;
+                  }
+                });
+              }
+            });
+            if ((window as any).refreshSignalRouterPanel) {
+              (window as any).refreshSignalRouterPanel();
+            }
+          }
+          if (comp.type === 'vg-FET' && key === 'Gate_Signal_Label') {
+            if ((window as any).refreshSignalRouterPanel) {
+              (window as any).refreshSignalRouterPanel();
+            }
+          }
           
           // Re-route wires for dynamic pins counts or custom XFMR winders
           if (comp.type === 'XFMR' && ['primary_turns', 'secondary_turns'].includes(key)) {
@@ -418,6 +479,43 @@ export function updatePropertiesPanel(): void {
         openCodeEditorModal(comp);
       });
       card.appendChild(editorBtn);
+      if (comp.type === 'CSCRIPT') {
+        const routeBtn = document.createElement('button');
+        routeBtn.className = 'btn btn-primary';
+        routeBtn.style.width = '100%';
+        routeBtn.style.marginTop = '8px';
+        routeBtn.style.padding = '8px';
+        routeBtn.style.backgroundColor = '#6366f1';
+        routeBtn.style.color = '#ffffff';
+        routeBtn.style.border = 'none';
+        routeBtn.style.borderRadius = '4px';
+        routeBtn.style.cursor = 'pointer';
+        routeBtn.style.fontWeight = 'bold';
+        routeBtn.textContent = 'Configure Signal Routing';
+        routeBtn.addEventListener('click', () => {
+          const event = new CustomEvent('openSignalRouter', { detail: { compId: comp.id } });
+          window.dispatchEvent(event);
+        });
+        card.appendChild(routeBtn);
+
+        const inputRouteBtn = document.createElement('button');
+        inputRouteBtn.className = 'btn btn-primary';
+        inputRouteBtn.style.width = '100%';
+        inputRouteBtn.style.marginTop = '8px';
+        inputRouteBtn.style.padding = '8px';
+        inputRouteBtn.style.backgroundColor = '#4f46e5';
+        inputRouteBtn.style.color = '#ffffff';
+        inputRouteBtn.style.border = 'none';
+        inputRouteBtn.style.borderRadius = '4px';
+        inputRouteBtn.style.cursor = 'pointer';
+        inputRouteBtn.style.fontWeight = 'bold';
+        inputRouteBtn.textContent = 'Configure Input Probing';
+        inputRouteBtn.addEventListener('click', () => {
+          const event = new CustomEvent('openInputRouter', { detail: { compId: comp.id } });
+          window.dispatchEvent(event);
+        });
+        card.appendChild(inputRouteBtn);
+      }
     }
     if (comp.type === 'PWM_MASTER') {
       const editorBtn = document.createElement('button');
@@ -598,6 +696,19 @@ export function updatePropertiesPanel(): void {
             wire.to.compId = newId;
           }
         });
+
+        // If a GOTO_SIG is renamed, update its reference in any CSCRIPT mappings
+        if (comp.type === 'GOTO_SIG') {
+          state.components.forEach((c: any) => {
+            if (c.type === 'CSCRIPT' && c.parameters && c.parameters.goto_mappings) {
+              Object.keys(c.parameters.goto_mappings).forEach(varName => {
+                if (c.parameters.goto_mappings[varName] === oldId) {
+                  c.parameters.goto_mappings[varName] = newId;
+                }
+              });
+            }
+          });
+        }
         
         draw();
         updatePropertiesPanel();

@@ -607,6 +607,98 @@ std::map<std::string, double> CircuitSimulator::evaluateControls(
                 double in_val = signals_local[block.getChannelRef("In")];
                 signals_local[block.getChannelRef("Out1")] = in_val;
                 signals_local[block.getChannelRef("Out2")] = 0.0;
+            } else if (block.type == "INTERNAL_VAR") {
+                std::string target = block.getParamStr("probe_target", "");
+                double val = 0.0;
+                if (!target.empty()) {
+                    if (target.rfind("V_", 0) == 0 || target.rfind("I_", 0) == 0 || target.rfind("Ctrl_", 0) == 0 || target.rfind("Power_", 0) == 0 || target.rfind("Conducting_", 0) == 0) {
+                        size_t pos = target.find('_');
+                        std::string prefix = target.substr(0, pos);
+                        std::string compId = target.substr(pos + 1);
+                        
+                        Component tc;
+                        bool found = false;
+                        for (const auto& comp : physical_stage) {
+                            if (comp.id == compId) {
+                                tc = comp;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) {
+                            std::string n1 = tc.nodes.size() > 0 ? tc.nodes[0] : "node_0";
+                            std::string n2 = tc.nodes.size() > 1 ? tc.nodes[1] : "node_0";
+                            int i1 = (n1 != "node_0") ? node_to_idx[n1] : -1;
+                            int i2 = (n2 != "node_0") ? node_to_idx[n2] : -1;
+                            double v = ((i1 >= 0) ? w[i1] : 0.0) - ((i2 >= 0) ? w[i2] : 0.0);
+                            
+                            double i = 0.0;
+                            if (tc.type == "Resistor" || tc.type == "R") {
+                                double rv = parse_scientific(tc.getParamStr("value", "10"));
+                                if (rv < 1e-6) rv = 1e-6;
+                                i = v / rv;
+                            } else if (tc.type == "VariableResistor") {
+                                std::string ctrlSig = tc.getChannelRef("Ctrl");
+                                double baseVal = parse_scientific(tc.getParamStr("value", "10"));
+                                double ctrlVal = (!ctrlSig.empty() && signals_local.count(ctrlSig)) ? signals_local[ctrlSig] : baseVal;
+                                if (ctrlVal < 1e-6) ctrlVal = 1e-6;
+                                i = v / ctrlVal;
+                            } else if (tc.type == "Inductor" || tc.type == "L") {
+                                if (L_to_idx.count(tc.id)) i = w[L_to_idx[tc.id]];
+                            } else if (tc.type == "Capacitor" || tc.type == "C") {
+                                double cv = parse_scientific(tc.getParamStr("C", "100u"));
+                                if (!is_first_step && cap_history.count(tc.id)) {
+                                    i = cv / cap_history[tc.id].dt_prev * (v - cap_history[tc.id].v_prev);
+                                }
+                            } else if (tc.type == "VoltageSource" || tc.type == "ACVoltageSource" || tc.type == "Ammeter" || tc.type == "V" || tc.type == "AC_V" || tc.type == "AM" || tc.type == "ControlledVoltageSource" || tc.type == "OPAMP" || tc.type == "E_COMP") {
+                                if (V_to_idx.count(tc.id)) i = w[V_to_idx[tc.id]];
+                            } else if (tc.type.find("Switch") != std::string::npos || tc.type.find("Diode") != std::string::npos || tc.type.find("MOSFET") != std::string::npos || tc.type.find("vg-FET") != std::string::npos || tc.type == "S" || tc.type == "D" || tc.type.find("IGBT") != std::string::npos || tc.type.find("IGCT") != std::string::npos || tc.type.find("GTO") != std::string::npos || tc.type.find("THYRISTOR") != std::string::npos || tc.type.find("JFET") != std::string::npos || tc.type.find("BJT") != std::string::npos) {
+                                double ron = parse_scientific(tc.getParamStr("Ron", "1e-3"));
+                                double roff = parse_scientific(tc.getParamStr("Roff", "1e6"));
+                                std::string state = sw_states_curr.count(tc.id) ? sw_states_curr.at(tc.id) : "OFF";
+                                if (tc.type == "Diode" && state == "ON") {
+                                    double vd_drop = parse_scientific(tc.getParamStr("Vd", "0.7"));
+                                    i = (v - vd_drop) / ron;
+                                } else {
+                                    i = v / (state == "ON" ? ron : roff);
+                                }
+                            } else if (tc.type == "CurrentSource" || tc.type == "I" || tc.type == "ControlledCurrentSource" || tc.type == "ACCurrentSource") {
+                                std::string srcType = tc.getParamStr("src_type", "");
+                                if (tc.type == "ControlledCurrentSource" || srcType == "controlled") {
+                                    double gain = parse_scientific(tc.getParamStr("value", "1.0"));
+                                    std::string ctrlSig = tc.getChannelRef("Ctrl");
+                                    double ctrlVal = (!ctrlSig.empty() && signals_local.count(ctrlSig)) ? signals_local[ctrlSig] : 0.0;
+                                    i = ctrlVal * gain;
+                                } else if (tc.type == "ACCurrentSource" || srcType == "ac") {
+                                    double amp = parse_scientific(tc.getParamStr("amplitude", "1.0"));
+                                    double freq = parse_scientific(tc.getParamStr("frequency", "50.0"));
+                                    double phase = parse_scientific(tc.getParamStr("phase", "0.0"));
+                                    i = amp * std::sin(2.0 * M_PI * freq * t_curr + phase * M_PI / 180.0);
+                                } else {
+                                    i = parse_scientific(tc.getParamStr("value", "1.0"));
+                                }
+                            }
+                            
+                            if (prefix == "V") val = v;
+                            else if (prefix == "I") val = i;
+                            else if (prefix == "Ctrl") {
+                                std::string ctrlChan = tc.getChannelRef("Ctrl");
+                                if (ctrlChan.empty()) ctrlChan = tc.getChannelRef("Switch");
+                                if (ctrlChan.empty()) ctrlChan = tc.getChannelRef("G");
+                                if (!ctrlChan.empty() && signals_local.count(ctrlChan)) {
+                                    val = signals_local[ctrlChan];
+                                }
+                            } else if (prefix == "Power") val = v * i;
+                            else if (prefix == "Conducting") {
+                                std::string state = sw_states_curr.count(tc.id) ? sw_states_curr.at(tc.id) : "OFF";
+                                val = (state == "ON") ? 1.0 : 0.0;
+                            }
+                        }
+                    } else {
+                        if (signals_local.count(target)) val = signals_local[target];
+                    }
+                }
+                signals_local[out_chan] = val;
             } else if (block.type == "CustomScript") {
                 if (custom_blocks.count(block.id)) {
                     auto& block_inst = custom_blocks[block.id];

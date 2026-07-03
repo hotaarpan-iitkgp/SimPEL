@@ -3,19 +3,20 @@ import {
   Play, RotateCcw, Settings, Sliders, ChevronDown, ChevronRight, 
   Trash2, RotateCw, PlusCircle, ArrowUpRight, Code, Sparkles, BarChart3,
   Undo2, FileJson, Upload, FolderInput, LogOut, CheckCircle2, AlertTriangle, Info,
-  Pause, StopCircle, Search, X
+  Pause, StopCircle, Search, X, Zap, Link
 } from 'lucide-react';
 import { state, saveState } from '../schematic/state';
 import { draw, updateAllWirePathsInDOM } from '../schematic/renderer';
 import { initInteractions } from '../schematic/interaction';
 import { updatePropertiesPanel } from '../schematic/properties';
 import { generateNextId, showToast, getNextGateSignalLabel } from '../schematic/utils';
-import { DEFAULT_PARAMETERS, getComponentPins } from '../schematic/config';
+import { DEFAULT_PARAMETERS, getComponentPins, discoverPortsJS } from '../schematic/config';
 import { openSimSettings, saveSimSettings, closeSimSettings } from '../schematic/simSettings';
 import { openPlotConfig, savePlotConfig, closePlotConfig, setAvailableVariables } from '../schematic/plotConfig';
 import { exportDualGraphJSON, triggerImport, exportJSON, clearWorkspace, undo, navigateToLevel } from '../schematic/actions';
 import { DETAILED_COMPONENTS } from '../schematic/detailedLibrary';
 import { exportCurrentSubsystemSVG, exportFullSchematicZIP } from '../schematic/svgExporter';
+import { getTerminalCoords, getTerminalDir } from '../schematic/routing';
 
 interface SchematicEditorProps {
   onRunSimulation: (netlistJson: string) => void;
@@ -38,6 +39,13 @@ export default function SchematicEditor({
   const importInputRef = useRef<HTMLInputElement>(null);
   
   const [showDetailedLibrary, setShowDetailedLibrary] = useState(false);
+  const [showSignalRouterPanel, setShowSignalRouterPanel] = useState(false);
+  const [showInputRouterPanel, setShowInputRouterPanel] = useState(false);
+  const [activeCScriptForRouting, setActiveCScriptForRouting] = useState<any | null>(null);
+  const [activeCScriptForInputRouting, setActiveCScriptForInputRouting] = useState<any | null>(null);
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
+  const [selectedProbe, setSelectedProbe] = useState<string | null>(null);
+  const [routerRefreshTrigger, setRouterRefreshTrigger] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [detailedAccordion, setDetailedAccordion] = useState<Record<string, boolean>>({
     general: false,
@@ -203,6 +211,399 @@ export default function SchematicEditor({
       };
     }
   }, []);
+
+  useEffect(() => {
+    const handleOpenRouter = (e: any) => {
+      const compId = e.detail.compId;
+      const comp = state.components.find((c: any) => c.id === compId);
+      if (comp) {
+        setActiveCScriptForRouting(comp);
+        setShowSignalRouterPanel(true);
+      }
+    };
+    const handleOpenInputRouter = (e: any) => {
+      const compId = e.detail.compId;
+      const comp = state.components.find((c: any) => c.id === compId);
+      if (comp) {
+        setActiveCScriptForInputRouting(comp);
+        setShowInputRouterPanel(true);
+      }
+    };
+    window.addEventListener('openSignalRouter', handleOpenRouter);
+    window.addEventListener('openInputRouter', handleOpenInputRouter);
+    return () => {
+      window.removeEventListener('openSignalRouter', handleOpenRouter);
+      window.removeEventListener('openInputRouter', handleOpenInputRouter);
+    };
+  }, []);
+
+  useEffect(() => {
+    (window as any).refreshSignalRouterPanel = () => {
+      setRouterRefreshTrigger(prev => prev + 1);
+    };
+    return () => {
+      delete (window as any).refreshSignalRouterPanel;
+    };
+  }, []);
+
+  const activeCompExists = activeCScriptForRouting
+    ? state.components.some((c: any) => c.id === activeCScriptForRouting.id)
+    : false;
+
+  const activeInputCompExists = activeCScriptForInputRouting
+    ? state.components.some((c: any) => c.id === activeCScriptForInputRouting.id)
+    : false;
+
+  useEffect(() => {
+    if (activeCScriptForRouting && !activeCompExists) {
+      setShowSignalRouterPanel(false);
+      setActiveCScriptForRouting(null);
+    }
+  }, [activeCScriptForRouting, activeCompExists]);
+
+  useEffect(() => {
+    if (activeCScriptForInputRouting && !activeInputCompExists) {
+      setShowInputRouterPanel(false);
+      setActiveCScriptForInputRouting(null);
+    }
+  }, [activeCScriptForInputRouting, activeInputCompExists]);
+
+  const handleMapSignal = (outputVar: string, tag: string) => {
+    if (!activeCScriptForRouting) return;
+    
+    saveState();
+    
+    if (!activeCScriptForRouting.parameters) {
+      activeCScriptForRouting.parameters = {};
+    }
+    if (!activeCScriptForRouting.parameters.goto_mappings) {
+      activeCScriptForRouting.parameters.goto_mappings = {};
+    }
+    
+    const existingGotoId = activeCScriptForRouting.parameters.goto_mappings[outputVar];
+    let gotoComp = state.components.find((c: any) => c.id === existingGotoId);
+    
+    if (gotoComp) {
+      gotoComp.parameters.tag = tag;
+      showToast(`Updated mapping for ${outputVar} to tag ${tag}`);
+    } else {
+      const gotoId = generateNextId('GOTO_SIG');
+      
+      const pinCoords = getTerminalCoords(activeCScriptForRouting, outputVar);
+      const pinDir = getTerminalDir(activeCScriptForRouting, outputVar);
+      
+      let candidateX = pinCoords.x + pinDir.x * 60;
+      let candidateY = pinCoords.y + pinDir.y * 60;
+      
+      let collision = true;
+      let shiftCount = 0;
+      while (collision && shiftCount < 10) {
+        collision = false;
+        for (const other of state.components) {
+          const dx = Math.abs(other.x - candidateX);
+          const dy = Math.abs(other.y - candidateY);
+          if (dx < 60 && dy < 40) {
+            collision = true;
+            break;
+          }
+        }
+        if (collision) {
+          candidateX += pinDir.x * 40;
+          candidateY += pinDir.y * 40;
+          shiftCount++;
+        }
+      }
+      
+      candidateX = Math.round(candidateX / 20) * 20;
+      candidateY = Math.round(candidateY / 20) * 20;
+      
+      state.components.push({
+        id: gotoId,
+        type: 'GOTO_SIG',
+        x: candidateX,
+        y: candidateY,
+        rotation: activeCScriptForRouting.rotation,
+        parameters: { tag }
+      });
+      
+      activeCScriptForRouting.parameters.goto_mappings[outputVar] = gotoId;
+      
+      state.wires = state.wires.filter((w: any) => {
+        const isCscriptPort = w.from.compId === activeCScriptForRouting.id && w.from.terminal === outputVar;
+        return !isCscriptPort;
+      });
+      
+      state.wires.push({
+        id: generateNextId('W'),
+        from: { type: 'pin', compId: activeCScriptForRouting.id, terminal: outputVar },
+        to: { type: 'pin', compId: gotoId, terminal: 'In' },
+        manualPath: null
+      });
+      
+      showToast(`Mapped ${outputVar} to wireless tag ${tag}`);
+    }
+    
+    draw();
+    updatePropertiesPanel();
+    setRouterRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleUnmapSignal = (outputVar: string) => {
+    if (!activeCScriptForRouting || !activeCScriptForRouting.parameters.goto_mappings) return;
+    
+    saveState();
+    
+    const gotoId = activeCScriptForRouting.parameters.goto_mappings[outputVar];
+    delete activeCScriptForRouting.parameters.goto_mappings[outputVar];
+    
+    if (gotoId) {
+      state.components = state.components.filter((c: any) => c.id !== gotoId);
+      
+      state.wires = state.wires.filter((w: any) => {
+        if (w.from.compId === gotoId || (w.to && w.to.compId === gotoId)) return false;
+        if (w.from.compId === activeCScriptForRouting.id && w.from.terminal === outputVar) return false;
+        return true;
+      });
+      
+      showToast(`Removed routing for ${outputVar}`);
+    }
+    
+    draw();
+    updatePropertiesPanel();
+    setRouterRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleAutoRouteFromBlockLabels = () => {
+    if (!activeCScriptForRouting) return;
+    
+    const allFromLabels = new Set<string>();
+    state.components.forEach((c: any) => {
+      if (c.type === 'FROM_SIG') {
+        const tag = (c.parameters?.tag || 'A').trim();
+        if (tag) allFromLabels.add(tag);
+      } else if (c.type === 'vg-FET') {
+        const tag = (c.parameters?.Gate_Signal_Label || 'S1').trim();
+        if (tag) allFromLabels.add(tag);
+      }
+    });
+    
+    const allGotoLabels = new Set<string>();
+    state.components.forEach((c: any) => {
+      if (c.type === 'GOTO_SIG') {
+        const tag = (c.parameters?.tag || 'A').trim();
+        if (tag) allGotoLabels.add(tag);
+      }
+    });
+    
+    const unassignedLabels = Array.from(allFromLabels)
+      .filter(label => !allGotoLabels.has(label))
+      .sort();
+      
+    if (unassignedLabels.length === 0) {
+      showToast("No unassigned From-block or vg-FET tags found on canvas.");
+      return;
+    }
+    
+    const outputs = discoverPortsJS(activeCScriptForRouting.parameters?.code || '').outputs;
+    
+    if (!activeCScriptForRouting.parameters.goto_mappings) {
+      activeCScriptForRouting.parameters.goto_mappings = {};
+    }
+    
+    const mappings = activeCScriptForRouting.parameters.goto_mappings;
+    const unassignedOutputs = outputs.filter(outVar => {
+      const gotoId = mappings[outVar];
+      return !gotoId || !state.components.some((c: any) => c.id === gotoId);
+    });
+    
+    if (unassignedOutputs.length === 0) {
+      showToast("All C-Script output variables are already mapped.");
+      return;
+    }
+    
+    let mapCount = 0;
+    const limit = Math.min(unassignedOutputs.length, unassignedLabels.length);
+    
+    for (let i = 0; i < limit; i++) {
+      const outVar = unassignedOutputs[i];
+      const label = unassignedLabels[i];
+      handleMapSignal(outVar, label);
+      mapCount++;
+    }
+    
+    if (mapCount > 0) {
+      showToast(`Auto-routed ${mapCount} control signals successfully!`);
+    }
+  };
+
+  const cscriptOutputs = activeCScriptForRouting
+    ? discoverPortsJS(activeCScriptForRouting.parameters?.code || '').outputs
+    : [];
+
+  const cscriptInputs = activeCScriptForInputRouting
+    ? discoverPortsJS(activeCScriptForInputRouting.parameters?.code || '').inputs
+    : [];
+
+  const activeProbes = (() => {
+    const probes = new Set<string>();
+    if (state.plotConfiguration && Array.isArray(state.plotConfiguration.plots)) {
+      state.plotConfiguration.plots.forEach((p: any) => {
+        if (Array.isArray(p.variables)) {
+          p.variables.forEach((v: string) => {
+            if (v && (!activeCScriptForInputRouting || !v.startsWith(activeCScriptForInputRouting.id + '.'))) {
+              probes.add(v);
+            }
+          });
+        }
+      });
+    }
+    return Array.from(probes).sort();
+  })();
+
+  useEffect(() => {
+    if (showInputRouterPanel && activeCScriptForInputRouting && activeCScriptForInputRouting.parameters?.input_mappings) {
+      const mappings = activeCScriptForInputRouting.parameters.input_mappings;
+      let changed = false;
+      Object.keys(mappings).forEach(u => {
+        const target = mappings[u];
+        if (target && !activeProbes.includes(target)) {
+          delete mappings[u];
+          changed = true;
+        }
+      });
+      if (changed) {
+        draw();
+        setRouterRefreshTrigger(prev => prev + 1);
+      }
+    }
+  }, [showInputRouterPanel, activeCScriptForInputRouting, routerRefreshTrigger, activeProbes]);
+
+  const handleMapInputSignal = (inputVar: string, probeTarget: string) => {
+    if (!activeCScriptForInputRouting) return;
+    saveState();
+
+    if (!activeCScriptForInputRouting.parameters) {
+      activeCScriptForInputRouting.parameters = {};
+    }
+    if (!activeCScriptForInputRouting.parameters.input_mappings) {
+      activeCScriptForInputRouting.parameters.input_mappings = {};
+    }
+
+    const mappings = activeCScriptForInputRouting.parameters.input_mappings;
+    
+    // Find if there is already an existing INTERNAL_VAR block connected to this input pin
+    const existingWire = state.wires.find((w: any) => {
+      const isToCscript = w.to && w.to.type === 'pin' && w.to.compId === activeCScriptForInputRouting.id && w.to.terminal === inputVar;
+      if (isToCscript) {
+        const fromComp = state.components.find((c: any) => c.id === w.from.compId);
+        return fromComp && fromComp.type === 'INTERNAL_VAR';
+      }
+      return false;
+    });
+
+    if (existingWire) {
+      const intVarComp = state.components.find((c: any) => c.id === existingWire.from.compId);
+      if (intVarComp) {
+        if (!intVarComp.parameters) intVarComp.parameters = {};
+        intVarComp.parameters.probe_target = probeTarget;
+      }
+      mappings[inputVar] = probeTarget;
+      showToast(`Updated input ${inputVar} mapping to ${probeTarget}`);
+    } else {
+      const pinCoords = getTerminalCoords(activeCScriptForInputRouting, inputVar);
+      const pinDir = getTerminalDir(activeCScriptForInputRouting, inputVar);
+      
+      let candidateX = pinCoords.x + pinDir.x * 60;
+      let candidateY = pinCoords.y + pinDir.y * 60;
+      
+      let collision = true;
+      while (collision) {
+        collision = state.components.some((c: any) => {
+          const dx = c.x - candidateX;
+          const dy = c.y - candidateY;
+          return Math.sqrt(dx * dx + dy * dy) < 30;
+        });
+        if (collision) {
+          candidateX += pinDir.x * 40;
+          candidateY += pinDir.y * 40;
+        }
+      }
+      
+      candidateX = Math.round(candidateX / 20) * 20;
+      candidateY = Math.round(candidateY / 20) * 20;
+
+      const intVarId = generateNextId('INTERNAL_VAR');
+      
+      state.components.push({
+        id: intVarId,
+        type: 'INTERNAL_VAR',
+        x: candidateX,
+        y: candidateY,
+        rotation: activeCScriptForInputRouting.rotation,
+        parameters: { probe_target: probeTarget }
+      });
+
+      state.wires = state.wires.filter((w: any) => {
+        const isCscriptPort = w.to && w.to.type === 'pin' && w.to.compId === activeCScriptForInputRouting.id && w.to.terminal === inputVar;
+        return !isCscriptPort;
+      });
+
+      state.wires.push({
+        id: generateNextId('W'),
+        from: { type: 'pin', compId: intVarId, terminal: 'Out' },
+        to: { type: 'pin', compId: activeCScriptForInputRouting.id, terminal: inputVar },
+        manualPath: null
+      });
+
+      mappings[inputVar] = probeTarget;
+      showToast(`Mapped input ${inputVar} to ${probeTarget} wirelessly!`);
+    }
+
+    draw();
+    setRouterRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleUnmapInputSignal = (inputVar: string) => {
+    if (!activeCScriptForInputRouting || !activeCScriptForInputRouting.parameters?.input_mappings) return;
+    saveState();
+
+    delete activeCScriptForInputRouting.parameters.input_mappings[inputVar];
+
+    const existingWire = state.wires.find((w: any) => {
+      const isToCscript = w.to && w.to.type === 'pin' && w.to.compId === activeCScriptForInputRouting.id && w.to.terminal === inputVar;
+      if (isToCscript) {
+        const fromComp = state.components.find((c: any) => c.id === w.from.compId);
+        return fromComp && fromComp.type === 'INTERNAL_VAR';
+      }
+      return false;
+    });
+
+    if (existingWire) {
+      const intVarId = existingWire.from.compId;
+      state.components = state.components.filter((c: any) => c.id !== intVarId);
+      state.wires = state.wires.filter((w: any) => 
+        !(w.from && w.from.compId === intVarId) && !(w.to && w.to.compId === intVarId)
+      );
+    }
+
+    showToast(`Unmapped input ${inputVar}`);
+    draw();
+    setRouterRefreshTrigger(prev => prev + 1);
+  };
+
+  const availableTags = (() => {
+    const tags = new Set<string>();
+    state.components.forEach((c: any) => {
+      if (c.type === 'FROM_SIG') {
+        const tag = (c.parameters?.tag || 'A').trim();
+        if (tag) tags.add(tag);
+      } else if (c.type === 'vg-FET') {
+        const tag = (c.parameters?.Gate_Signal_Label || 'S1').trim();
+        if (tag) tags.add(tag);
+      }
+    });
+    return Array.from(tags).sort();
+  })();
 
   const handleAddComponent = (type: string) => {
     saveState();
@@ -896,6 +1297,309 @@ export default function SchematicEditor({
           <div id="toast" className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 border border-sky-400 bg-sky-950/90 text-sky-200 rounded-lg text-xs font-semibold shadow-2xl z-30 opacity-0 transition-opacity pointer-events-none">
             Toast alert!
           </div>
+
+          {/* Slide-out Signal Router Panel */}
+          {showSignalRouterPanel && activeCScriptForRouting && (
+            <div 
+              className="absolute right-0 top-0 h-full w-80 bg-slate-950/95 backdrop-blur-md border-l border-slate-800 shadow-2xl z-20 flex flex-col animate-fade-in"
+            >
+              {/* Header */}
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/40">
+                <h3 className="font-bold flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-slate-200">
+                  <Zap className="h-4 w-4 text-amber-500 animate-pulse" />
+                  <span>Control Signal Router</span>
+                </h3>
+                <button 
+                  onClick={() => {
+                    setShowSignalRouterPanel(false);
+                    setActiveCScriptForRouting(null);
+                    setSelectedLabel(null);
+                  }} 
+                  className="text-slate-500 hover:text-slate-350 cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+                {/* Description */}
+                <div className="text-[10px] text-slate-400 bg-slate-900/60 p-3 rounded-lg border border-slate-900 leading-relaxed">
+                  Map internal variables to external <strong>Go-To</strong> blocks. Drag from the list on the right, or click a label to select and click an output slot.
+                </div>
+                
+                {/* Auto Route Button */}
+                <button
+                  onClick={handleAutoRouteFromBlockLabels}
+                  className="w-full py-2 px-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-600/10 border border-indigo-500/20"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>Auto-Route from Canvas Labels</span>
+                </button>
+
+                {/* Two columns wrapper */}
+                <div className="flex-1 flex gap-3 min-h-0">
+                  {/* Column 1: Outputs */}
+                  <div className="flex-1 flex flex-col gap-2 min-w-0">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">C-Script Outputs</span>
+                    <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
+                      {cscriptOutputs.length === 0 ? (
+                        <span className="text-[10px] text-slate-600 italic">No output variables found in code.</span>
+                      ) : (
+                        cscriptOutputs.map(outVar => {
+                          const mappings = activeCScriptForRouting.parameters?.goto_mappings || {};
+                          const gotoId = mappings[outVar];
+                          const gotoComp = gotoId ? state.components.find((c: any) => c.id === gotoId) : null;
+                          const mappedTag = gotoComp ? gotoComp.parameters?.tag : null;
+
+                          return (
+                            <div 
+                              key={outVar} 
+                              className="p-2.5 rounded-lg border border-slate-800 bg-slate-900/30 flex flex-col gap-1.5 hover:border-slate-700/60 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-mono text-[10px] font-bold text-sky-400 truncate" title={outVar}>{outVar}</span>
+                                {mappedTag && (
+                                  <button 
+                                    onClick={() => handleUnmapSignal(outVar)}
+                                    className="text-[9px] text-red-400 hover:text-red-300 font-mono font-bold cursor-pointer hover:bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 transition-colors"
+                                  >
+                                    Unassign
+                                  </button>
+                                )}
+                              </div>
+                              
+                              {/* Drop zone */}
+                              <div 
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.add('border-sky-500', 'bg-sky-500/5');
+                                }}
+                                onDragLeave={(e) => {
+                                  e.currentTarget.classList.remove('border-sky-500', 'bg-sky-500/5');
+                                }}
+                                onDrop={(e) => {
+                                  e.currentTarget.classList.remove('border-sky-500', 'bg-sky-500/5');
+                                  const tag = e.dataTransfer.getData('text/plain');
+                                  if (tag) {
+                                    handleMapSignal(outVar, tag);
+                                  }
+                                }}
+                                onClick={() => {
+                                  if (selectedLabel) {
+                                    handleMapSignal(outVar, selectedLabel);
+                                    setSelectedLabel(null);
+                                  }
+                                }}
+                                className={`h-11 rounded-lg border-2 border-dashed flex items-center justify-center text-[10px] font-medium transition-all cursor-pointer ${
+                                  mappedTag 
+                                    ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-400 font-bold' 
+                                    : selectedLabel 
+                                      ? 'border-indigo-500/40 bg-indigo-500/5 hover:border-indigo-400 text-indigo-400 animate-pulse' 
+                                      : 'border-slate-800 hover:border-slate-700 text-slate-500'
+                                }`}
+                              >
+                                {mappedTag ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <Link className="h-3 w-3 text-emerald-500 shrink-0" />
+                                    <span className="truncate max-w-[90px]">{mappedTag}</span>
+                                  </div>
+                                ) : selectedLabel ? (
+                                  <span>Click to assign {selectedLabel}</span>
+                                ) : (
+                                  <span>Drop tag here</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Column 2: Available Labels */}
+                  <div className="w-24 shrink-0 flex flex-col gap-2">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Canvas Tags</span>
+                    <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 pr-1">
+                      {availableTags.length === 0 ? (
+                        <span className="text-[9px] text-slate-600 italic leading-snug">No tags on canvas.</span>
+                      ) : (
+                        availableTags.map(tag => {
+                          const isSelected = selectedLabel === tag;
+                          return (
+                            <div
+                              key={tag}
+                              draggable
+                              onDragStart={(e) => {
+                                  e.dataTransfer.setData('text/plain', tag);
+                              }}
+                              onClick={() => {
+                                  setSelectedLabel(isSelected ? null : tag);
+                              }}
+                              className={`p-2 rounded-lg border text-center text-[10px] font-bold font-mono cursor-grab active:cursor-grabbing transition-all select-none hover:scale-[1.03] ${
+                                isSelected 
+                                  ? 'border-indigo-500 bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' 
+                                  : 'border-slate-800 bg-slate-900/50 hover:bg-slate-900 text-slate-300 hover:border-slate-700'
+                              }`}
+                              title="Drag to assign, or click to snap"
+                            >
+                              {tag}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Slide-out Input Router Panel */}
+          {showInputRouterPanel && activeCScriptForInputRouting && (
+            <div 
+              className="absolute left-0 top-0 h-full w-80 bg-slate-950/95 backdrop-blur-md border-r border-slate-800 shadow-2xl z-20 flex flex-col animate-fade-in"
+            >
+              {/* Header */}
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/40">
+                <h3 className="font-bold flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-slate-200">
+                  <Zap className="h-4 w-4 text-indigo-500 animate-pulse" />
+                  <span>Input Probing Router</span>
+                </h3>
+                <button 
+                  onClick={() => {
+                    setShowInputRouterPanel(false);
+                    setActiveCScriptForInputRouting(null);
+                    setSelectedProbe(null);
+                  }} 
+                  className="text-slate-500 hover:text-slate-350 cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+                {/* Description */}
+                <div className="text-[10px] text-slate-400 bg-slate-900/60 p-3 rounded-lg border border-slate-900 leading-relaxed">
+                  Map actively probed circuit variables to internal <strong>C-Script</strong> inputs. Drag from the list on the left, or click a probe to select and click an input slot.
+                </div>
+
+                {/* Two columns wrapper */}
+                <div className="flex-1 flex gap-3 min-h-0">
+                  {/* Column 1: Available Probes */}
+                  <div className="w-24 shrink-0 flex flex-col gap-2">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Active Probes</span>
+                    <div className="flex-1 overflow-y-auto flex flex-col gap-1.5 pr-1">
+                      {activeProbes.length === 0 ? (
+                        <span className="text-[9px] text-slate-600 italic leading-snug">No active probes on canvas.</span>
+                      ) : (
+                        activeProbes.map(probe => {
+                          const isSelected = selectedProbe === probe;
+                          return (
+                            <div
+                              key={probe}
+                              draggable
+                              onDragStart={(e) => {
+                                  e.dataTransfer.setData('text/plain', probe);
+                              }}
+                              onClick={() => {
+                                  setSelectedProbe(isSelected ? null : probe);
+                              }}
+                              className={`p-2 rounded-lg border text-center text-[9px] font-bold font-mono cursor-grab active:cursor-grabbing transition-all select-none hover:scale-[1.03] truncate ${
+                                isSelected 
+                                  ? 'border-indigo-500 bg-indigo-600/90 text-white shadow-lg shadow-indigo-600/25' 
+                                  : 'border-slate-800 bg-slate-900/50 hover:bg-slate-900 text-slate-300 hover:border-slate-700'
+                              }`}
+                              title={probe}
+                            >
+                              {probe}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Column 2: C-Script Inputs */}
+                  <div className="flex-1 flex flex-col gap-2 min-w-0">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">C-Script Inputs</span>
+                    <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
+                      {cscriptInputs.length === 0 ? (
+                        <span className="text-[10px] text-slate-600 italic">No input variables found in code.</span>
+                      ) : (
+                        cscriptInputs.map(inputVar => {
+                          const mappings = activeCScriptForInputRouting.parameters?.input_mappings || {};
+                          const mappedProbe = mappings[inputVar];
+
+                          return (
+                            <div 
+                              key={inputVar} 
+                              className="p-2.5 rounded-lg border border-slate-800 bg-slate-900/30 flex flex-col gap-1.5 hover:border-slate-700/60 transition-colors"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-mono text-[10px] font-bold text-sky-400 truncate" title={inputVar}>{inputVar}</span>
+                                {mappedProbe && (
+                                  <button 
+                                    onClick={() => handleUnmapInputSignal(inputVar)}
+                                    className="text-[9px] text-red-400 hover:text-red-300 font-mono font-bold cursor-pointer hover:bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 transition-colors"
+                                  >
+                                    Unassign
+                                  </button>
+                                )}
+                              </div>
+                              
+                              {/* Drop zone */}
+                              <div 
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.add('border-indigo-500', 'bg-indigo-500/5');
+                                }}
+                                onDragLeave={(e) => {
+                                  e.currentTarget.classList.remove('border-indigo-500', 'bg-indigo-500/5');
+                                }}
+                                onDrop={(e) => {
+                                  e.currentTarget.classList.remove('border-indigo-500', 'bg-indigo-500/5');
+                                  const probe = e.dataTransfer.getData('text/plain');
+                                  if (probe) {
+                                    handleMapInputSignal(inputVar, probe);
+                                  }
+                                }}
+                                onClick={() => {
+                                  if (selectedProbe) {
+                                    handleMapInputSignal(inputVar, selectedProbe);
+                                    setSelectedProbe(null);
+                                  }
+                                }}
+                                className={`h-11 rounded-lg border-2 border-dashed flex items-center justify-center text-[10px] font-medium transition-all cursor-pointer ${
+                                  mappedProbe 
+                                    ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-400 font-bold' 
+                                    : selectedProbe 
+                                      ? 'border-indigo-500/40 bg-indigo-500/5 hover:border-indigo-400 text-indigo-400 animate-pulse' 
+                                      : 'border-slate-800 hover:border-slate-700 text-slate-500'
+                                }`}
+                              >
+                                {mappedProbe ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <Link className="h-3 w-3 text-emerald-500 shrink-0" />
+                                    <span className="truncate max-w-[120px]">{mappedProbe}</span>
+                                  </div>
+                                ) : selectedProbe ? (
+                                  <span>Click to assign {selectedProbe}</span>
+                                ) : (
+                                  <span>Drop probe here</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right drawer panel - component properties */}

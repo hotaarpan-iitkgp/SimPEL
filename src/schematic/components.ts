@@ -434,6 +434,18 @@ export function getComponentSVG(comp: any): string {
           <line class="comp-path" x1="-${halfWidth}" y1="${y}" x2="-${halfWidth - 5}" y2="${y}" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
           <text x="-${halfWidth - 8}" y="${y + 3}" font-family="Inter, sans-serif" font-size="8" fill="currentColor" text-anchor="start" stroke="none" opacity="0.8">${inList[i]}</text>
         `;
+        
+        const mappings = comp.parameters && comp.parameters.input_mappings || {};
+        const mappedProbe = mappings[inList[i]];
+        if (mappedProbe) {
+          const textW = Math.max(20, mappedProbe.length * 5);
+          paths += `
+            <g transform="translate(-${halfWidth + 8}, ${y})">
+              <rect x="-${textW + 8}" y="-6" width="${textW + 6}" height="12" rx="3" fill="var(--color-bg-secondary, #020617)" stroke="#6366f1" stroke-width="1" opacity="0.9" />
+              <text x="-4" y="3" font-family="JetBrains Mono, monospace" font-size="7" font-weight="700" fill="#818cf8" text-anchor="end" stroke="none">${mappedProbe}</text>
+            </g>
+          `;
+        }
       }
       
       // Draw output pins labels on the right
