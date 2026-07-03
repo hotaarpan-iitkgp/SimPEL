@@ -1070,6 +1070,8 @@ export interface ComponentTS {
     id: string; type: string; nodes: string[]; parameters: Record<string, any>; channels: Record<string, any>;
 }
 
+export const ANALOG_SWITCH_TYPES = ["MOSFET", "vg-FET", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"];
+
 export class CircuitSimulator {
     physical_stage: ComponentTS[] = []; control_loops: ComponentTS[] = [];
     sim_params = { t_end: 0.05, h: 1e-5, solver: "euler", step_type: "fixed" };
@@ -1109,9 +1111,10 @@ export class CircuitSimulator {
                 const list = physical[cat.key];
                 if (Array.isArray(list)) {
                     for (const item of list) {
+                        const compType = cat.type === "dc_ac" ? (item.type === "ac" ? "ACVoltageSource" : "VoltageSource") : (item.type || cat.type);
                         const comp: ComponentTS = {
                             id: item.id || `C_${Math.floor(Math.random() * 1000)}`,
-                            type: cat.type === "dc_ac" ? (item.type === "ac" ? "ACVoltageSource" : "VoltageSource") : cat.type,
+                            type: compType,
                             nodes: item.nodes || [],
                             parameters: {},
                             channels: {}
@@ -1122,13 +1125,13 @@ export class CircuitSimulator {
                             comp.parameters[k] = String(v);
                         }
 
-                        if (cat.type === "Switch" && item.control_signal) {
+                        if (compType === "Switch" && item.control_signal) {
                             comp.channels = { Switch: item.control_signal };
-                        } else if (cat.type === "MOSFET" && item.control_signal) {
+                        } else if (ANALOG_SWITCH_TYPES.includes(compType) && item.control_signal) {
                             comp.channels = { G: item.control_signal };
-                        } else if (cat.type === "Voltmeter" && item.signal) {
+                        } else if (compType === "Voltmeter" && item.signal) {
                             comp.channels = { OutV: item.signal };
-                        } else if (cat.type === "Ammeter" && item.signal) {
+                        } else if (compType === "Ammeter" && item.signal) {
                             comp.channels = { OutI: item.signal };
                         }
 
@@ -1384,7 +1387,7 @@ export class CircuitSimulator {
             else if (c.type === "Capacitor") this.capacitors.push(c);
             else if (c.type === "Inductor") this.inductors.push(c);
             else if (["VoltageSource", "ACVoltageSource", "Ammeter"].includes(c.type)) this.voltage_sources.push(c);
-            else if (["Switch", "Diode", "MOSFET", "vg-FET"].includes(c.type)) this.switches.push(c);
+            else if (["Switch", "Diode", "MOSFET", "vg-FET", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"].includes(c.type)) this.switches.push(c);
             else if (c.type === "Voltmeter") this.voltmeters.push(c);
         }
         this.num_L = this.inductors.length; this.num_V = this.voltage_sources.length;
@@ -2270,7 +2273,7 @@ export class CircuitSimulator {
                 const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                 const vd = ((i1 >= 0) ? wl[i1] : 0.0) - ((i2 >= 0) ? wl[i2] : 0.0);
                 const old = ss[sw.id] ?? "OFF"; let swn = "OFF";
-                if (sw.type === "MOSFET" || sw.type === "vg-FET") {
+                if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
                     const gate_on = (sigs_start[sw.channels.G] ?? 0) > 0.5;
                     const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
                     const diode_on = -vd > vd_drop;
@@ -2336,7 +2339,7 @@ export class CircuitSimulator {
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                     const vd = ((i1 >= 0) ? wn[i1] : 0.0) - ((i2 >= 0) ? wn[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; let swn = "OFF";
-                    if (sw.type === "MOSFET" || sw.type === "vg-FET") {
+                    if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
                         const gate_on = (sigs_start[sw.channels.G] ?? 0) > 0.5;
                         const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
                         const diode_on = -vd > vd_drop;
@@ -2380,7 +2383,7 @@ export class CircuitSimulator {
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                     const vd = ((i1 >= 0) ? w_con[i1] : 0.0) - ((i2 >= 0) ? w_con[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; let swn = "OFF";
-                    if (sw.type === "MOSFET" || sw.type === "vg-FET") {
+                    if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
                         const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
                         const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
                         const diode_on = -vd > vd_drop;
@@ -2452,7 +2455,7 @@ export class CircuitSimulator {
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                     const vd = ((i1 >= 0) ? wn[i1] : 0.0) - ((i2 >= 0) ? wn[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; let swn = "OFF";
-                    if (sw.type === "MOSFET" || sw.type === "vg-FET") {
+                    if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
                         const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
                         const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
                         const diode_on = -vd > vd_drop;
@@ -2529,7 +2532,7 @@ export class CircuitSimulator {
                 const idx = this.V_to_idx[comp.id]; 
                 curr = (idx !== undefined) ? w_val[idx] : 0.0; 
             }
-            else if (["Switch", "Diode", "MOSFET", "vg-FET", "S", "D"].includes(comp.type)) {
+            else if (["Switch", "Diode", "MOSFET", "vg-FET", "S", "D", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"].includes(comp.type)) {
                 const ron = parseScientific(comp.parameters.Ron ?? "1e-3"), roff = parseScientific(comp.parameters.Roff ?? "1e6");
                 const state = ss[comp.id] ?? "OFF";
                 if (comp.type === "Diode" && state === "ON") {

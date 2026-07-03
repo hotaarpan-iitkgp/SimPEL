@@ -250,13 +250,38 @@ export function getComponentSVG(comp: any): string {
       shape = svg;
       break;
     }
-    case 'TRI': // Triangle wave carrier
-      shape = `
+    case 'TRI': {
+      const extPhase = (comp.parameters && comp.parameters.phase_source) === 'external';
+      const extFreq = (comp.parameters && comp.parameters.freq_source) === 'external';
+      
+      let svg = `
         <rect class="comp-path" x="-16" y="-16" width="32" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="2" />
         <path class="comp-path" d="M 16,0 L 20,0 M 17,-3 L 20,0 L 17,3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
         <path class="comp-path" d="M -10,6 L 0,-6 L 10,6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />
       `;
+      
+      if (extPhase && extFreq) {
+        svg += `
+          <path class="comp-path" d="M -20,-10 L -16,-10 M -19,-13 L -16,-10 L -19,-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <path class="comp-path" d="M -20,10 L -16,10 M -19,7 L -16,10 L -19,13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <text x="-12" y="-7.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="#94a3b8" text-anchor="start" stroke="none">P</text>
+          <text x="-12" y="12.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="#94a3b8" text-anchor="start" stroke="none">F</text>
+        `;
+      } else if (extPhase) {
+        svg += `
+          <path class="comp-path" d="M -20,0 L -16,0 M -19,-3 L -16,0 L -19,3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <text x="-12" y="2.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="#94a3b8" text-anchor="start" stroke="none">P</text>
+        `;
+      } else if (extFreq) {
+        svg += `
+          <path class="comp-path" d="M -20,0 L -16,0 M -19,-3 L -16,0 L -19,3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <text x="-12" y="2.5" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="#94a3b8" text-anchor="start" stroke="none">F</text>
+        `;
+      }
+      
+      shape = svg;
       break;
+    }
     case 'COMP': // Comparator
       shape = `
         <path class="comp-path" d="M -16,-20 L 16,0 L -16,20 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />

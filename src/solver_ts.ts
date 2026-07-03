@@ -1253,6 +1253,8 @@ export interface ComponentTS {
     id: string; type: string; nodes: string[]; parameters: Record<string, any>; channels: Record<string, any>;
 }
 
+export const ANALOG_SWITCH_TYPES = ["MOSFET", "vg-FET", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"];
+
 export class CircuitSimulator {
     physical_stage: ComponentTS[] = []; control_loops: ComponentTS[] = [];
     sim_params = { t_end: 0.05, h: 1e-5, solver: "euler", step_type: "fixed" };
@@ -1297,7 +1299,7 @@ export class CircuitSimulator {
                 const list = physical[cat.key];
                 if (Array.isArray(list)) {
                     for (const item of list) {
-                        let compType = cat.type;
+                        let compType = item.type || cat.type;
                         if (cat.type === "Resistor" && item.src_type === "variable") {
                             compType = "VariableResistor";
                         } else if (cat.type === "dc_ac") {
@@ -1333,11 +1335,11 @@ export class CircuitSimulator {
                             }
                         }
 
-                        if (["Switch", "MOSFET", "VariableResistor", "ControlledVoltageSource", "ControlledCurrentSource"].includes(compType) || item.control_signal) {
+                        if (["Switch", "VariableResistor", "ControlledVoltageSource", "ControlledCurrentSource", ...ANALOG_SWITCH_TYPES].includes(compType) || item.control_signal) {
                             const sig = item.control_signal;
                             if (sig) {
                                 if (compType === "Switch") comp.channels = { Switch: sig };
-                                else if (compType === "MOSFET") comp.channels = { G: sig };
+                                else if (ANALOG_SWITCH_TYPES.includes(compType)) comp.channels = { G: sig };
                                 else comp.channels = { Ctrl: sig };
                             }
                         }
@@ -1481,7 +1483,10 @@ export class CircuitSimulator {
                             }
                             comp.channels = chs;
                         } else if (cat.type === "Triangle_Carrier" && item.output) {
-                            comp.channels = { Out: item.output };
+                            const chs: Record<string, string> = { Out: item.output };
+                            if (item.input_phase) chs.Phase = item.input_phase;
+                            if (item.input_freq) chs.Freq = item.input_freq;
+                            comp.channels = chs;
                         } else if (cat.type === "Comparator" && Array.isArray(item.inputs) && item.output) {
                             comp.channels = { Plus: item.inputs[0], Minus: item.inputs[1], Out: item.output };
                         } else if (cat.type === "logic" && Array.isArray(item.inputs) && item.output) {
@@ -1629,7 +1634,7 @@ export class CircuitSimulator {
             else if (c.type === "Capacitor") this.capacitors.push(c);
             else if (c.type === "Inductor") this.inductors.push(c);
             else if (["VoltageSource", "ACVoltageSource", "Ammeter", "ControlledVoltageSource", "OPAMP", "E_COMP"].includes(c.type)) this.voltage_sources.push(c);
-            else if (["Switch", "Diode", "MOSFET"].includes(c.type)) this.switches.push(c);
+            else if (["Switch", "Diode", "MOSFET", "vg-FET", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"].includes(c.type)) this.switches.push(c);
             else if (c.type === "Voltmeter") this.voltmeters.push(c);
             else if (c.type === "XFMR") this.transformers.push(c);
         }
@@ -1910,10 +1915,19 @@ export class CircuitSimulator {
                     signals[out] = parseScientific(b.parameters.value ?? "1");
                 }
             } else if (b.type === "Triangle_Carrier") {
-                const freq = parseScientific(b.parameters.frequency ?? "10k");
-                const min = parseScientific(b.parameters.min ?? "0"); const max = parseScientific(b.parameters.max ?? "1");
-                const pr = 1.0 / freq; const tl = time % pr;
-                signals[out] = (tl < pr / 2.0) ? min + (max - min) * (tl / (pr / 2.0)) : max - (max - min) * ((tl - pr / 2.0) / (pr / 2.0));
+                const extPhase = b.parameters.phase_source === 'external';
+                const extFreq = b.parameters.freq_source === 'external';
+                
+                const phase_deg = extPhase ? (signals[b.channels.Phase] ?? 0.0) : parseScientific(b.parameters.phase ?? "0");
+                const freq = extFreq ? (signals[b.channels.Freq] ?? 10000.0) : parseScientific(b.parameters.frequency ?? "10k");
+                
+                const min = parseScientific(b.parameters.min ?? "0");
+                const max = parseScientific(b.parameters.max ?? "1");
+                
+                let t_norm = (time * freq + phase_deg / 360.0) % 1.0;
+                if (t_norm < 0.0) t_norm += 1.0;
+                
+                signals[out] = (t_norm < 0.5) ? min + (max - min) * (t_norm / 0.5) : max - (max - min) * ((t_norm - 0.5) / 0.5);
             }
         }
         for (let iter = 0; iter < 3; iter++) {
@@ -2860,12 +2874,51 @@ export class CircuitSimulator {
                         signals[out] = sum;
                     }
                 } else if (b.type === "PI_Controller" && out) {
-                    const error = signals[b.channels.In] ?? 0;
-                    if (!cs[b.id]) cs[b.id] = { integral: 0.0 };
-                    if (dt > 0.0 && !first && integrate && iter === 2) {
-                        cs[b.id].integral += error * dt;
+                    const error = signals[b.channels.In] ?? 0.0;
+                    if (!cs[b.id]) {
+                        cs[b.id] = { integral: 0.0, prev_error: error, prev_deriv: 0.0 };
                     }
-                    signals[out] = parseScientific(b.parameters.Kp ?? "2.5") * error + parseScientific(b.parameters.Ki ?? "50") * cs[b.id].integral;
+                    const Kp = parseScientific(b.parameters.Kp ?? "2.5");
+                    const Ki = parseScientific(b.parameters.Ki ?? "50.0");
+                    const Kd = parseScientific(b.parameters.Kd ?? "0.0");
+                    const Tf = 0.01;
+                    
+                    let deriv = cs[b.id].prev_deriv;
+                    if (Kd > 0.0 && dt > 0.0 && !first && integrate && iter === 2) {
+                        deriv = (Tf / (dt + Tf)) * cs[b.id].prev_deriv + (Kd / (dt + Tf)) * (error - cs[b.id].prev_error);
+                    }
+                    
+                    const u_unsat = Kp * error + Ki * cs[b.id].integral + deriv;
+                    
+                    const limit_output = b.parameters.limit_output === 'true';
+                    const upper_limit = parseScientific(b.parameters.upper_limit ?? "1.0");
+                    const lower_limit = parseScientific(b.parameters.lower_limit ?? "-1.0");
+                    const anti_windup = b.parameters.anti_windup === 'true';
+                    
+                    let u = u_unsat;
+                    if (limit_output) {
+                        if (u > upper_limit) u = upper_limit;
+                        else if (u < lower_limit) u = lower_limit;
+                    }
+                    
+                    if (dt > 0.0 && !first && integrate && iter === 2) {
+                        let integrate_ok = true;
+                        if (limit_output && anti_windup) {
+                            if (u_unsat > upper_limit && error > 0) {
+                                integrate_ok = false;
+                            } else if (u_unsat < lower_limit && error < 0) {
+                                integrate_ok = false;
+                            }
+                        }
+                        if (integrate_ok) {
+                            cs[b.id].integral += error * dt;
+                        }
+                        if (Kd > 0.0) {
+                            cs[b.id].prev_deriv = deriv;
+                        }
+                        cs[b.id].prev_error = error;
+                    }
+                    signals[out] = u;
                 } else if (b.type === "ContinuousPID" && out) {
                     const error = signals[b.channels.In] ?? 0.0;
                     if (!cs[b.id]) {
@@ -2876,16 +2929,42 @@ export class CircuitSimulator {
                     const Kd = parseScientific(b.parameters.Kd ?? "0.0");
                     const Tf = parseScientific(b.parameters.Tf ?? "0.01");
                     
+                    let deriv = cs[b.id].prev_deriv;
+                    if (Kd > 0.0 && dt > 0.0 && !first && integrate && iter === 2) {
+                        deriv = (Tf / (dt + Tf)) * cs[b.id].prev_deriv + (Kd / (dt + Tf)) * (error - cs[b.id].prev_error);
+                    }
+                    
+                    const u_unsat = Kp * error + Ki * cs[b.id].integral + deriv;
+                    
+                    const limit_output = b.parameters.limit_output === 'true';
+                    const upper_limit = parseScientific(b.parameters.upper_limit ?? "1.0");
+                    const lower_limit = parseScientific(b.parameters.lower_limit ?? "-1.0");
+                    const anti_windup = b.parameters.anti_windup === 'true';
+                    
+                    let u = u_unsat;
+                    if (limit_output) {
+                        if (u > upper_limit) u = upper_limit;
+                        else if (u < lower_limit) u = lower_limit;
+                    }
+                    
                     if (dt > 0.0 && !first && integrate && iter === 2) {
-                        cs[b.id].integral += error * dt;
-                        let deriv = 0.0;
-                        if (Kd > 0.0) {
-                            deriv = (Tf / (dt + Tf)) * cs[b.id].prev_deriv + (Kd / (dt + Tf)) * (error - cs[b.id].prev_error);
+                        let integrate_ok = true;
+                        if (limit_output && anti_windup) {
+                            if (u_unsat > upper_limit && error > 0) {
+                                integrate_ok = false;
+                            } else if (u_unsat < lower_limit && error < 0) {
+                                integrate_ok = false;
+                            }
                         }
-                        cs[b.id].prev_deriv = deriv;
+                        if (integrate_ok) {
+                            cs[b.id].integral += error * dt;
+                        }
+                        if (Kd > 0.0) {
+                            cs[b.id].prev_deriv = deriv;
+                        }
                         cs[b.id].prev_error = error;
                     }
-                    signals[out] = Kp * error + Ki * cs[b.id].integral + cs[b.id].prev_deriv;
+                    signals[out] = u;
                 } else if (b.type === "PLL") {
                     const fn = parseScientific(b.parameters.fn ?? "50.0");
                     const w_nom = 2.0 * Math.PI * fn;
@@ -3612,7 +3691,7 @@ export class CircuitSimulator {
                 const vd = ((i1 >= 0) ? wl[i1] : 0.0) - ((i2 >= 0) ? wl[i2] : 0.0);
                 const old = ss[sw.id] ?? "OFF"; 
                 let swn = "OFF";
-                if (sw.type === "MOSFET" || sw.type === "vg-FET") {
+                if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
                     const gate_on = (sigs_start[sw.channels.G] ?? 0) > 0.5;
                     const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
                     const diode_on = -vd > vd_drop;
@@ -3713,7 +3792,7 @@ export class CircuitSimulator {
                     const vd = ((i1 >= 0) ? wn[i1] : 0.0) - ((i2 >= 0) ? wn[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; 
                     let swn = "OFF";
-                    if (sw.type === "MOSFET" || sw.type === "vg-FET") {
+                    if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
                         const gate_on = (sigs_start[sw.channels.G] ?? 0) > 0.5;
                         const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
                         const diode_on = -vd > vd_drop;
@@ -3761,7 +3840,7 @@ export class CircuitSimulator {
                     const vd = ((i1 >= 0) ? w_con[i1] : 0.0) - ((i2 >= 0) ? w_con[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; 
                     let swn = "OFF";
-                    if (sw.type === "MOSFET" || sw.type === "vg-FET") {
+                    if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
                         const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
                         const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
                         const diode_on = -vd > vd_drop;
@@ -3846,7 +3925,7 @@ export class CircuitSimulator {
                     const vd = ((i1 >= 0) ? wn[i1] : 0.0) - ((i2 >= 0) ? wn[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; 
                     let swn = "OFF";
-                    if (sw.type === "MOSFET" || sw.type === "vg-FET") {
+                    if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
                         const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
                         const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
                         const diode_on = -vd > vd_drop;
@@ -4003,7 +4082,7 @@ export class CircuitSimulator {
                     const idx = this.V_to_idx[comp.id]; 
                     curr = (idx !== undefined) ? w_val[idx] : 0.0; 
                 } 
-                else if (["Switch", "Diode", "MOSFET", "vg-FET", "S", "D"].includes(comp.type)) {
+                else if (["Switch", "Diode", "MOSFET", "vg-FET", "S", "D", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"].includes(comp.type)) {
                     const ron = parseScientific(comp.parameters.Ron ?? "1e-3"), roff = parseScientific(comp.parameters.Roff ?? "1e6");
                     const state = ss[comp.id] ?? "OFF";
                     if (comp.type === "Diode" && state === "ON") {

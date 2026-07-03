@@ -755,7 +755,7 @@ export default function App() {
       const tempTraces: string[] = [];
       
       physical.forEach((c: any) => {
-        if (["R", "L", "C", "V", "AC_V", "I", "S", "D", "MOSFET", "VM", "AM", "Resistor", "Inductor", "Capacitor", "VoltageSource", "ACVoltageSource", "CurrentSource", "Switch", "Diode", "Voltmeter", "Ammeter"].includes(c.type)) {
+        if (["R", "L", "C", "V", "AC_V", "I", "S", "D", "MOSFET", "vg-FET", "VM", "AM", "Resistor", "Inductor", "Capacitor", "VoltageSource", "ACVoltageSource", "CurrentSource", "Switch", "Diode", "Voltmeter", "Ammeter"].includes(c.type)) {
           tempTraces.push(`V_${c.id}`);
           tempTraces.push(`I_${c.id}`);
         }

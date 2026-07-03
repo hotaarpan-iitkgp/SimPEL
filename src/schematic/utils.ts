@@ -2,7 +2,7 @@ import { state } from './state';
 
 // Generate IDs for components
 export function generateNextId(type: string, excludeIds: string[] = []): string {
-  const prefix = type;
+  const prefix = type === 'vg-FET' ? 'vgFET' : type;
   let count = 1;
   while (
     state.components.some((c: any) => c.id === `${prefix}${count}`) || 

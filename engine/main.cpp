@@ -128,34 +128,74 @@ int main(int argc, char* argv[]) {
 
         // --- 2. Parse physical_stage components ---
         Json phys = root.get("physical_stage");
+        auto parse_comp = [](const Json& item, const std::string& default_type) -> Component {
+            Component comp;
+            comp.id = item.get("id").as_string();
+            comp.type = item.get("type").as_string();
+            if (comp.type.empty()) {
+                comp.type = default_type;
+            }
+
+            Json nodes_json = item.get("nodes");
+            if (nodes_json.is_array()) {
+                for (const auto& node : nodes_json.as_array()) {
+                    comp.nodes.push_back(node.as_string());
+                }
+            }
+
+            Json params_json = item.get("parameters");
+            if (params_json.is_object()) {
+                for (const auto& pair : params_json.as_object()) {
+                    comp.parameters[pair.first] = pair.second.as_string();
+                }
+            }
+
+            Json chans_json = item.get("channels");
+            if (chans_json.is_object()) {
+                for (const auto& pair : chans_json.as_object()) {
+                    comp.channels[pair.first] = pair.second.as_string();
+                }
+            }
+            
+            // Map control_signal channel for switches in C++ solver
+            std::string ctrl_sig = item.get("control_signal").as_string();
+            if (!ctrl_sig.empty()) {
+                if (comp.type == "Switch") {
+                    comp.channels["Switch"] = ctrl_sig;
+                } else if (comp.type == "MOSFET" || comp.type == "vg-FET" || comp.type == "IGBT" || comp.type == "BJT" || comp.type == "JFET") {
+                    comp.channels["G"] = ctrl_sig;
+                } else {
+                    comp.channels["Ctrl"] = ctrl_sig;
+                }
+            }
+            return comp;
+        };
+
         if (phys.is_array()) {
             for (const auto& item : phys.as_array()) {
-                Component comp;
-                comp.id = item.get("id").as_string();
-                comp.type = item.get("type").as_string();
-
-                Json nodes_json = item.get("nodes");
-                if (nodes_json.is_array()) {
-                    for (const auto& node : nodes_json.as_array()) {
-                        comp.nodes.push_back(node.as_string());
+                sim.physical_stage.push_back(parse_comp(item, ""));
+            }
+        } else if (phys.is_object()) {
+            for (const auto& pair : phys.as_object()) {
+                std::string key = pair.first;
+                Json list = pair.second;
+                if (list.is_array()) {
+                    std::string def_type = "";
+                    if (key == "resistors") def_type = "Resistor";
+                    else if (key == "inductors") def_type = "Inductor";
+                    else if (key == "capacitors") def_type = "Capacizer";
+                    else if (key == "voltage_sources") def_type = "VoltageSource";
+                    else if (key == "current_sources") def_type = "CurrentSource";
+                    else if (key == "switches") def_type = "Switch";
+                    else if (key == "diodes") def_type = "Diode";
+                    else if (key == "analog_switches") def_type = "MOSFET";
+                    else if (key == "voltmeters") def_type = "Voltmeter";
+                    else if (key == "ammeters") def_type = "Ammeter";
+                    
+                    for (const auto& item : list.as_array()) {
+                        sim.physical_stage.push_back(parse_comp(item, def_type));
                     }
                 }
-
-                Json params_json = item.get("parameters");
-                if (params_json.is_object()) {
-                    for (const auto& pair : params_json.as_object()) {
-                        comp.parameters[pair.first] = pair.second.as_string();
-                    }
-                }
-
-                Json chans_json = item.get("channels");
-                if (chans_json.is_object()) {
-                    for (const auto& pair : chans_json.as_object()) {
-                        comp.channels[pair.first] = pair.second.as_string();
-                    }
-                }
-
-                sim.physical_stage.push_back(comp);
             }
         }
 
@@ -163,32 +203,16 @@ int main(int argc, char* argv[]) {
         Json ctrl = root.get("control_loops");
         if (ctrl.is_array()) {
             for (const auto& item : ctrl.as_array()) {
-                Component comp;
-                comp.id = item.get("id").as_string();
-                comp.type = item.get("type").as_string();
-
-                Json nodes_json = item.get("nodes");
-                if (nodes_json.is_array()) {
-                    for (const auto& node : nodes_json.as_array()) {
-                        comp.nodes.push_back(node.as_string());
+                sim.control_loops.push_back(parse_comp(item, ""));
+            }
+        } else if (ctrl.is_object()) {
+            for (const auto& pair : ctrl.as_object()) {
+                Json list = pair.second;
+                if (list.is_array()) {
+                    for (const auto& item : list.as_array()) {
+                        sim.control_loops.push_back(parse_comp(item, ""));
                     }
                 }
-
-                Json params_json = item.get("parameters");
-                if (params_json.is_object()) {
-                    for (const auto& pair : params_json.as_object()) {
-                        comp.parameters[pair.first] = pair.second.as_string();
-                    }
-                }
-
-                Json chans_json = item.get("channels");
-                if (chans_json.is_object()) {
-                    for (const auto& pair : chans_json.as_object()) {
-                        comp.channels[pair.first] = pair.second.as_string();
-                    }
-                }
-
-                sim.control_loops.push_back(comp);
             }
         }
 

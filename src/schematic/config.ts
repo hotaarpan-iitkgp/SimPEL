@@ -250,6 +250,23 @@ export function getComponentPins(comp: any): Record<string, any> {
     }
     return pins;
   }
+  if (comp.type === 'TRI') {
+    const pins: Record<string, any> = {};
+    pins['Out'] = { x: 20, y: 0, dx: 1, dy: 0 };
+    
+    const extPhase = (comp.parameters && comp.parameters.phase_source) === 'external';
+    const extFreq = (comp.parameters && comp.parameters.freq_source) === 'external';
+    
+    if (extPhase && extFreq) {
+      pins['Phase'] = { x: -20, y: -10, dx: -1, dy: 0 };
+      pins['Freq'] = { x: -20, y: 10, dx: -1, dy: 0 };
+    } else if (extPhase) {
+      pins['Phase'] = { x: -20, y: 0, dx: -1, dy: 0 };
+    } else if (extFreq) {
+      pins['Freq'] = { x: -20, y: 0, dx: -1, dy: 0 };
+    }
+    return pins;
+  }
   if (comp.type === 'GEN_EBLOCK') {
     let n = parseInt(comp.parameters && comp.parameters.terminals);
     if (isNaN(n) || n <= 0) {
@@ -403,10 +420,10 @@ export const DEFAULT_PARAMETERS: Record<string, any> = {
   XFMR:   { primary_turns: "[100]", secondary_turns: "[100]" },
   CONST:  { value: "1.0" },
   GAIN:   { K: "2.5" },
-  PID:    { Kp: "2.5", Ki: "50.0", Kd: "0" },
+  PID:    { Kp: "2.5", Ki: "50.0", Kd: "0", limit_output: "false", upper_limit: "1", lower_limit: "-1", anti_windup: "false" },
   PWM:    { frequency: "10k", min: "0", max: "1" },
   PWM_MASTER: { num_carriers: "3", fc: "10k", dead_time: "1u", cycles: "2", config: "[]", common_modulation: "false" },
-  TRI:    { frequency: "10k", min: "0", max: "1" },
+  TRI:    { frequency: "10k", min: "0", max: "1", phase_source: "internal", phase: "0", freq_source: "internal" },
   COMP:   { hysteresis: "0" },
   FCN:    { expr: "u[0] * 2" },
   PROD:   {},

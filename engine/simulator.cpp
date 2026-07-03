@@ -7,6 +7,16 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+inline bool is_analog_switch(const std::string& type) {
+    return (type == "MOSFET" || type == "vg-FET" || type == "IGBT" || type == "BJT" || 
+            type == "JFET" || type == "GTO" || type == "THYRISTOR" || type == "IGCT" || 
+            type == "IGBT_DIODE" || type == "MOSFET_DIODE");
+}
+
+inline bool is_any_switch(const std::string& type) {
+    return (type == "Switch" || type == "Diode" || is_analog_switch(type));
+}
+
 void split_into_nodes(const std::vector<std::string>& nodes, std::string& n1, std::string& n2) {
     n1 = (nodes.size() > 0) ? nodes[0] : "node_0";
     n2 = (nodes.size() > 1) ? nodes[1] : "node_0";
@@ -54,7 +64,7 @@ void CircuitSimulator::initializeNetwork() {
             inductors.push_back(comp);
         } else if (comp.type == "VoltageSource" || comp.type == "ACVoltageSource" || comp.type == "Ammeter") {
             voltage_sources.push_back(comp);
-        } else if (comp.type == "Switch" || comp.type == "Diode" || comp.type == "MOSFET") {
+        } else if (is_any_switch(comp.type)) {
             switches.push_back(comp);
         } else if (comp.type == "Voltmeter") {
             voltmeters.push_back(comp);
@@ -445,7 +455,7 @@ std::map<std::string, double> CircuitSimulator::evaluateControls(
                             if (V_to_idx.count(target_id)) {
                                 i_val = w_curr[V_to_idx[target_id]];
                             }
-                        } else if (target_comp->type == "Switch" || target_comp->type == "Diode" || target_comp->type == "MOSFET") {
+                        } else if (is_any_switch(target_comp->type)) {
                             double ron = target_comp->getParam("Ron", 1e-3);
                             double roff = target_comp->getParam("Roff", 1e6);
                             std::string sw_state = "OFF";
@@ -846,7 +856,7 @@ Vector CircuitSimulator::compute_k(
             std::string old_state = sw_stage_states[sw_id];
             std::string new_state = "OFF";
 
-            if (sw_type == "MOSFET") {
+            if (is_analog_switch(sw_type)) {
                 double gate_val = signals_start[sw.getChannelRef("G")];
                 bool gate_on = gate_val > 0.5;
                 double vd_drop = sw.getParam("Vd", 0.7);
@@ -996,7 +1006,7 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
                 std::string old_state = sw_stage_states[sw_id];
                 std::string new_state = "OFF";
 
-                if (sw_type == "MOSFET") {
+                if (is_analog_switch(sw_type)) {
                     double gate_val = signals_start[sw.getChannelRef("G")];
                     bool gate_on = gate_val > 0.5;
                     double vd_drop = sw.getParam("Vd", 0.7);
@@ -1090,7 +1100,7 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
                 std::string old_state = sw_stage_states[sw_id];
                 std::string new_state = "OFF";
 
-                if (sw_type == "MOSFET") {
+                if (is_analog_switch(sw_type)) {
                     double gate_val = signals_start[sw.getChannelRef("G")];
                     bool gate_on = gate_val > 0.5;
                     double vd_drop = sw.getParam("Vd", 0.7);
@@ -1263,7 +1273,7 @@ CircuitSimulator::takeStep(double t_curr, const Vector& w_curr, double dt_val, c
                 std::string old_state = sw_stage_states[sw_id];
                 std::string new_state = "OFF";
 
-                if (sw_type == "MOSFET") {
+                if (is_analog_switch(sw_type)) {
                     double gate_val = signals_start[sw.getChannelRef("G")];
                     bool gate_on = gate_val > 0.5;
                     double vd_drop = sw.getParam("Vd", 0.7);
@@ -1375,7 +1385,7 @@ void CircuitSimulator::logAcceptedState(double t_val, const Vector& w_val, const
                 if (V_to_idx.count(comp.id)) {
                     i_val = w_val[V_to_idx[comp.id]];
                 }
-            } else if (comp.type == "Switch" || comp.type == "Diode" || comp.type == "MOSFET") {
+            } else if (is_any_switch(comp.type)) {
                 double ron = comp.getParam("Ron", 1e-3);
                 double roff = comp.getParam("Roff", 1e6);
                 std::string sw_st = "OFF";

@@ -6,6 +6,8 @@ import { getAvailableVariables } from './plotConfig';
 import { DETAILED_COMPONENTS } from './detailedLibrary';
 import { rotateSelected, deleteSelected, enterSubsystem } from './actions';
 
+let activeEditingComp: any = null;
+
 // Update properties panel dynamically based on select items
 export function updatePropertiesPanel(): void {
   const panel = document.getElementById('properties-panel');
@@ -262,6 +264,14 @@ export function updatePropertiesPanel(): void {
         if (key === 'code') return; // Handled by Python Modal editor
         if (comp.type === 'GEN_EBLOCK' && !['terminals', 'timestep', 'plot_disabled_pins', 'plot_custom_vars'].includes(key)) return;
         
+        if (comp.type === 'TRI') {
+          if (key === 'phase' && comp.parameters.phase_source === 'external') return;
+          if (key === 'frequency' && comp.parameters.freq_source === 'external') return;
+        }
+        if (comp.type === 'PID') {
+          if (['upper_limit', 'lower_limit', 'anti_windup'].includes(key) && comp.parameters.limit_output !== 'true') return;
+        }
+        
         const row = document.createElement('div');
         row.className = 'prop-row';
         row.style.display = 'flex';
@@ -308,6 +318,38 @@ export function updatePropertiesPanel(): void {
               inputField.appendChild(opt);
             });
           }
+        } else if (comp.type === 'TRI' && (key === 'phase_source' || key === 'freq_source')) {
+          inputField = document.createElement('select');
+          inputField.className = 'prop-input';
+          
+          const optInt = document.createElement('option');
+          optInt.value = 'internal';
+          optInt.textContent = 'Internal';
+          if (comp.parameters[key] === 'internal' || !comp.parameters[key]) optInt.selected = true;
+          
+          const optExt = document.createElement('option');
+          optExt.value = 'external';
+          optExt.textContent = 'External';
+          if (comp.parameters[key] === 'external') optExt.selected = true;
+          
+          inputField.appendChild(optInt);
+          inputField.appendChild(optExt);
+        } else if (comp.type === 'PID' && (key === 'limit_output' || key === 'anti_windup')) {
+          inputField = document.createElement('select');
+          inputField.className = 'prop-input';
+          
+          const optTrue = document.createElement('option');
+          optTrue.value = 'true';
+          optTrue.textContent = 'True';
+          if (comp.parameters[key] === 'true') optTrue.selected = true;
+          
+          const optFalse = document.createElement('option');
+          optFalse.value = 'false';
+          optFalse.textContent = 'False';
+          if (comp.parameters[key] === 'false' || !comp.parameters[key]) optFalse.selected = true;
+          
+          inputField.appendChild(optTrue);
+          inputField.appendChild(optFalse);
         } else if (['inputs', 'outputs', 'channels'].includes(key)) {
           // Number dropdown selectors
           inputField = document.createElement('select');
@@ -362,10 +404,17 @@ export function updatePropertiesPanel(): void {
             }
           }
           
+          if (comp.type === 'PID' && key === 'limit_output') {
+            updatePropertiesPanel();
+          }
+          if (comp.type === 'TRI' && (key === 'phase_source' || key === 'freq_source')) {
+            updatePropertiesPanel();
+          }
+
           // Re-route wires for dynamic pins counts or custom XFMR winders
           if (comp.type === 'XFMR' && ['primary_turns', 'secondary_turns'].includes(key)) {
             cleanDanglingWires(comp.id);
-          } else if (['SCOPE', 'MUX', 'DEMUX', 'CSCRIPT', 'GEN_EBLOCK', 'SUM_ROUND', 'SUM_RECT', 'PRODUCT_RECT', 'MULTIPORT_SWITCH', 'PWM_MASTER'].includes(comp.type)) {
+          } else if (['SCOPE', 'MUX', 'DEMUX', 'CSCRIPT', 'GEN_EBLOCK', 'SUM_ROUND', 'SUM_RECT', 'PRODUCT_RECT', 'MULTIPORT_SWITCH', 'PWM_MASTER', 'TRI'].includes(comp.type)) {
             cleanDanglingWires(comp.id);
           }
           if (comp.type === 'GEN_EBLOCK' && key === 'terminals') {
@@ -448,6 +497,21 @@ export function updatePropertiesPanel(): void {
       
       // Event listeners for value inputs
       customParamsGroup.querySelectorAll('.custom-param-value-input').forEach((input: any) => {
+        input.addEventListener('input', (e: any) => {
+          const key = input.getAttribute('data-key');
+          const val = e.target.value.trim();
+          comp.parameters.code = updateParamInCode(comp.parameters.code || "", key, val);
+          comp.parameters[key] = val;
+          
+          const modal = document.getElementById('code-editor-modal');
+          const textarea: any = document.getElementById('code-editor-textarea');
+          if (modal && modal.classList.contains('show') && textarea && activeEditingComp === comp) {
+            textarea.value = comp.parameters.code;
+            textarea.dispatchEvent(new Event('input'));
+          }
+          draw();
+        });
+
         input.addEventListener('change', (e: any) => {
           const key = input.getAttribute('data-key');
           const val = e.target.value.trim();
@@ -546,13 +610,13 @@ export function updatePropertiesPanel(): void {
     const predicted: string[] = [];
     
     // Predict based on physical electrical component types
-    const isBasicElectrical = ['R', 'L', 'C', 'V', 'AC_V', 'I', 'S', 'D', 'MOSFET', 'VM', 'AM', 'Resistor', 'Inductor', 'Capacitor', 'VoltageSource', 'ACVoltageSource', 'CurrentSource', 'Switch', 'Diode', 'Voltmeter', 'Ammeter'].includes(comp.type);
+    const isBasicElectrical = ['R', 'L', 'C', 'V', 'AC_V', 'I', 'S', 'D', 'MOSFET', 'vg-FET', 'VM', 'AM', 'Resistor', 'Inductor', 'Capacitor', 'VoltageSource', 'ACVoltageSource', 'CurrentSource', 'Switch', 'Diode', 'Voltmeter', 'Ammeter'].includes(comp.type);
     const isDetailedElectrical = DETAILED_COMPONENTS.some(dc => dc.type === comp.type && dc.category === 'electrical');
     if (isBasicElectrical || isDetailedElectrical) {
       predicted.push(`V_${comp.id}`);
       predicted.push(`I_${comp.id}`);
       const isSignalControlled = [
-        'MOSFET', 'MOSFET_DIODE', 'IGBT', 'IGBT_DIODE', 'IGCT', 'GTO', 'THYRISTOR', 'JFET', 'BJT',
+        'MOSFET', 'vg-FET', 'MOSFET_DIODE', 'IGBT', 'IGBT_DIODE', 'IGCT', 'GTO', 'THYRISTOR', 'JFET', 'BJT',
         'CTRL_V', 'CTRL_I', 'VAR_R',
         'S', 'BREAKER', 'SR_SWITCH', 'DBL_SWITCH', 'MAN_SWITCH', 'MAN_DBL_SWITCH', 'MAN_TRPL_SWITCH', 'TRPL_SWITCH'
       ].includes(comp.type);
@@ -887,6 +951,10 @@ export function openCodeEditorModal(comp: any): void {
   
   if (!modal || !textarea) return;
   
+  if (!comp.parameters) comp.parameters = {};
+  const originalParameters = JSON.parse(JSON.stringify(comp.parameters));
+  activeEditingComp = comp;
+  
   textarea.value = comp.parameters.code || '';
   
   const disabledPins = new Set<string>((comp.parameters.plot_disabled_pins || "").split(",").filter(Boolean));
@@ -1060,6 +1128,7 @@ export function openCodeEditorModal(comp: any): void {
         const name = input.getAttribute('data-name');
         const val = e.target.value.trim();
         textarea.value = updateParamInCode(textarea.value, name, val);
+        textarea.dispatchEvent(new Event('input'));
       });
     });
   };
@@ -1111,9 +1180,39 @@ export function openCodeEditorModal(comp: any): void {
   }
   
   const handleTextareaInput = () => {
+    comp.parameters.code = textarea.value;
+    
+    if (comp.type === 'GEN_EBLOCK' || comp.type === 'CSCRIPT') {
+      if (comp.type === 'GEN_EBLOCK') {
+        const sensed = senseTerminalsFromCode(textarea.value);
+        comp.parameters.terminals = String(sensed);
+      }
+      
+      const codeParams = discoverParamsFromCode(textarea.value);
+      const keysToKeep = ['code', 'terminals', 'timestep', 'plot_disabled_pins', 'plot_custom_vars'];
+      const codeParamKeys = new Set(codeParams.map(p => p.name));
+      Object.keys(comp.parameters).forEach(k => {
+        if (!keysToKeep.includes(k) && !codeParamKeys.has(k)) {
+          delete comp.parameters[k];
+        }
+      });
+      codeParams.forEach(p => {
+        comp.parameters[p.name] = p.value;
+      });
+    }
+    
+    const activeEl = document.activeElement;
+    const isEditingPropInput = activeEl && activeEl.classList.contains('custom-param-value-input');
+    if (!isEditingPropInput) {
+      updatePropertiesPanel();
+    }
+    
+    draw();
+    
+    const isEditingParamInput = activeEl && activeEl.classList.contains('pane-param-input');
     if (activePaneTab === 'plots') {
       renderPlotPane();
-    } else {
+    } else if (!isEditingParamInput) {
       renderParamsPane();
     }
   };
@@ -1169,14 +1268,18 @@ export function openCodeEditorModal(comp: any): void {
   };
   
   const handleCancel = () => {
+    comp.parameters = originalParameters;
     modal.classList.remove('show');
     cleanup();
+    draw();
+    updatePropertiesPanel();
   };
   
   const cleanup = () => {
     saveBtn?.removeEventListener('click', handleSave);
     cancelBtn?.removeEventListener('click', handleCancel);
     textarea.removeEventListener('input', handleTextareaInput);
+    activeEditingComp = null;
   };
   
   saveBtn?.addEventListener('click', handleSave);
@@ -1473,7 +1576,7 @@ export function getComponentProbeSignals(tc: any): { label: string, value: strin
   const id = tc.id;
   const type = tc.type;
   
-  const isSwitch = ['Switch', 'Diode', 'MOSFET', 'IGBT', 'IGBT_DIODE', 'S', 'D', 'IGCT', 'GTO', 'THYRISTOR', 'JFET', 'BJT'].includes(type);
+  const isSwitch = ['Switch', 'Diode', 'MOSFET', 'vg-FET', 'IGBT', 'IGBT_DIODE', 'S', 'D', 'IGCT', 'GTO', 'THYRISTOR', 'JFET', 'BJT'].includes(type);
   const isResistor = ['R', 'Resistor', 'VAR_R', 'VariableResistor'].includes(type);
   const isInductor = ['L', 'Inductor'].includes(type);
   const isCapacitor = ['C', 'Capacitor'].includes(type);

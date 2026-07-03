@@ -1352,6 +1352,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'SR_SWITCH':
         physical_stage.switches.push({
           id: comp.id,
+          type: comp.type,
           nodes: resolveNodes(comp.id, 2, ['A', 'B']),
           Ron: p.Ron || 1e-3,
           Roff: p.Roff || 1e6,
@@ -1363,6 +1364,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'MAN_SWITCH':
         physical_stage.switches.push({
           id: comp.id,
+          type: comp.type,
           nodes: resolveNodes(comp.id, 2, ['Common', 'A']),
           Ron: p.Ron || 1e-3,
           Roff: p.Roff || 1e6,
@@ -1375,6 +1377,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'TRPL_SWITCH':
         physical_stage.switches.push({
           id: comp.id,
+          type: comp.type,
           nodes: resolveNodes(comp.id, 2, ['A1', 'A2']),
           Ron: p.Ron || 1e-3,
           Roff: p.Roff || 1e6,
@@ -1385,6 +1388,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'D':
         physical_stage.diodes.push({
           id: comp.id,
+          type: comp.type,
           nodes: resolveNodes(comp.id, 2, ['A', 'B']),
           Vd: p.Vd || 0.7,
           Ron: p.Ron || 1e-3,
@@ -1405,8 +1409,10 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
         const termD = isBJT ? 'C' : 'D';
         const termS = isBJT ? 'E' : 'S';
         const termG = isBJT ? 'B' : 'G';
+        const exportedType = comp.type === 'vg-FET' ? 'MOSFET' : comp.type;
         physical_stage.analog_switches.push({
           id: comp.id,
+          type: exportedType,
           nodes: resolveNodes(comp.id, 2, [termD, termS]),
           control_node: `${comp.id}.${termG}`,
           control_signal: getIncomingControlTerminal(comp.id, termG),
@@ -1831,7 +1837,11 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           output: `${comp.id}.Out`,
           Kp: p.Kp || 1.0,
           Ki: p.Ki || 0.0,
-          Kd: p.Kd || 0.0
+          Kd: p.Kd || 0.0,
+          limit_output: p.limit_output || "false",
+          upper_limit: p.upper_limit || "1",
+          lower_limit: p.lower_limit || "-1",
+          anti_windup: p.anti_windup || "false"
         });
         break;
       case 'CONT_PID':
@@ -1965,15 +1975,23 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
         });
         break;
       }
-      case 'TRI':
+      case 'TRI': {
+        const extPhase = p.phase_source === 'external';
+        const extFreq = p.freq_source === 'external';
         control_loops.triangle_carriers.push({
           id: comp.id,
           output: `${comp.id}.Out`,
           frequency: p.frequency || 10000.0,
           min: p.min || 0.0,
-          max: p.max || 1.0
+          max: p.max || 1.0,
+          phase_source: p.phase_source || "internal",
+          phase: p.phase || "0",
+          freq_source: p.freq_source || "internal",
+          input_phase: extPhase ? getIncomingControlTerminal(comp.id, 'Phase') : null,
+          input_freq: extFreq ? getIncomingControlTerminal(comp.id, 'Freq') : null
         });
         break;
+      }
       case 'COMP':
         control_loops.comparators.push({
           id: comp.id,
@@ -2569,7 +2587,7 @@ export function compileHierarchicalNetlist(
               'tag', 'label', 'code', 'plot_custom_vars', 'method', 'operator', 
               'signs', 'edge', 'trigger_edge', 'datatype', 'retriggerable', 'type',
               'target', 'selected_signals', 'num', 'den', 'A', 'B', 'C', 'D', 'x0',
-              'config', 'primary_turns', 'secondary_turns', 'indices'
+              'config', 'primary_turns', 'secondary_turns', 'indices', 'Gate_Signal_Label'
             ];
             const isStringParam = stringKeys.includes(k) || 
                                   k.startsWith('plot_') || 
