@@ -2689,17 +2689,47 @@ export class CircuitSimulator {
                                 const e = val;
                                 const P = Kp * e;
                                 
-                                if (method === "Forward Euler") {
-                                    I_new = I_prev + Ki * ts * prev_err;
-                                } else if (method === "Backward Euler") {
-                                    I_new = I_prev + Ki * ts * e;
-                                } else if (method === "Trapezoidal") {
-                                    I_new = I_prev + 0.5 * Ki * ts * (e + prev_err);
-                                }
-                                
                                 D_new = (Tf / (Tf + ts)) * D_prev + (Kd / (Tf + ts)) * (e - prev_err);
                                 
-                                y_temp = P + I_new + D_new;
+                                const limit_output = b.parameters.limit_output === 'true';
+                                const upper_limit = parseScientific(b.parameters.upper_limit ?? "1.0");
+                                const lower_limit = parseScientific(b.parameters.lower_limit ?? "-1.0");
+                                const anti_windup = b.parameters.anti_windup === 'true';
+                                
+                                let I_test = I_prev;
+                                if (method === "Forward Euler") {
+                                    I_test = I_prev + Ki * ts * prev_err;
+                                } else if (method === "Backward Euler") {
+                                    I_test = I_prev + Ki * ts * e;
+                                } else if (method === "Trapezoidal") {
+                                    I_test = I_prev + 0.5 * Ki * ts * (e + prev_err);
+                                }
+                                
+                                const u_unsat = P + I_test + D_new;
+                                
+                                let integrate_ok = true;
+                                if (limit_output && anti_windup) {
+                                    if (u_unsat > upper_limit && e > 0) {
+                                        integrate_ok = false;
+                                    } else if (u_unsat < lower_limit && e < 0) {
+                                        integrate_ok = false;
+                                    }
+                                }
+                                
+                                if (integrate_ok) {
+                                    I_new = I_test;
+                                } else {
+                                    I_new = I_prev;
+                                }
+                                
+                                const u_sat = P + I_new + D_new;
+                                if (limit_output) {
+                                    if (u_sat > upper_limit) y_temp = upper_limit;
+                                    else if (u_sat < lower_limit) y_temp = lower_limit;
+                                    else y_temp = u_sat;
+                                } else {
+                                    y_temp = u_sat;
+                                }
                             }
                         }
                         

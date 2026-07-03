@@ -268,7 +268,7 @@ export function updatePropertiesPanel(): void {
           if (key === 'phase' && comp.parameters.phase_source === 'external') return;
           if (key === 'frequency' && comp.parameters.freq_source === 'external') return;
         }
-        if (comp.type === 'PID') {
+        if (['PID', 'CONT_PID', 'DISCRETE_PID'].includes(comp.type)) {
           if (['upper_limit', 'lower_limit', 'anti_windup'].includes(key) && comp.parameters.limit_output !== 'true') return;
         }
         
@@ -334,7 +334,7 @@ export function updatePropertiesPanel(): void {
           
           inputField.appendChild(optInt);
           inputField.appendChild(optExt);
-        } else if (comp.type === 'PID' && (key === 'limit_output' || key === 'anti_windup')) {
+        } else if (['PID', 'CONT_PID', 'DISCRETE_PID'].includes(comp.type) && (key === 'limit_output' || key === 'anti_windup')) {
           inputField = document.createElement('select');
           inputField.className = 'prop-input';
           
@@ -404,7 +404,7 @@ export function updatePropertiesPanel(): void {
             }
           }
           
-          if (comp.type === 'PID' && key === 'limit_output') {
+          if (['PID', 'CONT_PID', 'DISCRETE_PID'].includes(comp.type) && key === 'limit_output') {
             updatePropertiesPanel();
           }
           if (comp.type === 'TRI' && (key === 'phase_source' || key === 'freq_source')) {

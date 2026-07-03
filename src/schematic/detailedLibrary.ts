@@ -537,7 +537,7 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     category: 'control',
     subcategory: 'Continuous',
     symbol: 'PID(s)',
-    defaultParameters: { Kp: '1.0', Ki: '0.0', Kd: '0.0', Tf: '0.01' }
+    defaultParameters: { Kp: '1.0', Ki: '0.0', Kd: '0.0', Tf: '0.01', limit_output: 'false', upper_limit: '1', lower_limit: '-1', anti_windup: 'false' }
   },
   {
     type: 'PLL_1PH',
@@ -664,7 +664,7 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     category: 'control',
     subcategory: 'Discrete-Time Dynamics',
     symbol: 'PID z',
-    defaultParameters: { Kp: '1.0', Ki: '10.0', Kd: '0.0', Tf: '0.001', ts: '100u', method: 'Forward Euler' }
+    defaultParameters: { Kp: '1.0', Ki: '10.0', Kd: '0.0', Tf: '0.001', ts: '100u', method: 'Forward Euler', limit_output: 'false', upper_limit: '1', lower_limit: '-1', anti_windup: 'false' }
   },
 
   // Discontinuous
