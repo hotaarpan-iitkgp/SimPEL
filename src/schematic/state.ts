@@ -51,7 +51,8 @@ export const state: any = {
     stopTime: "0.05",
     stepSize: "1e-5",
     stepType: "fixed", // "fixed" | "variable"
-    solver: "euler"    // "euler" | "rk45" | "radau"
+    solver: "euler",    // "euler" | "rk45" | "radau"
+    simulationMode: "regular" // "regular" | "current_flow"
   }
 };
 

@@ -247,7 +247,8 @@ export default function App() {
   useEffect(() => {
     if (activeTab === 'simulator' && prevActiveTabRef.current !== 'simulator') {
       try {
-        const netlist = exportDualGraphJSON(true); // default fast mode
+        const isRegularMode = (state.simulationSettings.simulationMode || 'regular') === 'regular';
+        const netlist = exportDualGraphJSON(isRegularMode); // respect selected mode
         const netlistStr = JSON.stringify(netlist, null, 2);
         setJsonText(netlistStr);
       } catch (err) {

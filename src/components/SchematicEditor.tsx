@@ -661,7 +661,8 @@ export default function SchematicEditor({
   // Run Simulation exporter trigger
   const handleSimulateBtn = () => {
     try {
-      const netlist = exportDualGraphJSON();
+      const isRegularMode = (state.simulationSettings.simulationMode || 'regular') === 'regular';
+      const netlist = exportDualGraphJSON(isRegularMode);
       const netlistStr = JSON.stringify(netlist, null, 2);
       onRunSimulation(netlistStr);
       showToast("Automatic Netlist Export Complete. Running C++ Solver!");
@@ -1756,6 +1757,13 @@ export default function SchematicEditor({
                   <option value="radau">Implicit Radau solver</option>
                 </select>
               </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">Simulation Mode</label>
+              <select id="sim-mode" className="px-3 py-2 bg-slate-950 border border-slate-800 rounded outline-none focus:border-emerald-500 text-xs">
+                <option value="regular">Regular Simulation (Treat wires as short circuits, faster)</option>
+                <option value="current_flow">Current Flow Animation (Treat wires as small resistors)</option>
+              </select>
             </div>
           </div>
           <div className="p-4 border-t border-slate-800 flex justify-end gap-2 bg-slate-900/10">
