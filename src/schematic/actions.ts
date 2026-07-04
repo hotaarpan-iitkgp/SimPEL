@@ -797,29 +797,29 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
 
   try {
     // Validate and clean up dynamic probe mappings
-    const compiledActiveProbes = new Set<string>();
-    if (state.plotConfiguration && Array.isArray(state.plotConfiguration.plots)) {
-      state.plotConfiguration.plots.forEach((p: any) => {
-        if (Array.isArray(p.variables)) {
-          p.variables.forEach((v: string) => {
-            if (v) compiledActiveProbes.add(v);
-          });
-        }
-      });
-    }
     state.components.forEach((c: any) => {
       if (c.type === 'CSCRIPT' && c.parameters && c.parameters.input_mappings) {
         Object.keys(c.parameters.input_mappings).forEach(u => {
           const target = c.parameters.input_mappings[u];
-          if (target && !compiledActiveProbes.has(target)) {
-            delete c.parameters.input_mappings[u];
+          if (target && target !== 'None') {
+            const parts = target.split(/[_\.]/);
+            const compId = parts.slice(1).join("_") || parts[0];
+            const exists = state.components.some((x: any) => x.id === compId || x.id === parts[0]);
+            if (!exists) {
+              delete c.parameters.input_mappings[u];
+            }
           }
         });
       }
       if (c.type === 'INTERNAL_VAR' && c.parameters) {
         const target = c.parameters.probe_target;
-        if (target && target !== 'None' && !compiledActiveProbes.has(target)) {
-          c.parameters.probe_target = 'None';
+        if (target && target !== 'None') {
+          const parts = target.split(/[_\.]/);
+          const compId = parts.slice(1).join("_") || parts[0];
+          const exists = state.components.some((x: any) => x.id === compId || x.id === parts[0]);
+          if (!exists) {
+            c.parameters.probe_target = 'None';
+          }
         }
       }
     });
@@ -1352,7 +1352,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'SR_SWITCH':
         physical_stage.switches.push({
           id: comp.id,
-          type: comp.type,
+          type: 'Switch',
           nodes: resolveNodes(comp.id, 2, ['A', 'B']),
           Ron: p.Ron || 1e-3,
           Roff: p.Roff || 1e6,
@@ -1364,7 +1364,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'MAN_SWITCH':
         physical_stage.switches.push({
           id: comp.id,
-          type: comp.type,
+          type: 'Switch',
           nodes: resolveNodes(comp.id, 2, ['Common', 'A']),
           Ron: p.Ron || 1e-3,
           Roff: p.Roff || 1e6,
@@ -1377,7 +1377,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'TRPL_SWITCH':
         physical_stage.switches.push({
           id: comp.id,
-          type: comp.type,
+          type: 'Switch',
           nodes: resolveNodes(comp.id, 2, ['A1', 'A2']),
           Ron: p.Ron || 1e-3,
           Roff: p.Roff || 1e6,
@@ -1388,7 +1388,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'D':
         physical_stage.diodes.push({
           id: comp.id,
-          type: comp.type,
+          type: 'Diode',
           nodes: resolveNodes(comp.id, 2, ['A', 'B']),
           Vd: p.Vd || 0.7,
           Ron: p.Ron || 1e-3,
@@ -2128,14 +2128,16 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
         });
         break;
       }
-      case 'INTERNAL_VAR':
-        control_loops.signals_routing.push({
+      case 'INTERNAL_VAR': {
+        const parts = (comp.parameters?.probe_target || "").split("_");
+        const targetCompId = parts.slice(1).join("_");
+        control_loops.probes.push({
           id: comp.id,
-          type: 'internal_var',
-          output: `${comp.id}.Out`,
-          probe_target: comp.parameters?.probe_target || ""
+          target: targetCompId,
+          selected_signals: comp.parameters?.probe_target || ""
         });
         break;
+      }
       case 'PROBE':
         control_loops.probes.push({
           id: comp.id,
@@ -2200,7 +2202,17 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       if (targetStr) {
         probes.push({
           id: c.id,
-          target: targetStr
+          target: targetStr,
+          selected_signals: c.parameters.selected_signals || ""
+        });
+      }
+    } else if (c.type === 'INTERNAL_VAR') {
+      const targetStr = (c.parameters?.probe_target || "").split("_").slice(1).join("_");
+      if (targetStr) {
+        probes.push({
+          id: c.id,
+          target: targetStr,
+          selected_signals: c.parameters?.probe_target || ""
         });
       }
     } else if (c.type === 'SCOPE') {
@@ -2343,6 +2355,11 @@ function getIncomingControlTerminal(compId: string, destTerminalName: string): s
       // Check if this pin is a control source (output)
       if (isControlOutputPin(curr.compId, curr.terminal)) {
         if (curr.compId !== compId || curr.terminal !== destTerminalName) {
+          const srcComp = state.components.find((x: any) => x.id === curr.compId);
+          if (srcComp && srcComp.type === 'INTERNAL_VAR') {
+            const probeTarget = srcComp.parameters?.probe_target || 'None';
+            return `${curr.compId}.${probeTarget}`;
+          }
           return pinKey;
         }
       }
@@ -2586,7 +2603,7 @@ export function compileHierarchicalNetlist(
             const stringKeys = [
               'tag', 'label', 'code', 'plot_custom_vars', 'method', 'operator', 
               'signs', 'edge', 'trigger_edge', 'datatype', 'retriggerable', 'type',
-              'target', 'selected_signals', 'num', 'den', 'A', 'B', 'C', 'D', 'x0',
+              'target', 'selected_signals', 'probe_target', 'num', 'den', 'A', 'B', 'C', 'D', 'x0',
               'config', 'primary_turns', 'secondary_turns', 'indices', 'Gate_Signal_Label'
             ];
             const isStringParam = stringKeys.includes(k) || 

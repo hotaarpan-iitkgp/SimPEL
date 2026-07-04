@@ -134,7 +134,7 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
   },
   {
     type: 'INTERNAL_VAR',
-    label: 'Internal Variable',
+    label: 'Probe',
     desc: 'Receive an actively probed schematic variable as a control signal wirelessly.',
     category: 'general',
     subcategory: 'Signal Routing',
@@ -2134,12 +2134,13 @@ export function getDetailedComponentSVG(comp: any): string | null {
     const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
     let fillColor = isLightMode ? '#ffffff' : '#090d16';
     const textWidth = Math.max(20, target.length * 6);
-    const boundsW = 25 + textWidth;
+    const boundsW = 29 + textWidth;
     const boundsX = -boundsW + 18;
     return `
-      <rect class="comp-bounds" x="${boundsX}" y="-15" width="${boundsW}" height="30" rx="4" />
+      <rect class="comp-bounds" x="${boundsX}" y="-10" width="${boundsW}" height="20" rx="3" />
+      <rect x="-9" y="-10" width="3" height="20" class="comp-path" fill="${fillColor}" stroke="#6366f1" stroke-width="1.5" />
       <polygon points="-5,-10 15,0 -5,10" class="comp-path" fill="${fillColor}" stroke="#6366f1" stroke-width="1.5" />
-      <g transform="translate(-10, 0) rotate(${-rotation})">
+      <g transform="translate(-13, 0) rotate(${-rotation})">
         <text x="0" y="3.5" font-family="JetBrains Mono, monospace" font-size="8" font-weight="700" fill="#818cf8" text-anchor="end">${target}</text>
       </g>
     `;

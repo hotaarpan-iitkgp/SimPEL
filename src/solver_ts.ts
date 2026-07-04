@@ -1300,6 +1300,8 @@ export class CircuitSimulator {
                 if (Array.isArray(list)) {
                     for (const item of list) {
                         let compType = item.type || cat.type;
+                        if (compType === "S") compType = "Switch";
+                        if (compType === "D") compType = "Diode";
                         if (cat.type === "Resistor" && item.src_type === "variable") {
                             compType = "VariableResistor";
                         } else if (cat.type === "dc_ac") {

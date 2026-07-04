@@ -1111,7 +1111,9 @@ export class CircuitSimulator {
                 const list = physical[cat.key];
                 if (Array.isArray(list)) {
                     for (const item of list) {
-                        const compType = cat.type === "dc_ac" ? (item.type === "ac" ? "ACVoltageSource" : "VoltageSource") : (item.type || cat.type);
+                        let compType = cat.type === "dc_ac" ? (item.type === "ac" ? "ACVoltageSource" : "VoltageSource") : (item.type || cat.type);
+                        if (compType === "S") compType = "Switch";
+                        if (compType === "D") compType = "Diode";
                         const comp: ComponentTS = {
                             id: item.id || `C_${Math.floor(Math.random() * 1000)}`,
                             type: compType,

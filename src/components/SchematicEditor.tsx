@@ -1393,7 +1393,7 @@ export default function SchematicEditor({
           {/* Slide-out Signal Router Panel */}
           {showSignalRouterPanel && activeCScriptForRouting && (
             <div 
-              className="absolute right-0 top-0 h-full w-80 bg-slate-950/95 backdrop-blur-md border-l border-slate-800 shadow-2xl z-20 flex flex-col animate-fade-in"
+              className="absolute right-0 top-0 h-full w-80 bg-slate-950/85 backdrop-blur-md border-l border-slate-800 shadow-2xl z-20 flex flex-col animate-fade-in"
             >
               {/* Header */}
               <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/40">
@@ -1531,7 +1531,7 @@ export default function SchematicEditor({
                               className={`p-2 rounded-lg border text-center text-[10px] font-bold font-mono cursor-grab active:cursor-grabbing transition-all select-none hover:scale-[1.03] ${
                                 isSelected 
                                   ? 'border-indigo-500 bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' 
-                                  : 'border-slate-800 bg-slate-900/50 hover:bg-slate-900 text-slate-300 hover:border-slate-700'
+                                  : 'border-slate-800 bg-slate-900/40 hover:bg-slate-900/10 text-slate-350 hover:border-slate-700'
                               }`}
                               title="Drag to assign, or click to snap"
                             >
@@ -1550,7 +1550,7 @@ export default function SchematicEditor({
           {/* Slide-out Input Router Panel */}
           {showInputRouterPanel && activeCScriptForInputRouting && (
             <div 
-              className="absolute left-0 top-0 h-full w-80 bg-slate-950/95 backdrop-blur-md border-r border-slate-800 shadow-2xl z-20 flex flex-col animate-fade-in"
+              className="absolute left-0 top-0 h-full w-80 bg-slate-950/85 backdrop-blur-md border-r border-slate-800 shadow-2xl z-20 flex flex-col animate-fade-in"
             >
               {/* Header */}
               <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/40">
@@ -1601,7 +1601,7 @@ export default function SchematicEditor({
                               className={`p-2 rounded-lg border text-center text-[9px] font-bold font-mono cursor-grab active:cursor-grabbing transition-all select-none hover:scale-[1.03] truncate ${
                                 isSelected 
                                   ? 'border-indigo-500 bg-indigo-600/90 text-white shadow-lg shadow-indigo-600/25' 
-                                  : 'border-slate-800 bg-slate-900/50 hover:bg-slate-900 text-slate-300 hover:border-slate-700'
+                                  : 'border-slate-800 bg-slate-900/40 hover:bg-slate-900/10 text-slate-350 hover:border-slate-700'
                               }`}
                               title={probe}
                             >

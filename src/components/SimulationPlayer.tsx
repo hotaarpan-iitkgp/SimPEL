@@ -397,7 +397,7 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
   // Playback State
   const [isPlaying, setIsPlaying] = useState(false);
   const [playTime, setPlayTime] = useState(0.0);
-  const [speedMultiplier, setSpeedMultiplier] = useState(1.0); // 1.0x plays in 5s
+  const [speedMultiplier, setSpeedMultiplier] = useState(0.01); // 0.01x lowest start speed
   const [showWireOverlays, setShowWireOverlays] = useState(true);
   const [showFlowInspector, setShowFlowInspector] = useState(false);
 
@@ -3343,13 +3343,13 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
             <div className="flex-1 flex flex-col gap-0.5 min-w-[70px]">
               <div className="flex items-center justify-between text-[9px] font-bold text-slate-500">
                 <span className="uppercase tracking-tight font-sans">Playback Rate</span>
-                <span className="font-mono text-emerald-550 font-bold">{speedMultiplier}x</span>
+                <span className="font-mono text-emerald-550 font-bold">{speedMultiplier.toFixed(2)}x</span>
               </div>
               <input 
                 type="range"
-                min="0.05"
+                min="0.01"
                 max="2.00"
-                step="0.05"
+                step="0.01"
                 value={speedMultiplier}
                 onChange={(e) => setSpeedMultiplier(parseFloat(e.target.value))}
                 className="w-full accent-emerald-500 h-1 cursor-pointer bg-slate-900 rounded-full"

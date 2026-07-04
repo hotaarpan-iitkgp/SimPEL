@@ -262,6 +262,7 @@ export function updatePropertiesPanel(): void {
     } else if (comp.parameters) {
       Object.keys(comp.parameters).forEach(key => {
         if (key === 'code') return; // Handled by Python Modal editor
+        if (comp.type === 'CSCRIPT') return;
         if (comp.type === 'GEN_EBLOCK' && !['terminals', 'timestep', 'plot_disabled_pins', 'plot_custom_vars'].includes(key)) return;
         
         if (comp.type === 'TRI') {
@@ -288,9 +289,9 @@ export function updatePropertiesPanel(): void {
           inputField = document.createElement('select');
           inputField.className = 'prop-input';
           
-          const activeProbes: string[] = [];
+          const probesSet = new Set<string>();
+          // Add variables from plots
           if (state.plotConfiguration && Array.isArray(state.plotConfiguration.plots)) {
-            const probesSet = new Set<string>();
             state.plotConfiguration.plots.forEach((p: any) => {
               if (Array.isArray(p.variables)) {
                 p.variables.forEach((v: string) => {
@@ -298,26 +299,55 @@ export function updatePropertiesPanel(): void {
                 });
               }
             });
-            activeProbes.push(...Array.from(probesSet).sort());
           }
-
-          if (activeProbes.length === 0) {
-            const opt = document.createElement('option');
-            opt.value = 'None';
-            opt.textContent = 'None';
-            opt.selected = true;
-            inputField.appendChild(opt);
-          } else {
-            activeProbes.forEach(probe => {
-              const opt = document.createElement('option');
-              opt.value = probe;
-              opt.textContent = probe;
-              if (String(comp.parameters[key]) === probe) {
-                opt.selected = true;
+          // Add variables from canvas components
+          if (Array.isArray(state.components)) {
+            state.components.forEach((c: any) => {
+              const isElectrical = ['R', 'L', 'C', 'V', 'AC_V', 'I', 'S', 'D', 'MOSFET', 'vg-FET', 'VM', 'AM', 'Resistor', 'Inductor', 'Capacitor', 'VoltageSource', 'ACVoltageSource', 'CurrentSource', 'Switch', 'Diode', 'Voltmeter', 'Ammeter'].includes(c.type);
+              if (isElectrical) {
+                probesSet.add(`V_${c.id}`);
+                probesSet.add(`I_${c.id}`);
+                if ([
+                  'MOSFET', 'vg-FET', 'MOSFET_DIODE', 'IGBT', 'IGBT_DIODE', 'IGCT', 'GTO', 'THYRISTOR', 'JFET', 'BJT',
+                  'CTRL_V', 'CTRL_I', 'VAR_R',
+                  'S', 'BREAKER', 'SR_SWITCH', 'DBL_SWITCH', 'MAN_SWITCH', 'MAN_DBL_SWITCH', 'MAN_TRPL_SWITCH', 'TRPL_SWITCH'
+                ].includes(c.type)) {
+                  probesSet.add(`Ctrl_${c.id}`);
+                }
+              } else {
+                try {
+                  const pinMap = getComponentPins(c);
+                  Object.keys(pinMap).forEach(pinName => {
+                    const pin = pinMap[pinName];
+                    if (pin && (pin.dx > 0 || pinName.toLowerCase().includes('out') || pinName === 'y')) {
+                      probesSet.add(`${c.id}.${pinName}`);
+                    }
+                  });
+                } catch (_) {}
               }
-              inputField.appendChild(opt);
             });
           }
+
+          // Merge current value to make sure it is not lost
+          const currentVal = String(comp.parameters[key] || '');
+          if (currentVal && currentVal !== 'None') {
+            probesSet.add(currentVal);
+          }
+
+          const activeProbes = Array.from(probesSet).sort();
+          if (!activeProbes.includes('None')) {
+            activeProbes.unshift('None');
+          }
+
+          activeProbes.forEach(probe => {
+            const opt = document.createElement('option');
+            opt.value = probe;
+            opt.textContent = probe;
+            if (currentVal === probe || (probe === 'None' && !currentVal)) {
+              opt.selected = true;
+            }
+            inputField.appendChild(opt);
+          });
         } else if (comp.type === 'TRI' && (key === 'phase_source' || key === 'freq_source')) {
           inputField = document.createElement('select');
           inputField.className = 'prop-input';
@@ -460,7 +490,7 @@ export function updatePropertiesPanel(): void {
       const customParamsGroup = document.createElement('div');
       customParamsGroup.className = 'prop-group';
       customParamsGroup.style.marginTop = '15px';
-      customParamsGroup.style.borderTop = '1px solid #1e293b';
+      customParamsGroup.style.borderTop = '1px solid var(--color-border)';
       customParamsGroup.style.paddingTop = '12px';
       
       const codeParams = discoverParamsFromCode(comp.parameters.code || "");
@@ -476,17 +506,17 @@ export function updatePropertiesPanel(): void {
         comp.parameters[p.name] = p.value;
       });
       
-      let html = `<h4 class="category-title" style="margin-bottom: 8px; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Custom Parameters</h4>`;
+      let html = `<h4 class="category-title" style="margin-bottom: 8px; font-size: 11px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase;">Custom Parameters</h4>`;
       html += `<div id="custom-params-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">`;
       
       if (codeParams.length === 0) {
-        html += `<span style="font-size: 10px; color: #64748b; font-style: italic;">No custom parameters defined in code.</span>`;
+        html += `<span style="font-size: 10px; color: var(--color-text-secondary); font-style: italic;">No custom parameters defined in code.</span>`;
       } else {
         codeParams.forEach(p => {
           html += `
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-              <span style="font-family: monospace; font-size: 11px; color: #cbd5e1; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.name}</span>
-              <input type="text" class="custom-param-value-input" data-key="${p.name}" value="${p.value}" style="width: 120px; padding: 4px 8px; border: 1px solid #334155; border-radius: 4px; font-size: 11px; background: #020617; color: #f8fafc; outline: none; font-family: monospace;" />
+              <span style="font-family: monospace; font-size: 11px; color: var(--color-text-secondary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.name}</span>
+              <input type="text" class="prop-input custom-param-value-input" data-key="${p.name}" value="${p.value}" style="width: 120px; padding: 4px 8px;" />
             </div>
           `;
         });
@@ -533,12 +563,12 @@ export function updatePropertiesPanel(): void {
       editorBtn.style.width = '100%';
       editorBtn.style.marginTop = '10px';
       editorBtn.style.padding = '8px';
-      editorBtn.style.backgroundColor = '#10b981';
-      editorBtn.style.color = '#ffffff';
-      editorBtn.style.border = 'none';
+      editorBtn.style.setProperty('background-color', '#10b981', 'important');
+      editorBtn.style.setProperty('color', '#ffffff', 'important');
+      editorBtn.style.setProperty('border', 'none', 'important');
       editorBtn.style.borderRadius = '4px';
       editorBtn.style.cursor = 'pointer';
-      editorBtn.textContent = comp.type === 'GEN_EBLOCK' ? 'Edit Electrical Equations' : 'Edit Python script code';
+      editorBtn.textContent = comp.type === 'GEN_EBLOCK' ? 'Edit Electrical Equations' : 'Edit Script';
       editorBtn.addEventListener('click', () => {
         openCodeEditorModal(comp);
       });
@@ -549,9 +579,9 @@ export function updatePropertiesPanel(): void {
         routeBtn.style.width = '100%';
         routeBtn.style.marginTop = '8px';
         routeBtn.style.padding = '8px';
-        routeBtn.style.backgroundColor = '#6366f1';
-        routeBtn.style.color = '#ffffff';
-        routeBtn.style.border = 'none';
+        routeBtn.style.setProperty('background-color', '#6366f1', 'important');
+        routeBtn.style.setProperty('color', '#ffffff', 'important');
+        routeBtn.style.setProperty('border', 'none', 'important');
         routeBtn.style.borderRadius = '4px';
         routeBtn.style.cursor = 'pointer';
         routeBtn.style.fontWeight = 'bold';
@@ -567,9 +597,9 @@ export function updatePropertiesPanel(): void {
         inputRouteBtn.style.width = '100%';
         inputRouteBtn.style.marginTop = '8px';
         inputRouteBtn.style.padding = '8px';
-        inputRouteBtn.style.backgroundColor = '#4f46e5';
-        inputRouteBtn.style.color = '#ffffff';
-        inputRouteBtn.style.border = 'none';
+        inputRouteBtn.style.setProperty('background-color', '#4f46e5', 'important');
+        inputRouteBtn.style.setProperty('color', '#ffffff', 'important');
+        inputRouteBtn.style.setProperty('border', 'none', 'important');
         inputRouteBtn.style.borderRadius = '4px';
         inputRouteBtn.style.cursor = 'pointer';
         inputRouteBtn.style.fontWeight = 'bold';
