@@ -1001,14 +1001,23 @@ export default function App() {
     if (!results) return [];
     const traces: string[] = [];
 
+    const isWireOrSegment = (name: string): boolean => {
+      if (name.includes('_seg')) return true;
+      return /^([VI]_)?W\d+(\.|$|_)/i.test(name);
+    };
+
     // Control Signals (like GAIN1.Out)
     Object.keys(results.signals).forEach(sig => {
-      traces.push(sig);
+      if (!isWireOrSegment(sig)) {
+        traces.push(sig);
+      }
     });
 
     // Custom plots (which include our V_R1, I_R1 differential component voltages and currents)
     Object.keys(results.custom_plots).forEach(plot => {
-      traces.push(plot);
+      if (!isWireOrSegment(plot)) {
+        traces.push(plot);
+      }
     });
 
     return Array.from(new Set(traces)).sort();
@@ -2212,7 +2221,7 @@ export default function App() {
           }`}
         >
           {/* Left panel: Controls (width: w-60) */}
-          <div className={`w-60 shrink-0 p-3 flex flex-col justify-between gap-3 border-r ${
+          <div className={`w-60 shrink-0 p-3 flex flex-col justify-start gap-3 border-r ${
             theme === 'light' ? 'border-slate-200 bg-slate-50/30' : 'border-slate-900 bg-slate-900/10'
           }`}>
             <div className="flex flex-col gap-2.5">
@@ -2433,7 +2442,7 @@ export default function App() {
                           }`}
                         >
                           <span className="h-1 w-1 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                          <span className="truncate max-w-[50px]">{trace.replace('_', ' ')}</span>
+                          <span className="whitespace-nowrap">{trace.replace('_', ' ')}</span>
                         </button>
                       );
                     })}

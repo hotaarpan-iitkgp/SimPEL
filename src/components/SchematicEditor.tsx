@@ -3,13 +3,13 @@ import {
   Play, RotateCcw, Settings, Sliders, ChevronDown, ChevronRight, 
   Trash2, RotateCw, PlusCircle, ArrowUpRight, Code, Sparkles, BarChart3,
   Undo2, FileJson, Upload, FolderInput, LogOut, CheckCircle2, AlertTriangle, Info,
-  Pause, StopCircle, Search, X, Zap, Link
+  Pause, StopCircle, Search, X, Zap, Link, Maximize2
 } from 'lucide-react';
 import { state, saveState } from '../schematic/state';
 import { draw, updateAllWirePathsInDOM } from '../schematic/renderer';
 import { initInteractions } from '../schematic/interaction';
 import { updatePropertiesPanel } from '../schematic/properties';
-import { generateNextId, showToast, getNextGateSignalLabel } from '../schematic/utils';
+import { generateNextId, showToast, getNextGateSignalLabel, updateViewportTransform } from '../schematic/utils';
 import { DEFAULT_PARAMETERS, getComponentPins, discoverPortsJS } from '../schematic/config';
 import { openSimSettings, saveSimSettings, closeSimSettings } from '../schematic/simSettings';
 import { openPlotConfig, savePlotConfig, closePlotConfig, setAvailableVariables } from '../schematic/plotConfig';
@@ -713,6 +713,88 @@ export default function SchematicEditor({
     undo();
   };
 
+  const handleFitSchematic = () => {
+    const comps = state.components || [];
+    const wires = state.wires || [];
+    
+    if (comps.length === 0 && wires.length === 0) {
+      state.panX = 100;
+      state.panY = 100;
+      state.zoom = 1.0;
+      updateViewportTransform();
+      draw();
+      return;
+    }
+    
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    
+    // Components bounding box
+    comps.forEach((c: any) => {
+      const halfSize = 50; 
+      if (c.x - halfSize < minX) minX = c.x - halfSize;
+      if (c.x + halfSize > maxX) maxX = c.x + halfSize;
+      if (c.y - halfSize < minY) minY = c.y - halfSize;
+      if (c.y + halfSize > maxY) maxY = c.y + halfSize;
+    });
+    
+    // Wires bounding box
+    wires.forEach((w: any) => {
+      if (w.from) {
+        if (w.from.x < minX) minX = w.from.x;
+        if (w.from.x > maxX) maxX = w.from.x;
+        if (w.from.y < minY) minY = w.from.y;
+        if (w.from.y > maxY) maxY = w.from.y;
+      }
+      if (w.to) {
+        if (w.to.x < minX) minX = w.to.x;
+        if (w.to.x > maxX) maxX = w.to.x;
+        if (w.to.y < minY) minY = w.to.y;
+        if (w.to.y > maxY) maxY = w.to.y;
+      }
+      if (Array.isArray(w.waypoints)) {
+        w.waypoints.forEach((pt: any) => {
+          if (pt.x < minX) minX = pt.x;
+          if (pt.x > maxX) maxX = pt.x;
+          if (pt.y < minY) minY = pt.y;
+          if (pt.y > maxY) maxY = pt.y;
+        });
+      }
+    });
+    
+    const svg = document.getElementById('canvas-svg');
+    let W_canvas = 800;
+    let H_canvas = 600;
+    if (svg) {
+      const rect = svg.getBoundingClientRect();
+      if (rect.width > 0) W_canvas = rect.width;
+      if (rect.height > 0) H_canvas = rect.height;
+    }
+    
+    const padding = 60;
+    const W_schematic = (maxX - minX) || 100;
+    const H_schematic = (maxY - minY) || 100;
+    
+    const zoomX = (W_canvas - padding * 2) / W_schematic;
+    const zoomY = (H_canvas - padding * 2) / H_schematic;
+    let newZoom = Math.min(zoomX, zoomY);
+    newZoom = Math.min(2.5, Math.max(0.2, newZoom)); // clamp zoom range for fitting
+    
+    const center_canvas_X = W_canvas / 2;
+    const center_canvas_Y = H_canvas / 2;
+    const center_schematic_X = (minX + maxX) / 2;
+    const center_schematic_Y = (minY + maxY) / 2;
+    
+    state.panX = center_canvas_X - center_schematic_X * newZoom;
+    state.panY = center_canvas_Y - center_schematic_Y * newZoom;
+    state.zoom = newZoom;
+    
+    updateViewportTransform();
+    draw();
+  };
+
   const libraryPower = [
     { type: 'R', label: 'Resistor', desc: 'Passive resistive load R' },
     { type: 'L', label: 'Inductor', desc: 'Energy storing inductor L' },
@@ -786,7 +868,7 @@ export default function SchematicEditor({
     : [];
 
   return (
-    <div className="flex-1 flex flex-col min-h-[820px] bg-slate-950/20 border border-slate-900 rounded-xl overflow-hidden shadow-2xl relative">
+    <div className="flex-1 flex flex-col min-h-[820px] bg-slate-950/20 border border-slate-900 rounded-xl shadow-2xl relative">
       <input 
         type="file" 
         ref={importInputRef} 
@@ -796,7 +878,7 @@ export default function SchematicEditor({
       />
       
       {/* Schematic Editor Toolbar controls */}
-      <div className="relative z-30 flex flex-wrap items-center justify-between gap-4 p-4 border-b border-slate-900 bg-slate-950/60 backdrop-blur-md">
+      <div className="sticky top-[57px] z-30 flex flex-wrap items-center justify-between gap-4 p-4 border-b border-slate-900 bg-slate-950/85 backdrop-blur-md rounded-t-xl shadow-md">
         
         {/* Actions panel */}
         <div className="flex flex-wrap items-center gap-2">
@@ -838,6 +920,15 @@ export default function SchematicEditor({
           >
             <FileJson className="h-3.5 w-3.5 text-amber-500" />
             <span>Save Schematic</span>
+          </button>
+
+          <button 
+            onClick={handleFitSchematic}
+            className="px-3 py-2 border border-slate-800 hover:border-sky-950 bg-slate-900/60 hover:bg-sky-950/20 hover:text-emerald-400 rounded-lg text-xs font-bold font-sans cursor-pointer transition-all flex items-center gap-1.5"
+            title="Fit Schematic to Window"
+          >
+            <Maximize2 className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Fit Schematic</span>
           </button>
 
           {/* Export Menu Dropdown */}
