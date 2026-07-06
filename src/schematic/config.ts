@@ -5,7 +5,7 @@ export const COMPONENT_PINS: Record<string, any> = {
   R:   { A: {x: 0, y: -40, dx: 0, dy: -1}, B: {x: 0, y: 40, dx: 0, dy: 1} },
   L:   { A: {x: 0, y: -40, dx: 0, dy: -1}, B: {x: 0, y: 40, dx: 0, dy: 1} },
   C:   { A: {x: 0, y: -40, dx: 0, dy: -1}, B: {x: 0, y: 40, dx: 0, dy: 1} },
-  S:   { A: {x: 0, y: -40, dx: 0, dy: -1}, B: {x: 0, y: 40, dx: 0, dy: 1} },
+  S:   { A: {x: 0, y: -40, dx: 0, dy: -1}, B: {x: 0, y: 40, dx: 0, dy: 1}, Ctrl: {x: -20, y: 0, dx: -1, dy: 0} },
   D:   { A: {x: 0, y: -40, dx: 0, dy: -1}, B: {x: 0, y: 40, dx: 0, dy: 1} },
   V:   { A: {x: 0, y: -40, dx: 0, dy: -1}, B: {x: 0, y: 40, dx: 0, dy: 1} },
   I:   { A: {x: 0, y: -40, dx: 0, dy: -1}, B: {x: 0, y: 40, dx: 0, dy: 1} },

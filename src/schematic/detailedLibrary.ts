@@ -1968,7 +1968,7 @@ export function getDetailedComponentPins(type: string): Record<string, any> | nu
         [isBJT ? 'B' : 'G']: { x: -20, y: 0, dx: -1, dy: 0 }
       };
     }
-    if (type.includes('VAR_') || type.includes('SAT_') || type.includes('CTRL_') || type.includes('BREAKER') || type.includes('SR_')) {
+    if (type === 'S' || type.includes('VAR_') || type.includes('SAT_') || type.includes('CTRL_') || type.includes('BREAKER') || type.includes('SR_')) {
       return {
         A: { x: 0, y: -30, dx: 0, dy: -1 },
         B: { x: 0, y: 30, dx: 0, dy: 1 },

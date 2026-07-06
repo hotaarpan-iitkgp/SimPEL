@@ -489,6 +489,80 @@ export async function pasteSelected(): Promise<void> {
   showToast(`Pasted ${newComps.length} components.`);
 }
 
+export function duplicateSelected(dx: number = 0, dy: number = 0): Record<string, string> {
+  if (state.selectedComponentIds.length === 0) return {};
+  
+  const compMap: Record<string, any> = {};
+  const copiedComps = state.selectedComponentIds.map((id: string) => {
+    const c = state.components.find((x: any) => x.id === id);
+    compMap[id] = true;
+    return JSON.parse(JSON.stringify(c));
+  });
+  
+  const copiedWires: any[] = [];
+  state.wires.forEach((wire: any) => {
+    let fromConnectsSelected = false;
+    let toConnectsSelected = false;
+    if (wire.from.type === 'pin' && compMap[wire.from.compId]) fromConnectsSelected = true;
+    if (wire.to && wire.to.type === 'pin' && compMap[wire.to.compId]) toConnectsSelected = true;
+    if (fromConnectsSelected && toConnectsSelected) {
+      copiedWires.push(JSON.parse(JSON.stringify(wire)));
+    }
+  });
+
+  saveState();
+  const idMap: Record<string, string> = {};
+  const newComps: any[] = [];
+  
+  copiedComps.forEach((c: any) => {
+    const oldId = c.id;
+    const newId = generateNextId(c.type, [...state.components.map(x => x.id), ...newComps.map(x => x.id)]);
+    idMap[oldId] = newId;
+    
+    c.id = newId;
+    c.x += dx;
+    c.y += dy;
+    
+    if (c.type === 'vg-FET') {
+      const currentLabel = c.parameters?.Gate_Signal_Label || 'S1';
+      c.parameters = {
+        ...(c.parameters || {}),
+        Gate_Signal_Label: getNextGateSignalLabel(currentLabel, [...state.components, ...newComps])
+      };
+    }
+    
+    state.components.push(c);
+    newComps.push(c);
+  });
+  
+  copiedWires.forEach((w: any) => {
+    w.id = generateNextId('W', [...state.wires.map((x: any) => x.id)]);
+    
+    if (w.from.type === 'pin') {
+      w.from.compId = idMap[w.from.compId];
+    }
+    if (w.to && w.to.type === 'pin') {
+      w.to.compId = idMap[w.to.compId];
+    }
+    
+    if (w.manualPath) {
+      w.manualPath.forEach((pt: any) => {
+        pt.x += dx;
+        pt.y += dy;
+      });
+    }
+    
+    state.wires.push(w);
+  });
+  
+  state.selectedComponentIds = newComps.map((c: any) => c.id);
+  state.selectedWireIds = [];
+  
+  draw();
+  updatePropertiesPanel();
+  return idMap;
+}
+
 // Rotate Selected Components
 export function rotateSelected(): void {
   if (state.selectedComponentIds.length === 0) return;
@@ -2191,6 +2265,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
     step_size: parseScientific(state.simulationSettings.stepSize || "1e-5"),
     solver: state.simulationSettings.solver || "euler",
     step_type: state.simulationSettings.stepType || "fixed",
+    solverMethod: state.simulationSettings.solverMethod || "non-ideal",
     wanted_variables: Array.from(new Set(resolvedWanted))
   };
   

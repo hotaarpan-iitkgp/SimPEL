@@ -75,6 +75,7 @@ export function getPinDomain(compType: string, terminalName: string, comp?: any)
   }
 
   const controlPins: Record<string, string[]> = {
+    S: ['Ctrl'],
     VM: ['Out'],
     AM: ['Out'],
     VM_3PH: ['Out'],

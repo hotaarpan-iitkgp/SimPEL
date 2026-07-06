@@ -46,13 +46,13 @@ export const state: any = {
   // Custom multi-figure plot configuration
   plotConfiguration: { plots: [] },
 
-  // Simulation settings
   simulationSettings: {
     stopTime: "0.05",
     stepSize: "1e-5",
     stepType: "fixed", // "fixed" | "variable"
     solver: "euler",    // "euler" | "rk45" | "radau"
-    simulationMode: "regular" // "regular" | "current_flow"
+    simulationMode: "regular", // "regular" | "current_flow"
+    solverMethod: "non-ideal" // "non-ideal" | "ideal-pwl"
   }
 };
 

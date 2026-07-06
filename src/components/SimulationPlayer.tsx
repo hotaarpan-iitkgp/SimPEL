@@ -3,13 +3,15 @@ import {
   Play, Pause, Square, SkipBack, SkipForward, Sliders, 
   HelpCircle, ZoomIn, ZoomOut, RotateCcw, AlertCircle, Info, ChevronRight,
   Plus, Trash2, ChevronUp, ChevronDown, EyeOff, Layers, Eye, Maximize2, Minimize2,
-  Download, FileCode
+  Download, FileCode, Activity, X
 } from 'lucide-react';
 import { state } from '../schematic/state';
 import { getWirePath, getTerminalCoords, getPinDomain, getWireDomain, getWireEndpointCoords } from '../schematic/routing';
 import { getComponentSVG } from '../schematic/components';
 import { getComponentPins } from '../schematic/config';
 import { exportDualGraphJSON } from '../schematic/actions';
+import { MathVisualizer } from './MathVisualizer';
+import { buildMNALatex, Component } from '../utils/mnaSolver';
 
 const getTapPointsOnWire = (wireId: string, wires: any[]) => {
   const points: { x: number; y: number }[] = [];
@@ -143,9 +145,11 @@ function getGateSignalName(compId: string, wires: any[], compType?: string): str
 
 interface SimulationPlayerProps {
   simResults: any;
+  jsonText: string;
   onRunSimulation: (netlistJson: string) => void;
   subplots: Array<{ id: string; title: string; traces: string[] }>;
   theme?: 'light' | 'dark';
+  onClose?: () => void;
 }
 
 const getWirePathMidpoint = (pathPoints: Array<{ x: number; y: number }>) => {
@@ -345,7 +349,7 @@ const resolveInputPinToSource = (trace: string): string => {
   return trace; // fallback to original trace if source not found
 };
 
-export default function SimulationPlayer({ simResults, onRunSimulation, subplots, theme }: SimulationPlayerProps) {
+export default function SimulationPlayer({ simResults, jsonText, onRunSimulation, subplots, theme, onClose }: SimulationPlayerProps) {
   // Check if current simulation results have high-fidelity segmented wire tracks
   const isFidelitySimActive = useMemo(() => {
     if (!simResults) return false;
@@ -400,10 +404,57 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
   const [speedMultiplier, setSpeedMultiplier] = useState(0.01); // 0.01x lowest start speed
   const [showWireOverlays, setShowWireOverlays] = useState(true);
   const [showFlowInspector, setShowFlowInspector] = useState(false);
+  const [showModeInspector, setShowModeInspector] = useState(false);
+  const [modeInspectorTab, setModeInspectorTab] = useState<'states' | 'equations'>('states');
+  const [rightPanelTab, setRightPanelTab] = useState<'waveforms' | 'equations'>('waveforms');
+  
+  // MNA Equations View Toggle States
+  const [showMatrix, setShowMatrix] = useState(true);
+  const [showRawEqs, setShowRawEqs] = useState(true);
+  const [showSimpEqs, setShowSimpEqs] = useState(true);
+
+  // Sidebar Width and Pointer Drag Resizing
+  const [rightSidebarWidth, setRightSidebarWidth] = useState(420);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const isResizingRef = useRef(false);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleResizePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    isResizingRef.current = true;
+    document.addEventListener('pointermove', handleResizePointerMove);
+    document.addEventListener('pointerup', handleResizePointerUp);
+  };
+
+  const handleResizePointerMove = (e: PointerEvent) => {
+    if (!isResizingRef.current) return;
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const newWidth = rect.right - e.clientX;
+      setRightSidebarWidth(Math.max(280, Math.min(rect.width - 320, newWidth)));
+    }
+  };
+
+  const handleResizePointerUp = () => {
+    isResizingRef.current = false;
+    document.removeEventListener('pointermove', handleResizePointerMove);
+    document.removeEventListener('pointerup', handleResizePointerUp);
+  };
 
   // Theme and customization states
   const [miniplotWidthUs, setMiniplotWidthUs] = useState(100);
+  const [maxMiniplotWidthUs, setMaxMiniplotWidthUs] = useState(1000);
+  const [maxSpeedMultiplier, setMaxSpeedMultiplier] = useState(0.2);
   const [showNumericalValues, setShowNumericalValues] = useState(false);
+  const [isMathMode, setIsMathMode] = useState(false);
+  const [activeMathPopovers, setActiveMathPopovers] = useState<string[]>([]);
+  const [mathPopoverOffsets, setMathPopoverOffsets] = useState<Record<string, { x: number; y: number }>>({});
   const [isSchematicFullScreen, setIsSchematicFullScreen] = useState(false);
   const [openPlotSettingsId, setOpenPlotSettingsId] = useState<string | null>(null);
 
@@ -411,6 +462,74 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
   const [timeZoom, setTimeZoom] = useState(1.0);
   const [previewPlotId, setPreviewPlotId] = useState<string | null>(null);
   const draggedTraceRef = useRef<{ name: string; label: string } | null>(null);
+
+  const getLocalPrefixedCompId = (compId: string): string => {
+    const currentPrefix = [
+      ...(state.navigationStack || []).map((layer: any) => layer.subsystemId),
+      state.currentSubsystemId
+    ].filter(Boolean).join('.');
+    return currentPrefix && !compId.startsWith(currentPrefix + '.') 
+      ? `${currentPrefix}.${compId}` 
+      : compId;
+  };
+
+  const getLocalGateSignalName = (compId: string, wires: any[], compType?: string): string => {
+    if (compType === 'vg-FET') {
+      return `${compId}.G`;
+    }
+    if (!wires) return "0.0";
+    let rootWire = wires.find((w: any) => 
+      w.to && w.to.type === 'pin' && w.to.compId === compId && w.to.terminal === 'G'
+    );
+    if (rootWire) {
+      const backtrace = (endpoint: any): string => {
+        if (!endpoint) return "0.0";
+        if (endpoint.type === 'pin') {
+          return `${endpoint.compId}.${endpoint.terminal}`;
+        } else if (endpoint.type === 'wire') {
+          const parentWire = wires.find((w: any) => w.id === endpoint.wireId);
+          if (!parentWire) return "0.0";
+          return backtrace(parentWire.from);
+        }
+        return "0.0";
+      };
+      return backtrace(rootWire.from);
+    }
+
+    rootWire = wires.find((w: any) => 
+      w.from && w.from.type === 'pin' && w.from.compId === compId && w.from.terminal === 'G'
+    );
+    if (rootWire) {
+      const backtrace = (endpoint: any): string => {
+        if (!endpoint) return "0.0";
+        if (endpoint.type === 'pin') {
+          return `${endpoint.compId}.${endpoint.terminal}`;
+        } else if (endpoint.type === 'wire') {
+          const parentWire = wires.find((w: any) => w.id === endpoint.wireId);
+          if (!parentWire) return "0.0";
+          return backtrace(parentWire.to);
+        }
+        return "0.0";
+      };
+      return backtrace(rootWire.to);
+    }
+
+    return "0.0";
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !document.getElementById('mathjax-script')) {
+      const script = document.createElement('script');
+      script.id = 'mathjax-script';
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-svg.js';
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, []);
+
+
+
+
 
   const addSubplotTraces = (subplotId: string, tracesToAdd: string[]) => {
     setLocalSubplots(prev => prev.map(sp => {
@@ -553,9 +672,8 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
   const handlePlayPause = () => {
     if (!isFidelitySimActive) {
       runFidelitySim();
-    } else {
-      setIsPlaying(!isPlaying);
     }
+    setIsPlaying(!isPlaying);
   };
 
   // Auto-play of high-fidelity solver results on load
@@ -1378,6 +1496,184 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
   };
 
   const currentStepIndex = getClosestTimeIndex(playTime);
+
+  const getSwitchOnAt = (compId: string, compType: string, stepIdx: number) => {
+    if (!simResults) return false;
+    const prefId = getLocalPrefixedCompId(compId);
+    
+    // 1. Check control channels
+    const compObj = state.components.find(c => c.id === compId);
+    const channelName = compObj?.channels?.G || compObj?.channels?.Ctrl || compObj?.channels?.Switch;
+    if (channelName) {
+      const prefChannel = getLocalPrefixedCompId(channelName);
+      if (simResults.signals?.[prefChannel] !== undefined) {
+        return (simResults.signals[prefChannel][stepIdx] ?? 0.0) > 0.5;
+      }
+      if (simResults.signals?.[channelName] !== undefined) {
+        return (simResults.signals[channelName][stepIdx] ?? 0.0) > 0.5;
+      }
+    }
+
+    // 2. Check solver custom plots
+    const ctrlPlot = simResults.custom_plots?.[`Ctrl_${prefId}`] || simResults.custom_plots?.[`Ctrl_${compId}`];
+    if (ctrlPlot) {
+      return (ctrlPlot[stepIdx] ?? 0.0) > 0.5;
+    }
+
+    // 3. Check wired gate signal
+    const gateSig = getLocalGateSignalName(compId, state.wires, compType);
+    if (gateSig && gateSig !== "0.0") {
+      const prefGateSig = getLocalPrefixedCompId(gateSig);
+      if (simResults.signals?.[prefGateSig] !== undefined) {
+        return (simResults.signals[prefGateSig][stepIdx] ?? 0.0) > 0.5;
+      }
+      if (simResults.signals?.[gateSig] !== undefined) {
+        return (simResults.signals[gateSig][stepIdx] ?? 0.0) > 0.5;
+      }
+    }
+
+    // 4. Fallback to current
+    const iVal = (simResults.custom_plots?.[`I_${prefId}`]?.[stepIdx] || simResults.custom_plots?.[`I_${compId}`]?.[stepIdx]) ?? 0.0;
+    return Math.abs(iVal) > 1e-3;
+  };
+
+  const detectedModes = useMemo(() => {
+    if (!simResults || tData.length === 0) return [];
+    
+    const physicalSwitches = state.components.filter((c: any) =>
+      ['MOSFET', 'vg-FET', 'Switch', 'S', 'D', 'Diode'].includes(c.type)
+    );
+    if (physicalSwitches.length === 0) return [];
+
+    const uniqueStatesMap = new Map<string, Record<string, boolean>>();
+    const stepSize = Math.max(1, Math.floor(tData.length / 500));
+    
+    for (let stepIdx = 0; stepIdx < tData.length; stepIdx += stepSize) {
+      const stateRecord: Record<string, boolean> = {};
+      physicalSwitches.forEach(sw => {
+        stateRecord[sw.id] = getSwitchOnAt(sw.id, sw.type, stepIdx);
+      });
+      const key = physicalSwitches.map(sw => `${sw.id}:${stateRecord[sw.id] ? 'ON' : 'OFF'}`).join('|');
+      if (!uniqueStatesMap.has(key)) {
+        uniqueStatesMap.set(key, stateRecord);
+      }
+    }
+
+    const currentRecord: Record<string, boolean> = {};
+    physicalSwitches.forEach(sw => {
+      currentRecord[sw.id] = getSwitchOnAt(sw.id, sw.type, currentStepIndex);
+    });
+    const currentKey = physicalSwitches.map(sw => `${sw.id}:${currentRecord[sw.id] ? 'ON' : 'OFF'}`).join('|');
+    if (!uniqueStatesMap.has(currentKey)) {
+      uniqueStatesMap.set(currentKey, currentRecord);
+    }
+
+    const sortedEntries = Array.from(uniqueStatesMap.entries()).sort();
+
+    return sortedEntries.map(([key, stateRecord], idx) => {
+      const labelList = Object.entries(stateRecord).map(([swId, isOn]) => `${swId}: ${isOn ? 'ON' : 'OFF'}`);
+      return {
+        id: `mode_${idx + 1}`,
+        key,
+        stateRecord,
+        name: `Mode ${idx + 1}`,
+        description: labelList.join(' | ')
+      };
+    });
+  }, [simResults, tData, currentStepIndex]);
+
+  const currentMode = useMemo(() => {
+    if (detectedModes.length === 0) return null;
+    
+    const physicalSwitches = state.components.filter((c: any) =>
+      ['MOSFET', 'vg-FET', 'Switch', 'S', 'D', 'Diode'].includes(c.type)
+    );
+    
+    const currentRecord: Record<string, boolean> = {};
+    physicalSwitches.forEach(sw => {
+      currentRecord[sw.id] = getSwitchOnAt(sw.id, sw.type, currentStepIndex);
+    });
+    
+    const currentKey = physicalSwitches.map(sw => `${sw.id}:${currentRecord[sw.id] ? 'ON' : 'OFF'}`).join('|');
+    return detectedModes.find(m => m.key === currentKey) || null;
+  }, [detectedModes, currentStepIndex]);
+
+  const modeMnaResults = useMemo(() => {
+    if (detectedModes.length === 0) return {};
+
+    let data: any = {};
+    try {
+      data = exportDualGraphJSON(true) || {};
+    } catch (e) {
+      return {};
+    }
+
+    const stage = data.physical_stage || {};
+    const isIdealMode = true;
+
+    const fixedComps: Component[] = [];
+    const switches: Component[] = [];
+
+    // Extract component structures directly using netlist-based nodes
+    (stage.resistors || []).forEach((c: any) => {
+      fixedComps.push({ type: 'R', id: c.id, n1: c.nodes?.[0] || 'node_0', n2: c.nodes?.[1] || 'node_0', sym: c.id });
+    });
+    (stage.capacitors || []).forEach((c: any) => {
+      fixedComps.push({ type: 'C', id: c.id, n1: c.nodes?.[0] || 'node_0', n2: c.nodes?.[1] || 'node_0', sym: c.id, esr: c.parameters?.esr });
+    });
+    (stage.inductors || []).forEach((c: any) => {
+      fixedComps.push({ type: 'L', id: c.id, n1: c.nodes?.[0] || 'node_0', n2: c.nodes?.[1] || 'node_0', sym: c.id, esr: c.parameters?.esr });
+    });
+    (stage.v_sources || []).forEach((c: any) => {
+      fixedComps.push({ type: 'V', id: c.id, n1: c.nodes?.[0] || 'node_0', n2: c.nodes?.[1] || 'node_0', sym: c.id });
+    });
+    (stage.i_sources || []).forEach((c: any) => {
+      fixedComps.push({ type: 'I', id: c.id, n1: c.nodes?.[0] || 'node_0', n2: c.nodes?.[1] || 'node_0', sym: c.id });
+    });
+    (stage.transformers || []).forEach((c: any) => {
+      const pWind = c.primary_windings?.[0] || c.primaryWindings?.[0];
+      const sWind = c.secondary_windings?.[0] || c.secondaryWindings?.[0];
+      if (pWind && sWind) {
+        fixedComps.push({
+          type: 'X', id: c.id, n1: "", n2: "",
+          p1: pWind.nodes?.[0] || 'node_0',
+          p2: pWind.nodes?.[1] || 'node_0',
+          s1: sWind.nodes?.[0] || 'node_0',
+          s2: sWind.nodes?.[1] || 'node_0'
+        });
+      }
+    });
+    (stage.diodes || []).forEach((c: any) => {
+      switches.push({ type: 'SW', id: c.id, n1: c.nodes?.[0] || 'node_0', n2: c.nodes?.[1] || 'node_0' });
+    });
+    (stage.analog_switches || []).forEach((c: any) => {
+      switches.push({ type: 'SW', id: c.id, n1: c.nodes?.[0] || 'node_0', n2: c.nodes?.[1] || 'node_0' });
+    });
+
+    const results: Record<string, any> = {};
+    detectedModes.forEach(mode => {
+      const activeSwitches = switches.filter(sw => mode.stateRecord[sw.id] === true);
+      try {
+        const mna = buildMNALatex(fixedComps, activeSwitches, switches, 'node_0', isIdealMode);
+        results[mode.key] = mna;
+      } catch (err) {
+        // Fallback
+      }
+    });
+
+    return results;
+  }, [jsonText, detectedModes]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const w = window as any;
+      if (w.MathJax && w.MathJax.typesetPromise) {
+        setTimeout(() => {
+          w.MathJax.typesetPromise().catch((e: any) => console.log(e));
+        }, 150);
+      }
+    }
+  }, [rightPanelTab, modeMnaResults]);
 
   // Helper: Find connected component terminal for a wire to extract its flowing current
   const findConnectedPin = (wireId: string, visited = new Set<string>()): { compId: string, terminal: string, wireEnd: 'from' | 'to' } | null => {
@@ -2213,241 +2509,340 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
 
   return (
     <div ref={containerRef} className={`flex-1 flex flex-col gap-4 ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
-      {/* Simulation Info Dashboard */}
-      <div className={`border rounded-2xl px-5 py-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl select-none ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950/60 border-slate-900'}`}>
-        <div className="flex items-center gap-3">
-          <div className={`h-9 w-9 border rounded-xl flex items-center justify-center font-bold ${isLight ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
-            ⚡
-          </div>
-          <div>
-            <h4 className={`text-xs font-bold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>Interactive Circuit Flow Sandbox</h4>
-            <div className="flex items-center flex-wrap gap-1.5 mt-1 text-[10.5px]">
-              <span className={isLight ? 'text-slate-500' : 'text-slate-500'}>Active Solver:</span>
-              <span className={`font-mono font-bold px-1 border rounded uppercase ${isLight ? 'text-sky-700 bg-sky-50 border-sky-200' : 'text-sky-400 bg-sky-950/40 border-sky-950'}`}>
-                {state.simulationSettings?.solver || 'euler'}
-              </span>
-              <span className="text-slate-700 font-bold">|</span>
-              <span className={isLight ? 'text-slate-500' : 'text-slate-500'}>Timesteps:</span>
-              <span className={`font-mono font-bold px-1 rounded ${isLight ? 'text-slate-700 bg-slate-100' : 'text-slate-300 bg-slate-900'}`}>{tData.length} pts</span>
-              
-              <span className="text-slate-700 font-bold">|</span>
-              <span className={isLight ? 'text-slate-500' : 'text-slate-500'}>Simulation Mode:</span>
-              <div className={`flex items-center p-0.5 rounded-lg border gap-1 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-900/60 border-slate-800/80'}`}>
-                <button
-                  onClick={triggerRun}
-                  className={`px-2 py-0.5 rounded text-[9.5px] font-bold font-sans transition-all cursor-pointer flex items-center gap-1 ${
-                    !isFidelitySimActive 
-                      ? (isLight ? 'bg-amber-100 text-amber-800 border border-amber-205 shadow-sm' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-sm') 
-                      : (isLight ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50 border border-transparent' : 'text-slate-400 hover:text-white hover:bg-slate-800/40 border border-transparent')
-                  }`}
-                  title="Run fast unsegmented simulation (plots and waveform calculation only)"
-                >
-                  {!isFidelitySimActive && <span className="h-1 w-1 rounded-full bg-amber-400" />}
-                  Fast (Plots)
-                </button>
-                <button
-                  onClick={runFidelitySim}
-                  className={`px-2 py-0.5 rounded text-[9.5px] font-bold font-sans transition-all cursor-pointer flex items-center gap-1 ${
-                    isFidelitySimActive 
-                      ? (isLight ? 'bg-emerald-100 text-emerald-800 border border-emerald-250' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30') 
-                      : (isLight ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/50 border border-transparent' : 'text-slate-400 hover:text-white hover:bg-slate-800/40 border border-transparent')
-                  }`}
-                  title="Run high-fidelity math splitting for real-time current flow animations"
-                >
-                  {isFidelitySimActive && <span className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" />}
-                  Detailed (Flows)
-                </button>
-              </div>
-            </div>
-          </div>
+      {/* Unified Window Header */}
+      <div className={`border rounded-xl px-4 py-1.5 flex flex-col md:flex-row items-center justify-between gap-3 shadow-md select-none ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950/60 border-slate-900'}`}>
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <h2 className={`text-xs font-bold tracking-wider uppercase font-sans ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>
+            Visual Flow
+          </h2>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
-          {/* Miniplot Window Setting */}
-          <div className={`h-10 px-4 rounded-xl flex items-center gap-2 shadow text-xs border ${isLight ? 'bg-white border-slate-200 text-slate-700' : 'bg-slate-950 border-slate-900 text-slate-350'}`}>
-            <span className="font-bold text-[9.5px] uppercase font-sans tracking-tight text-slate-500">Mini-Scope:</span>
+        <div className="flex items-center gap-3 flex-wrap md:flex-nowrap ml-auto">
+          {/* Mini-Scope Slider */}
+          <div className={`h-8 px-2.5 rounded-lg flex items-center gap-2 text-xs border ${isLight ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-950 border-slate-900 text-slate-350'}`}>
+            <span className="font-bold text-[8.5px] uppercase font-sans tracking-tight text-slate-550 shrink-0">Mini-Scope:</span>
+            <input 
+              type="range"
+              min="10"
+              max={maxMiniplotWidthUs}
+              step={Math.max(10, Math.floor(maxMiniplotWidthUs / 100))}
+              value={miniplotWidthUs}
+              onChange={(e) => setMiniplotWidthUs(Math.max(10, parseInt(e.target.value) || 100))}
+              className="w-16 accent-sky-500 h-1 cursor-pointer bg-slate-900 rounded-full shrink-0"
+            />
             <input 
               type="number"
               min="10"
-              max="10000"
+              max={maxMiniplotWidthUs}
               step="10"
               value={miniplotWidthUs}
               onChange={(e) => setMiniplotWidthUs(Math.max(10, parseInt(e.target.value) || 100))}
-              className={`w-16 h-7 px-1.5 text-center font-mono font-bold rounded border text-[11px] focus:outline-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800 focus:border-slate-350' : 'bg-slate-900 border-slate-800 text-slate-100 focus:border-slate-700'}`}
+              className={`w-12 h-5.5 text-center font-mono font-bold rounded border text-[9.5px] focus:outline-none ${isLight ? 'bg-white border-slate-200 text-slate-800 focus:border-slate-350' : 'bg-slate-900 border-slate-850 text-slate-100 focus:border-slate-700'} shrink-0`}
             />
-            <span className="font-bold">µs</span>
+            <span className="font-bold shrink-0 text-[10px]">µs</span>
+            <div className="flex items-center gap-1 shrink-0 border-l pl-2 border-slate-200/20">
+              <span className="text-[7.5px] text-slate-500 font-bold uppercase">Max:</span>
+              <input 
+                type="number"
+                min="20"
+                max="20000"
+                step="50"
+                value={maxMiniplotWidthUs}
+                onChange={(e) => setMaxMiniplotWidthUs(Math.max(20, parseInt(e.target.value) || 1000))}
+                className={`w-12 h-5 text-center font-mono text-[9px] font-bold rounded border focus:outline-none ${isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-850 text-slate-100'} shrink-0`}
+              />
+            </div>
           </div>
 
           {/* Digital Time Indicator Block */}
-          <div className={`h-10 px-4 rounded-xl flex items-center gap-2 shadow font-mono text-xs border ${isLight ? 'bg-white border-slate-200 text-sky-750' : 'bg-slate-950 border-slate-900 text-sky-450 border-r border-sky-500/10'}`}>
-            <span className="text-slate-500 font-bold text-[9.5px] uppercase font-sans tracking-tight">Time:</span>
-            <span className={`font-bold min-w-[70px] text-right ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
-              {(playTime * 1000).toFixed(4)}
+          <div className={`h-8 px-3 rounded-lg flex items-center gap-1.5 font-mono text-xs border ${isLight ? 'bg-slate-50 border-slate-200 text-sky-750' : 'bg-slate-950 border-slate-900 text-sky-450'}`}>
+            <span className="text-slate-500 font-bold text-[8.5px] uppercase font-sans tracking-tight">Time:</span>
+            <span className={`font-bold min-w-[55px] text-right ${isLight ? 'text-slate-850' : 'text-slate-100'}`}>
+              {(playTime * 1000).toFixed(3)}
             </span>
-            <span className={isLight ? 'text-sky-700 font-bold' : 'text-sky-500 font-bold'}>ms</span>
+            <span className={isLight ? 'text-sky-700 font-bold text-[10px]' : 'text-sky-500 font-bold text-[10px]'}>ms</span>
             <span className={isLight ? 'text-slate-300' : 'text-slate-800'}>/</span>
-            <span className="text-slate-500">{(tMax * 1000).toFixed(1)} ms</span>
+            <span className="text-slate-500 text-[10px]">{(tMax * 1000).toFixed(1)} ms</span>
           </div>
+
+          {/* Close Window button */}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className={`h-8 px-2.5 border rounded-lg text-[9.5px] font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 ${isLight ? 'border-slate-200 hover:bg-slate-100 text-slate-600 hover:text-slate-850 bg-white' : 'border-slate-850 hover:border-slate-800 hover:bg-slate-900/65 text-slate-400 hover:text-slate-100 bg-slate-950'}`}
+              title="Close Visual Flow Window"
+            >
+              <X className="h-3.5 w-3.5" />
+              <span>Close</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Main Sandbox Layout Area: Controls sidebar, Schematic overlay, and custom subplot lanes */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
-        
-        {/* Left Column: Interactive Legends & Visibility Toggles (3 cols) */}
-        {!isSchematicFullScreen && showFlowInspector && (
-          <div className={`lg:col-span-3 border p-4 rounded-2xl flex flex-col gap-4 shadow-xl select-none ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950/85 border-slate-900'}`}>
-            <div>
-              <div className="flex items-center gap-1.5 text-slate-200">
-                <Sliders className={`h-4 w-4 ${isLight ? 'text-sky-600' : 'text-sky-400'}`} />
-                <h3 className={`text-xs font-bold uppercase tracking-wider ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>Flow Inspector</h3>
-              </div>
-              <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                Toggle specific loops or signals below to instantly show/hide current overlay flows and wave lanes.
-              </p>
-            </div>
-
-            {/* Master Display Controls */}
-            <div className={`flex flex-col gap-2 p-2 px-2.5 rounded-xl border ${isLight ? 'bg-slate-50 border-slate-200/60' : 'bg-slate-900/30 border-slate-900/70'}`}>
-              <div className="flex items-center justify-between">
-                <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Overlay Master</span>
-                <button 
-                  onClick={() => {
-                    const anyOn = loops.some(l => visibleTraces[l.id] !== false);
-                    const updated: Record<string, boolean> = { ...visibleTraces };
-                    loops.forEach(l => {
-                      updated[l.id] = !anyOn;
-                    });
-                    setVisibleTraces(updated);
-                  }}
-                  className={`px-2 py-0.5 border text-[9px] font-extrabold rounded transition-all cursor-pointer ${isLight ? 'bg-white border-slate-200 hover:bg-slate-50 text-slate-655 hover:text-slate-900 shadow-sm' : 'bg-slate-950 border-slate-850 hover:bg-slate-900 text-slate-300 hover:text-white'}`}
-                >
-                  {loops.some(l => visibleTraces[l.id] !== false) ? "Mute All" : "Unmute All"}
-                </button>
-              </div>
-            </div>
-
-            {/* Traces Toggles List */}
-            <div className="flex-1 flex flex-col gap-3.5 overflow-y-auto max-h-[350px] pr-1">
-              {/* Loop currents */}
-              <div className="flex flex-col gap-1.5">
-                <span className={`text-[9px] font-extrabold uppercase tracking-widest flex items-center gap-1 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${isLight ? 'bg-emerald-500' : 'bg-emerald-400'}`} />
-                  Active Loop Currents
-                </span>
-
-                {loops.length === 0 ? (
-                  <p className="text-[10px] text-slate-600 italic py-1 pl-2">No active currents detected</p>
-                ) : (
-                  <div className="flex flex-col gap-1.5">
-                    {loops.map((loop, idx) => {
-                      const isVisible = visibleTraces[loop.id] !== false;
-                      const color = loop.color;
-                      const chordVal = getTraceDataAtTime(loop.traceKey, currentStepIndex);
-                      
-                      return (
-                        <div 
-                          key={loop.id}
-                          onClick={() => {
-                            setVisibleTraces(prev => ({ ...prev, [loop.id]: !isVisible }));
-                          }}
-                          className={`flex flex-col p-2 rounded-lg border transition-all cursor-pointer ${
-                            isVisible 
-                              ? (isLight ? 'bg-sky-50/60 border-sky-100 shadow-sm' : 'bg-slate-900/25 border-slate-900/60 hover:bg-slate-900/45') 
-                              : 'bg-transparent border-transparent opacity-60 hover:bg-slate-500/5 hover:opacity-90'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between min-w-0">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <input 
-                                type="checkbox"
-                                checked={isVisible}
-                                onChange={() => {}} // click is handled on parent wrapper
-                                className="h-3 w-3 rounded accent-sky-500 cursor-pointer text-sky-500"
-                                style={{ accentColor: color }}
-                              />
-                              <span 
-                                className="text-[10px] font-bold truncate tracking-tight uppercase"
-                                style={{ color: isVisible ? color : '#64748b' }}
-                              >
-                                Loop {idx + 1}
-                              </span>
-                            </div>
-                            
-                            <div className="text-right shrink-0">
-                              <span className={`text-[10.5px] font-mono font-bold ${isLight ? 'text-slate-700' : 'text-slate-350'}`}>
-                                {formatCurrentValue(chordVal)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className={`text-[8.5px] font-mono pl-5 pt-0.5 truncate max-w-full ${isLight ? 'text-slate-450' : 'text-slate-500'}`}>
-                            {loop.segments.map(s => s.compId).join(' → ')}
-                          </div>
-                        </div>
-                      );
-                    })}
+      <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0 w-full overflow-hidden">
+        {/* Left Column: Interactive Legends & Visibility Toggles */}
+        {!isSchematicFullScreen && (showFlowInspector || showModeInspector) && (
+          <div className={`w-full lg:w-72 shrink-0 border p-4 rounded-2xl flex flex-col gap-4 shadow-xl select-none ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950/85 border-slate-900'} max-h-[calc(100vh-175px)] overflow-y-auto`}>
+            {showFlowInspector && (
+              <div className="flex flex-col gap-4">
+                <div>
+                  <div className="flex items-center gap-1.5 text-slate-200">
+                    <Sliders className={`h-4 w-4 ${isLight ? 'text-sky-600' : 'text-sky-400'}`} />
+                    <h3 className={`text-xs font-bold uppercase tracking-wider ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>Flow Inspector</h3>
                   </div>
-                )}
-              </div>
+                  <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                    Toggle specific loops or signals below to instantly show/hide current overlay flows and wave lanes.
+                  </p>
+                </div>
 
-              {/* Other voltages/controls */}
-              {nonCurrentTraces.length > 0 && (
-                <div className="flex flex-col gap-1.5">
-                  <span className={`text-[9px] font-extrabold uppercase tracking-widest flex items-center gap-1 ${isLight ? 'text-sky-655' : 'text-sky-400'}`}>
-                    <span className={`h-1.5 w-1.5 rounded-full ${isLight ? 'bg-sky-500' : 'bg-sky-450'}`} />
-                    Voltages & Controls
-                  </span>
-                  <div className="flex flex-col gap-1">
-                    {nonCurrentTraces.map((trace) => {
-                      const isVisible = visibleTraces[trace] !== false;
-                      const color = getStableTraceColor(trace);
-                      const val = getTraceDataAtTime(trace, currentStepIndex);
-                      
-                      return (
-                        <div 
-                          key={trace}
-                          onClick={() => {
-                            setVisibleTraces(prev => ({ ...prev, [trace]: !isVisible }));
-                          }}
-                          className={`flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer ${
-                            isVisible 
-                              ? (isLight ? 'bg-slate-100 border-slate-205/65 hover:bg-slate-100/90' : 'bg-slate-900/25 border-slate-900/60 hover:bg-slate-900/45') 
-                              : 'bg-transparent border-transparent opacity-60 hover:bg-slate-500/5 hover:opacity-90'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <input 
-                              type="checkbox"
-                              checked={isVisible}
-                              onChange={() => {}} 
-                              className="h-3 w-3 rounded cursor-pointer"
-                              style={{ accentColor: color }}
-                            />
-                            <span 
-                              className="text-[10px] font-mono font-bold truncate"
-                              style={{ color: isVisible ? color : (isLight ? '#475569' : '#64748b') }}
-                            >
-                              {trace}
-                            </span>
-                          </div>
-                          
-                          <div className="text-right shrink-0">
-                            <span className={`text-[10.5px] font-mono font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                              {val.toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                {/* Master Display Controls */}
+                <div className={`flex flex-col gap-2 p-2 px-2.5 rounded-xl border ${isLight ? 'bg-slate-50 border-slate-200/60' : 'bg-slate-900/30 border-slate-900/70'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[10px] font-bold ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Overlay Master</span>
+                    <button 
+                      onClick={() => {
+                        const anyOn = loops.some(l => visibleTraces[l.id] !== false);
+                        const updated: Record<string, boolean> = { ...visibleTraces };
+                        loops.forEach(l => {
+                          updated[l.id] = !anyOn;
+                        });
+                        setVisibleTraces(updated);
+                      }}
+                      className={`px-2 py-0.5 border text-[9px] font-extrabold rounded transition-all cursor-pointer ${isLight ? 'bg-white border-slate-200 hover:bg-slate-50 text-slate-655 hover:text-slate-900 shadow-sm' : 'bg-slate-950 border-slate-850 hover:bg-slate-900 text-slate-300 hover:text-white'}`}
+                    >
+                      {loops.some(l => visibleTraces[l.id] !== false) ? "Mute All" : "Unmute All"}
+                    </button>
                   </div>
                 </div>
-              )}
-            </div>
+
+                {/* Traces Toggles List */}
+                <div className="flex flex-col gap-3.5 overflow-y-auto max-h-[350px] pr-1">
+                  {/* Loop currents */}
+                  <div className="flex flex-col gap-1.5">
+                    <span className={`text-[9px] font-extrabold uppercase tracking-widest flex items-center gap-1 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${isLight ? 'bg-emerald-500' : 'bg-emerald-400'}`} />
+                      Active Loop Currents
+                    </span>
+
+                    {loops.length === 0 ? (
+                      <p className="text-[10px] text-slate-650 italic py-1 pl-2">No active currents detected</p>
+                    ) : (
+                      <div className="flex flex-col gap-1.5">
+                        {loops.map((loop, idx) => {
+                          const isVisible = visibleTraces[loop.id] !== false;
+                          const color = loop.color;
+                          const chordVal = getTraceDataAtTime(loop.traceKey, currentStepIndex);
+                          
+                          return (
+                            <div 
+                              key={loop.id}
+                              onClick={() => {
+                                setVisibleTraces(prev => ({ ...prev, [loop.id]: !isVisible }));
+                              }}
+                              className={`flex flex-col p-2 rounded-lg border transition-all cursor-pointer ${
+                                isVisible 
+                                  ? (isLight ? 'bg-sky-50/60 border-sky-100 shadow-sm' : 'bg-slate-900/25 border-slate-900/60 hover:bg-slate-900/45') 
+                                  : 'bg-transparent border-transparent opacity-60 hover:bg-slate-500/5 hover:opacity-90'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between min-w-0">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <input 
+                                    type="checkbox"
+                                    checked={isVisible}
+                                    onChange={() => {}}
+                                    className="h-3 w-3 rounded cursor-pointer text-sky-500"
+                                    style={{ accentColor: color }}
+                                  />
+                                  <span 
+                                    className="text-[10px] font-bold truncate tracking-tight uppercase"
+                                    style={{ color: isVisible ? color : '#64748b' }}
+                                  >
+                                    Loop {idx + 1}
+                                  </span>
+                                </div>
+                                
+                                <div className="text-right shrink-0">
+                                  <span className={`text-[10.5px] font-mono font-bold ${isLight ? 'text-slate-700' : 'text-slate-350'}`}>
+                                    {formatCurrentValue(chordVal)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className={`text-[8.5px] font-mono pl-5 pt-0.5 truncate max-w-full ${isLight ? 'text-slate-455' : 'text-slate-500'}`}>
+                                {loop.segments.map(s => s.compId).join(' → ')}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Other voltages/controls */}
+                  {nonCurrentTraces.length > 0 && (
+                    <div className="flex flex-col gap-1.5">
+                      <span className={`text-[9px] font-extrabold uppercase tracking-widest flex items-center gap-1 ${isLight ? 'text-sky-655' : 'text-sky-400'}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${isLight ? 'bg-sky-500' : 'bg-sky-450'}`} />
+                        Voltages & Controls
+                      </span>
+                      <div className="flex flex-col gap-1">
+                        {nonCurrentTraces.map((trace) => {
+                          const isVisible = visibleTraces[trace] !== false;
+                          const color = getStableTraceColor(trace);
+                          const val = getTraceDataAtTime(trace, currentStepIndex);
+                          
+                          return (
+                            <div 
+                              key={trace}
+                              onClick={() => {
+                                setVisibleTraces(prev => ({ ...prev, [trace]: !isVisible }));
+                              }}
+                              className={`flex items-center justify-between p-2 rounded-lg border transition-all cursor-pointer ${
+                                isVisible 
+                                  ? (isLight ? 'bg-slate-100 border-slate-205/65 hover:bg-slate-100/90' : 'bg-slate-900/25 border-slate-900/60 hover:bg-slate-900/45') 
+                                  : 'bg-transparent border-transparent opacity-60 hover:bg-slate-500/5 hover:opacity-90'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <input 
+                                  type="checkbox"
+                                  checked={isVisible}
+                                  onChange={() => {}}
+                                  className="h-3 w-3 rounded cursor-pointer"
+                                  style={{ accentColor: color }}
+                                  />
+                                <span 
+                                  className="text-[10px] font-mono font-bold truncate"
+                                  style={{ color: isVisible ? color : (isLight ? '#475569' : '#64748b') }}
+                                >
+                                  {trace}
+                                </span>
+                              </div>
+                              
+                              <div className="text-right shrink-0">
+                                <span className={`text-[10.5px] font-mono font-medium ${isLight ? 'text-slate-655' : 'text-slate-400'}`}>
+                                  {val.toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {showModeInspector && (
+              <div className="flex flex-col gap-4">
+                <div>
+                  <div className="flex items-center gap-1.5 text-slate-200">
+                    <Activity className={`h-4 w-4 ${isLight ? 'text-cyan-600' : 'text-cyan-400'}`} />
+                    <h3 className={`text-xs font-bold uppercase tracking-wider ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>Mode Inspector</h3>
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+                    Identifies semiconductor state combinations occurring in the current simulation timeline.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                    {/* CURRENT ACTIVE MODE CARD */}
+                    <div className={`p-3 rounded-xl border flex flex-col gap-2 ${
+                      isLight 
+                        ? 'bg-cyan-50/60 border-cyan-100 shadow-sm' 
+                        : 'bg-cyan-950/15 border-cyan-950/40'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-cyan-500">Current Mode</span>
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      </div>
+                      {currentMode ? (
+                        <div className="flex flex-col gap-1.5">
+                          <h4 className={`text-xs font-extrabold ${isLight ? 'text-slate-850' : 'text-slate-200'}`}>
+                            {currentMode.name}
+                          </h4>
+                          <div className="flex flex-col gap-1">
+                            {Object.entries(currentMode.stateRecord).map(([swId, isOn]) => (
+                              <div key={swId} className="flex items-center justify-between text-[10px]">
+                                <span className="font-mono text-slate-550">{swId}</span>
+                                <span className={`font-mono font-bold px-1.5 py-0.5 rounded text-[8.5px] uppercase ${
+                                  isOn 
+                                    ? (isLight ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-500/15 text-emerald-300')
+                                    : (isLight ? 'bg-rose-100 text-rose-800' : 'bg-rose-500/15 text-rose-300')
+                                }`}>
+                                  {isOn ? 'ON' : 'OFF'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-555 italic">No active semiconductors detected</span>
+                      )}
+                    </div>
+
+                    {/* DETECTED MODES LIST */}
+                    <div className="flex flex-col gap-2">
+                      <span className={`text-[9px] font-extrabold uppercase tracking-widest flex items-center gap-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Available Modes ({detectedModes.length})
+                      </span>
+                      
+                      {detectedModes.length === 0 ? (
+                        <p className="text-[10px] text-slate-550 italic py-1 pl-2">No active semiconductor combinations found</p>
+                      ) : (
+                        <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px] pr-1">
+                          {detectedModes.map((mode) => {
+                            const isSelected = currentMode?.key === mode.key;
+                            return (
+                              <div
+                                key={mode.id}
+                                className={`p-2.5 rounded-lg border flex flex-col gap-1.5 transition-all ${
+                                  isSelected
+                                    ? (isLight ? 'bg-cyan-50/20 border-cyan-200/80 shadow-sm' : 'bg-cyan-950/10 border-cyan-900/40')
+                                    : 'bg-transparent border-transparent opacity-70 hover:opacity-100'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className={`text-[10px] font-bold ${isSelected ? (isLight ? 'text-cyan-700' : 'text-cyan-400') : (isLight ? 'text-slate-700' : 'text-slate-350')}`}>
+                                    {mode.name}
+                                  </span>
+                                  {isSelected && (
+                                    <span className={`text-[8px] font-bold font-mono px-1 rounded uppercase ${isLight ? 'bg-cyan-100 text-cyan-800' : 'bg-cyan-950 text-cyan-300'}`}>
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap gap-1 mt-0.5">
+                                  {Object.entries(mode.stateRecord).map(([swId, isOn]) => (
+                                    <span 
+                                      key={swId} 
+                                      className={`font-mono text-[8px] px-1 py-0.5 border rounded ${
+                                        isOn 
+                                          ? (isLight ? 'bg-emerald-50 text-emerald-700 border-emerald-150' : 'bg-emerald-950/20 text-emerald-450 border-emerald-900/30')
+                                          : (isLight ? 'bg-rose-50/50 text-rose-700 border-rose-100' : 'bg-rose-950/15 text-rose-455 border-rose-900/20')
+                                      }`}
+                                    >
+                                      {swId}: <b>{isOn ? 'ON' : 'OFF'}</b>
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Center Column: Schematic Canvas Section */}
-        <div className={`border rounded-2xl overflow-hidden flex flex-col relative ${isSchematicFullScreen ? 'lg:col-span-12 h-[650px]' : (showFlowInspector ? 'lg:col-span-5 h-[500px]' : 'lg:col-span-8 h-[500px]')} ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950 border-slate-900'}`}>
+        <div className={`border rounded-2xl overflow-hidden flex flex-col relative flex-1 h-[calc(100vh-175px)] ${isLight ? 'bg-white border-slate-200' : 'bg-slate-950 border-slate-900'}`}>
           {/* Header toolbar */}
           <div className={`px-4 py-2 border-b flex items-center justify-between select-none z-10 ${isLight ? 'border-slate-200 bg-slate-100' : 'border-slate-900 bg-slate-950/40'}`}>
             <span className={`text-[10.5px] font-bold flex items-center gap-1 ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>
@@ -2463,6 +2858,20 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
                   className="h-3 w-3 rounded accent-sky-500 cursor-pointer"
                 />
                 <span>Show Values</span>
+              </label>
+
+              {/* Checkbox for Pedagogical Math Mode */}
+              <label className={`flex items-center gap-1.5 text-[9.5px] font-bold cursor-pointer select-none px-2 py-1 rounded border transition-all ${isMathMode ? (isLight ? 'text-cyan-700 border-cyan-300 bg-cyan-50' : 'text-cyan-400 border-cyan-800 bg-cyan-955/20') : (isLight ? 'text-slate-600 border-slate-200 bg-white hover:bg-slate-50' : 'text-slate-400 border-slate-800 bg-slate-900/45 hover:bg-slate-900/80')}`}>
+                <input 
+                  type="checkbox"
+                  checked={isMathMode}
+                  onChange={(e) => {
+                    setIsMathMode(e.target.checked);
+                    if (!e.target.checked) setActiveMathPopovers([]);
+                  }}
+                  className="h-3 w-3 rounded accent-cyan-500 cursor-pointer"
+                />
+                <span>Math Mode</span>
               </label>
 
               <button 
@@ -2839,7 +3248,17 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
                           const dy = e.clientY - lastPointerDownRef.current.y;
                           if (Math.hypot(dx, dy) > 5) return; // it was a viewport pan drag, ignore click
                         }
-                        toggleComponentScope(comp);
+                        if (isMathMode) {
+                          setActiveMathPopovers(prev => {
+                            if (prev.includes(comp.id)) {
+                              return prev.filter(x => x !== comp.id);
+                            } else {
+                              return [...prev, comp.id];
+                            }
+                          });
+                        } else {
+                          toggleComponentScope(comp);
+                        }
                       }}
                     >
                       {/* Inner HTML representation generated by rendering subsystem */}
@@ -3123,11 +3542,38 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
                 })}
               </g>
             </svg>
+
+            {isMathMode && (
+              <MathVisualizer
+                components={state.components}
+                wires={state.wires}
+                simResults={simResults}
+                currentStepIndex={currentStepIndex}
+                panX={panX}
+                panY={panY}
+                zoom={zoom}
+                activeMathPopovers={activeMathPopovers}
+                onClosePopover={(compId) => {
+                  setActiveMathPopovers(prev => prev.filter(id => id !== compId));
+                }}
+                popoverOffsets={mathPopoverOffsets}
+                onDragPopover={(compId, offset) => {
+                  setMathPopoverOffsets(prev => ({
+                    ...prev,
+                    [compId]: offset
+                  }));
+                }}
+                theme={theme}
+                pinToNode={pinToNode}
+                modeMnaResult={currentMode ? modeMnaResults[currentMode.key] : undefined}
+              />
+            )}
           </div>
         </div>
         {/* Right Column: Tab Plots Subplots List (4 cols) */}
         {!isSchematicFullScreen && (
           <div 
+            className="flex flex-col lg:flex-row items-stretch shrink-0 w-full lg:w-auto"
             onDragOver={(e) => {
               e.preventDefault();
             }}
@@ -3169,53 +3615,204 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
               setPreviewPlotId(null);
               draggedTraceRef.current = null;
             }}
-            id="sidebar-plots-panel"
-            className={`lg:col-span-4 flex flex-col gap-3 overflow-y-auto max-h-[500px] border p-3 rounded-2xl shadow-inner ${isLight ? 'bg-slate-100/40 border-slate-200' : 'bg-slate-950/45 border-slate-900'}`}
           >
-            <div className={`flex items-center justify-between px-1.5 select-none shrink-0 border-b pb-1.5 ${isLight ? 'border-slate-200' : 'border-slate-900/60'}`}>
-              <span className={`text-[10px] font-bold flex items-center gap-1.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-                <Layers className="h-3.5 w-3.5 text-sky-500" />
-                Waveform Lanes ({localSubplots.length})
-              </span>
-              <button 
-                onClick={addSubplot}
-                className={`px-2 py-1 text-[9px] font-extrabold uppercase rounded-lg shadow transition-all flex items-center gap-1 cursor-pointer border ${isLight ? 'bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200' : 'bg-sky-950/65 hover:bg-sky-900/80 text-sky-400 border-sky-800/40'}`}
+
+          {/* Draggable boundary resizing handle */}
+          {!isSchematicFullScreen && (
+            <div 
+              onPointerDown={handleResizePointerDown}
+              className={`hidden lg:flex w-2 cursor-col-resize self-stretch items-center justify-center transition-all bg-transparent hover:bg-sky-500/10 active:bg-sky-500/20 rounded group select-none relative z-10`}
+            >
+              <div className={`w-0.5 h-10 rounded bg-slate-300 dark:bg-slate-800 group-hover:bg-sky-505 transition-colors`} />
+            </div>
+          )}
+
+          <div
+            id="sidebar-plots-panel"
+            style={isSchematicFullScreen ? { width: '0px', display: 'none' } : {
+              width: windowWidth >= 1024 ? `${rightSidebarWidth}px` : '100%',
+            }}
+            className={`flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-175px)] border p-3 rounded-2xl shadow-inner ${isLight ? 'bg-slate-100/40 border-slate-200' : 'bg-slate-950/45 border-slate-900'} lg:shrink-0`}
+          >
+            {/* Tab selector bar */}
+            <div className={`flex border-b text-[10px] font-bold shrink-0 ${isLight ? 'border-slate-200 bg-slate-100/50' : 'border-slate-900 bg-slate-950/20'} p-1 rounded-xl`}>
+              <button
+                onClick={() => setRightPanelTab('waveforms')}
+                className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                  rightPanelTab === 'waveforms'
+                    ? (isLight ? 'bg-white text-slate-850 shadow-sm border border-slate-200' : 'bg-slate-900 text-slate-100 border border-slate-800')
+                    : 'text-slate-500 hover:text-slate-400'
+                }`}
               >
-                <Plus className="h-3 w-3" /> Add Lane
+                Waveforms
+              </button>
+              <button
+                onClick={() => setRightPanelTab('equations')}
+                className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                  rightPanelTab === 'equations'
+                    ? (isLight ? 'bg-white text-slate-850 shadow-sm border border-slate-200' : 'bg-slate-900 text-slate-100 border border-slate-800')
+                    : 'text-slate-500 hover:text-slate-400'
+                }`}
+              >
+                MNA Equations
               </button>
             </div>
 
-            {/* Synced Zoom Controls */}
-            <div className={`flex flex-col gap-1.5 border-b pb-2 px-1.5 ${isLight ? 'border-slate-200' : 'border-slate-900/60'}`}>
-              <div className="flex items-center justify-between text-[9px] font-bold text-slate-500">
-                <span className="uppercase tracking-tight">Time Zoom</span>
-                <span className="font-mono text-sky-500">{timeZoom.toFixed(1)}x</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <input 
-                  type="range"
-                  min="1"
-                  max="50"
-                  step="0.5"
-                  value={timeZoom}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    setTimeZoom(val);
-                  }}
-                  className={`flex-1 h-1.5 rounded-full appearance-none cursor-pointer outline-none ${isLight ? 'bg-slate-200 accent-sky-500' : 'bg-slate-800 accent-sky-500'}`}
-                />
-                <button 
-                  onClick={() => { setTimeZoom(1); }}
-                  className={`px-1.5 py-0.5 text-[8px] font-bold rounded cursor-pointer ${isLight ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
+            {rightPanelTab === 'waveforms' ? (
+              <div className="flex flex-col gap-3 flex-1">
+                <div className={`flex items-center justify-between px-1.5 select-none shrink-0 border-b pb-1.5 ${isLight ? 'border-slate-200' : 'border-slate-900/60'}`}>
+                  <span className={`text-[10px] font-bold flex items-center gap-1.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    <Layers className="h-3.5 w-3.5 text-sky-500" />
+                    Waveform Lanes ({localSubplots.length})
+                  </span>
+                  <button 
+                    onClick={addSubplot}
+                    className={`px-2 py-1 text-[9px] font-extrabold uppercase rounded-lg shadow transition-all flex items-center gap-1 cursor-pointer border ${isLight ? 'bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200' : 'bg-sky-950/65 hover:bg-sky-900/80 text-sky-400 border-sky-800/40'}`}
+                  >
+                    <Plus className="h-3 w-3" /> Add Lane
+                  </button>
+                </div>
 
-            <div className="flex flex-col gap-2 flex-1">
-              {localSubplots.map((sp, idx) => renderInteractiveSubplot(sp, idx))}
-            </div>
+                {/* Synced Zoom Controls */}
+                <div className={`flex flex-col gap-1.5 border-b pb-2 px-1.5 ${isLight ? 'border-slate-200' : 'border-slate-900/60'}`}>
+                  <div className="flex items-center justify-between text-[9px] font-bold text-slate-500">
+                    <span className="uppercase tracking-tight">Time Zoom</span>
+                    <span className="font-mono text-sky-500">{timeZoom.toFixed(1)}x</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="range"
+                      min="1"
+                      max="50"
+                      step="0.5"
+                      value={timeZoom}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setTimeZoom(val);
+                      }}
+                      className={`flex-1 h-1.5 rounded-full appearance-none cursor-pointer outline-none ${isLight ? 'bg-slate-200 accent-sky-500' : 'bg-slate-800 accent-sky-500'}`}
+                    />
+                    <button 
+                      onClick={() => { setTimeZoom(1); }}
+                      className={`px-1.5 py-0.5 text-[8px] font-bold rounded cursor-pointer ${isLight ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 flex-1">
+                  {localSubplots.map((sp, idx) => renderInteractiveSubplot(sp, idx))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3 flex-1 min-h-0">
+                {/* Global stylesheet overrides for equations scaling to dynamically fit column width keeping aspect ratio */}
+                <style>{`
+                  .mathjax-large-equations mjx-container {
+                    margin: 0.35em 0 !important;
+                    display: flex !important;
+                    justify-content: center !important;
+                    align-items: center !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    overflow: hidden !important;
+                  }
+                  .mathjax-large-equations mjx-container[jax="SVG"] {
+                    font-size: 1.45em !important;
+                  }
+                  .mathjax-large-equations mjx-container[jax="SVG"] svg {
+                    width: auto !important;
+                    max-width: 100% !important;
+                    height: auto !important;
+                  }
+                `}</style>
+
+                {/* Tactile Toggle Selector Bar */}
+                {detectedModes.length > 0 && (
+                  <div className={`p-1 border rounded-lg flex items-center justify-between gap-1 select-none shrink-0 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-900'}`}>
+                    <button 
+                      onClick={() => setShowMatrix(!showMatrix)}
+                      className={`flex-1 py-1 rounded-md text-[9px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${showMatrix ? (isLight ? 'bg-sky-600 text-white shadow-sm' : 'bg-sky-500 text-white shadow-sm') : (isLight ? 'bg-transparent text-slate-500 hover:text-slate-700' : 'bg-transparent text-slate-400 hover:text-slate-200')}`}
+                    >
+                      Matrix
+                    </button>
+                    <button 
+                      onClick={() => setShowRawEqs(!showRawEqs)}
+                      className={`flex-1 py-1 rounded-md text-[9px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${showRawEqs ? (isLight ? 'bg-sky-600 text-white shadow-sm' : 'bg-sky-500 text-white shadow-sm') : (isLight ? 'bg-transparent text-slate-500 hover:text-slate-700' : 'bg-transparent text-slate-400 hover:text-slate-200')}`}
+                    >
+                      Raw Node
+                    </button>
+                    <button 
+                      onClick={() => setShowSimpEqs(!showSimpEqs)}
+                      className={`flex-1 py-1 rounded-md text-[9px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${showSimpEqs ? (isLight ? 'bg-emerald-600 text-white shadow-sm' : 'bg-emerald-500 text-white shadow-sm') : (isLight ? 'bg-transparent text-slate-500 hover:text-slate-700' : 'bg-transparent text-slate-400 hover:text-slate-200')}`}
+                    >
+                      Simplified
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex-1 overflow-auto max-h-[calc(100vh-270px)] max-w-full select-text pr-1 flex flex-col gap-4">
+                  {detectedModes.length === 0 ? (
+                    <div className={`p-8 text-center rounded-xl border border-dashed ${isLight ? 'border-slate-200 text-slate-400 bg-white/50' : 'border-slate-800 text-slate-500 bg-slate-950/20'}`}>
+                      <span className="text-xs font-semibold leading-relaxed">
+                        * Run simulation first to resolve mode-based MNA state space equations.
+                      </span>
+                    </div>
+                  ) : (
+                    detectedModes.map((mode) => {
+                      const isCurrent = currentMode?.key === mode.key;
+                      const results = modeMnaResults[mode.key];
+                      if (!results) return null;
+
+                      return (
+                        <div
+                          key={`mna-pre-render-${mode.key}`}
+                          className={isCurrent ? "flex flex-col gap-4" : "hidden"}
+                        >
+                          {/* Card 1: State-Space Matrix */}
+                          {showMatrix && (
+                            <div className={`p-4 rounded-xl border flex flex-col gap-3 shadow-sm ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
+                              <h4 className={`text-[11px] font-extrabold uppercase tracking-wide ${isLight ? 'text-slate-700' : 'text-slate-305 font-bold'}`}>
+                                State-Space Matrix
+                              </h4>
+                              <div className="py-1 px-1 flex justify-center text-center w-full mathjax-large-equations overflow-x-auto">
+                                {`\\[ ${results.latexMatrix} \\]`}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Card 2: Separated Equations (Raw Node Voltages) */}
+                          {showRawEqs && (
+                            <div className={`p-4 rounded-xl border flex flex-col gap-3 shadow-sm ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
+                              <h4 className={`text-[11px] font-extrabold uppercase tracking-wide ${isLight ? 'text-slate-700' : 'text-slate-305 font-bold'}`}>
+                                Separated Equations (Raw Node Voltages)
+                              </h4>
+                              <div className="py-1 px-1 flex justify-center text-center w-full mathjax-large-equations overflow-x-auto">
+                                {`\\[ ${results.latexSeparatedRaw} \\]`}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Card 3: Separated Equations (Simplified) */}
+                          {showSimpEqs && (
+                            <div className={`p-4 rounded-xl border flex flex-col gap-3 shadow-sm ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
+                              <h4 className={`text-[11px] font-bold uppercase tracking-wide text-emerald-600`}>
+                                Separated Equations (Simplified)
+                              </h4>
+                              <div className="py-1 px-1 flex justify-center text-center w-full mathjax-large-equations overflow-x-auto">
+                                {`\\[ ${results.latexSeparatedSimp} \\]`}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           </div>
         )}
       </div>
@@ -3324,10 +3921,15 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
 
             {/* Flow Inspector Toggle Panel control */}
             <button 
-              onClick={() => setShowFlowInspector(!showFlowInspector)}
+              onClick={() => {
+                setShowFlowInspector(!showFlowInspector);
+                if (!showFlowInspector) {
+                  setShowModeInspector(false);
+                }
+              }}
               className={`px-3 h-9 border rounded-lg text-xs font-sans font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 showFlowInspector 
-                ? (isLight ? 'border-sky-400 bg-sky-50 text-sky-600 shadow-sm' : 'border-sky-505 bg-sky-950/20 text-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.15)]') 
+                ? (isLight ? 'border-sky-400 bg-sky-50 text-sky-600 shadow-sm' : 'border-sky-505 bg-sky-955/20 text-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.15)]') 
                 : (isLight ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50' : 'border-slate-800 bg-slate-950 text-slate-400 hover:text-white hover:border-slate-700')
               }`}
               title="Toggle sidebar Flow Inspector panel"
@@ -3335,28 +3937,59 @@ export default function SimulationPlayer({ simResults, onRunSimulation, subplots
               <Sliders className="h-3.5 w-3.5" />
               <span>Flow Inspector</span>
             </button>
+
+            {/* Mode Inspector Toggle Panel control */}
+            <button 
+              onClick={() => {
+                setShowModeInspector(!showModeInspector);
+                if (!showModeInspector) {
+                  setShowFlowInspector(false);
+                }
+              }}
+              className={`px-3 h-9 border rounded-lg text-xs font-sans font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                showModeInspector 
+                ? (isLight ? 'border-cyan-400 bg-cyan-50 text-cyan-600 shadow-sm' : 'border-cyan-500 bg-cyan-950/20 text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.15)]') 
+                : (isLight ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50' : 'border-slate-800 bg-slate-950 text-slate-400 hover:text-white hover:border-slate-700')
+              }`}
+              title="Toggle sidebar Mode Inspector panel"
+            >
+              <Activity className="h-3.5 w-3.5" />
+              <span>Mode Inspector</span>
+            </button>
           </div>
 
           {/* Speed slider block */}
-          <div className={`flex items-center gap-3 block px-4 py-1.5 border rounded-xl max-w-xs w-full shadow-inner ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/50 border-slate-900'}`}>
+          <div className={`flex items-center gap-2.5 block px-3 py-1 border rounded-xl max-w-md w-full shadow-inner ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/50 border-slate-900'}`}>
             <Sliders className="h-3.5 w-3.5 text-slate-500 shrink-0" />
             <div className="flex-1 flex flex-col gap-0.5 min-w-[70px]">
               <div className="flex items-center justify-between text-[9px] font-bold text-slate-500">
                 <span className="uppercase tracking-tight font-sans">Playback Rate</span>
-                <span className="font-mono text-emerald-550 font-bold">{speedMultiplier.toFixed(2)}x</span>
+                <span className="font-mono text-emerald-550 font-bold">{speedMultiplier.toFixed(3)}x</span>
               </div>
               <input 
                 type="range"
-                min="0.01"
-                max="2.00"
-                step="0.01"
+                min="0.001"
+                max={maxSpeedMultiplier}
+                step={maxSpeedMultiplier / 100}
                 value={speedMultiplier}
                 onChange={(e) => setSpeedMultiplier(parseFloat(e.target.value))}
                 className="w-full accent-emerald-500 h-1 cursor-pointer bg-slate-900 rounded-full"
               />
             </div>
-            <div className={`text-[9.5px] font-bold font-sans min-w-[50px] text-right ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
-              {speedMultiplier < 0.25 ? 'Slo-Mo' : speedMultiplier < 0.75 ? 'Slow' : speedMultiplier <= 1.1 ? 'Normal' : 'Fast'}
+            <div className="flex items-center gap-1.5 shrink-0 border-l pl-2 border-slate-200/20">
+              <span className="text-[8px] text-slate-500 font-bold uppercase">Max:</span>
+              <input 
+                type="number"
+                min="0.01"
+                max="10.0"
+                step="0.01"
+                value={maxSpeedMultiplier}
+                onChange={(e) => {
+                  const val = Math.max(0.01, parseFloat(e.target.value) || 0.2);
+                  setMaxSpeedMultiplier(val);
+                }}
+                className={`w-10 h-6 text-center font-mono text-[10px] font-bold rounded border focus:outline-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100'} shrink-0`}
+              />
             </div>
           </div>
         </div>

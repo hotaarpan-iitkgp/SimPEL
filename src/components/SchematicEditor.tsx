@@ -1765,6 +1765,13 @@ export default function SchematicEditor({
                 <option value="current_flow">Current Flow Animation (Treat wires as small resistors)</option>
               </select>
             </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400">Solver Method</label>
+              <select id="sim-solver-method" className="px-3 py-2 bg-slate-950 border border-slate-800 rounded outline-none focus:border-emerald-500 text-xs">
+                <option value="non-ideal">Non-Ideal (DAE solver with ESR/parasitics)</option>
+                <option value="ideal-pwl">Ideal PWL (High-speed node-collapsing solver)</option>
+              </select>
+            </div>
           </div>
           <div className="p-4 border-t border-slate-800 flex justify-end gap-2 bg-slate-900/10">
             <button onClick={closeSimSettings} className="px-4 py-2 border border-slate-800 hover:bg-slate-900 rounded font-bold text-xs cursor-pointer">Cancel</button>

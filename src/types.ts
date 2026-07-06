@@ -39,6 +39,7 @@ export interface SolverConfig {
   step_size: string;
   solver: 'euler' | 'rk45' | 'radau';
   step_type: 'fixed' | 'variable';
+  solverMethod?: 'non-ideal' | 'ideal-pwl';
 }
 
 export interface SimulationResults {

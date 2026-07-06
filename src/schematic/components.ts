@@ -33,6 +33,7 @@ export function getComponentSVG(comp: any): string {
         <circle class="comp-node" cx="0" cy="20" r="3" fill="currentColor" />
         <line class="comp-path" x1="0" y1="-20" x2="13" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
         <line class="comp-path" x1="0" y1="20" x2="0" y2="40" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        <line class="comp-path" x1="-20" y1="0" x2="-6" y2="0" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
       `;
       break;
     case 'D': // Diode

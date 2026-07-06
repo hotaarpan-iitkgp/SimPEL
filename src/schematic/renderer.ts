@@ -15,7 +15,7 @@ import {
 import { getComponentSVG, createTerminalOverlay } from './components';
 import { pathToString, screenToCanvas, showToast, generateNextId } from './utils';
 import { updatePropertiesPanel, openCodeEditorModal, openMaskValuesModal, openProbeEditorModal, openPwmMasterModal } from './properties';
-import { completeWire, isControlInputPin, normalizeControlWires, getControlOutputPins, enterSubsystem } from './actions';
+import { completeWire, isControlInputPin, normalizeControlWires, getControlOutputPins, enterSubsystem, duplicateSelected } from './actions';
 import { getComponentPins } from './config';
 
 // Keep manual paths connected to moved elements and preserve orthogonality
@@ -547,8 +547,18 @@ export function draw(): void {
         }
       }
       
+      let dragComp = comp;
+      if (e.ctrlKey) {
+        const idMap = duplicateSelected(0, 0);
+        const clonedId = idMap[comp.id];
+        const clonedComp = state.components.find((x: any) => x.id === clonedId);
+        if (clonedComp) {
+          dragComp = clonedComp;
+        }
+      }
+      
       // Initialize dragging for all selected components and rigid wires
-      state.draggingComponent = comp;
+      state.draggingComponent = dragComp;
       state.dragStartMouse = screenToCanvas(e.clientX, e.clientY);
       state.draggedComponentsStart = state.selectedComponentIds.map((id: string) => {
         const c = state.components.find((x: any) => x.id === id);

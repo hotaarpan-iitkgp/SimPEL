@@ -10,12 +10,14 @@ export function openSimSettings(): void {
   const stepTypeSelect: any = document.getElementById('sim-step-type');
   const solverSelect: any = document.getElementById('sim-solver');
   const simModeSelect: any = document.getElementById('sim-mode');
+  const solverMethodSelect: any = document.getElementById('sim-solver-method');
   
   if (stopTimeInput) stopTimeInput.value = state.simulationSettings.stopTime;
   if (stepSizeInput) stepSizeInput.value = state.simulationSettings.stepSize;
   if (stepTypeSelect) stepTypeSelect.value = state.simulationSettings.stepType;
   if (solverSelect) solverSelect.value = state.simulationSettings.solver;
   if (simModeSelect) simModeSelect.value = state.simulationSettings.simulationMode || 'regular';
+  if (solverMethodSelect) solverMethodSelect.value = state.simulationSettings.solverMethod || 'non-ideal';
   
   modal.classList.add('show');
 }
@@ -34,6 +36,7 @@ export function saveSimSettings(): void {
   const stepTypeSelect: any = document.getElementById('sim-step-type');
   const solverSelect: any = document.getElementById('sim-solver');
   const simModeSelect: any = document.getElementById('sim-mode');
+  const solverMethodSelect: any = document.getElementById('sim-solver-method');
   
   saveState();
   
@@ -42,6 +45,7 @@ export function saveSimSettings(): void {
   if (stepTypeSelect) state.simulationSettings.stepType = stepTypeSelect.value;
   if (solverSelect) state.simulationSettings.solver = solverSelect.value;
   if (simModeSelect) state.simulationSettings.simulationMode = simModeSelect.value;
+  if (solverMethodSelect) state.simulationSettings.solverMethod = solverMethodSelect.value;
   
   closeSimSettings();
 }

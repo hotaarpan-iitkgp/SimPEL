@@ -13,6 +13,8 @@ import { state } from './schematic/state';
 import { getWireDomain } from './schematic/routing';
 import { triggerImport, exportDualGraphJSON } from './schematic/actions';
 import { CircuitSimulator } from './solver_ts';
+import { AlternativeCircuitSimulator } from './solver_alt';
+import { generateMNASpaceHTML } from './utils/mnaSolver';
 
 const localSimState = { cancelled: false, paused: false };
 
@@ -274,7 +276,8 @@ export default function App() {
     stop_time: "0.01",
     step_size: "10u",
     solver: "euler",
-    step_type: "fixed"
+    step_type: "fixed",
+    solverMethod: "non-ideal"
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -282,6 +285,8 @@ export default function App() {
   const [isPaused, setIsPaused] = useState(false);
   const [serverStatus, setServerStatus] = useState<'compiling' | 'ready' | 'error'>('ready');
   const [simResults, setSimResults] = useState<SimulationResults | null>(null);
+  const [isExtractionModalOpen, setIsExtractionModalOpen] = useState(false);
+  const [extractionModeSource, setExtractionModeSource] = useState<'auto' | 'sim'>('auto');
 
   // Raw JSON Netlist configuration states
   const [jsonText, setJsonText] = useState<string>("");
@@ -415,11 +420,18 @@ export default function App() {
         localSimState.cancelled = false;
         localSimState.paused = false;
         
-        const sim = new CircuitSimulator(
-          parsed.physical_stage || [],
-          parsed.control_loops || [],
-          parsed.simulation_parameters || {}
-        );
+        const useIdealPwl = parsed.simulation_parameters?.solverMethod === 'ideal-pwl';
+        const sim = useIdealPwl
+          ? new AlternativeCircuitSimulator(
+              parsed.physical_stage || [],
+              parsed.control_loops || [],
+              parsed.simulation_parameters || {}
+            )
+          : new CircuitSimulator(
+              parsed.physical_stage || [],
+              parsed.control_loops || [],
+              parsed.simulation_parameters || {}
+            );
         
         results = await sim.runAsync(
           () => localSimState.cancelled,
@@ -511,7 +523,8 @@ export default function App() {
           stop_time: String(json.simulation_parameters.stop_time ?? "0.01"),
           step_size: String(json.simulation_parameters.step_size ?? "10u"),
           solver: (json.simulation_parameters.solver ?? "euler") as any,
-          step_type: (json.simulation_parameters.step_type ?? "fixed") as any
+          step_type: (json.simulation_parameters.step_type ?? "fixed") as any,
+          solverMethod: (json.simulation_parameters.solverMethod ?? "non-ideal") as any
         });
       }
       
@@ -892,6 +905,7 @@ export default function App() {
         step_size: currentParsedNetlist.simulation_parameters?.step_size || solverConfig.step_size,
         solver: currentParsedNetlist.simulation_parameters?.solver || solverConfig.solver,
         step_type: currentParsedNetlist.simulation_parameters?.step_type || solverConfig.step_type,
+        solverMethod: currentParsedNetlist.simulation_parameters?.solverMethod || solverConfig.solverMethod || 'non-ideal',
         wanted_variables: currentParsedNetlist.simulation_parameters?.wanted_variables || Array.from(new Set(resolvedWanted))
       },
       physical_stage: components.filter(c => c.nodes && c.nodes.length > 0),
@@ -918,11 +932,18 @@ export default function App() {
         localSimState.cancelled = false;
         localSimState.paused = false;
         
-        const sim = new CircuitSimulator(
-          netlistPayload.physical_stage || [],
-          netlistPayload.control_loops || [],
-          netlistPayload.simulation_parameters || {}
-        );
+        const useIdealPwl = netlistPayload.simulation_parameters?.solverMethod === 'ideal-pwl';
+        const sim = useIdealPwl
+          ? new AlternativeCircuitSimulator(
+              netlistPayload.physical_stage || [],
+              netlistPayload.control_loops || [],
+              netlistPayload.simulation_parameters || {}
+            )
+          : new CircuitSimulator(
+              netlistPayload.physical_stage || [],
+              netlistPayload.control_loops || [],
+              netlistPayload.simulation_parameters || {}
+            );
         
         results = await sim.runAsync(
           () => localSimState.cancelled,
@@ -1441,6 +1462,124 @@ export default function App() {
     navigator.clipboard.writeText(jsonText)
       .then(() => alert("Raw Netlist JSON copied to clipboard!"))
       .catch((err) => alert("Clipboard copying failed: " + err));
+  };
+
+  const getSimulatedSwitchCombinations = (netlistText: string): boolean[][] | undefined => {
+    if (!simResults) return undefined;
+    
+    let stage: any = {};
+    try {
+      stage = JSON.parse(netlistText)?.physical_stage || {};
+    } catch (e) {
+      return undefined;
+    }
+
+    const switches: any[] = [];
+    (stage.diodes || []).forEach((c: any) => {
+      switches.push(c);
+    });
+    (stage.analog_switches || []).forEach((c: any) => {
+      switches.push(c);
+    });
+
+    if (switches.length === 0) return [];
+
+    const getGateSignalName = (compId: string, wires: any[], compType?: string): string => {
+      if (compType === 'vg-FET') return `${compId}.G`;
+      if (!wires) return "0.0";
+      let rootWire = wires.find((w: any) => 
+        w.to && w.to.type === 'pin' && w.to.compId === compId && w.to.terminal === 'G'
+      );
+      if (rootWire) {
+        const backtrace = (endpoint: any): string => {
+          if (!endpoint) return "0.0";
+          if (endpoint.type === 'pin') return `${endpoint.compId}.${endpoint.terminal}`;
+          if (endpoint.type === 'wire') {
+            const parentWire = wires.find((w: any) => w.id === endpoint.wireId);
+            if (!parentWire) return "0.0";
+            return backtrace(parentWire.from);
+          }
+          return "0.0";
+        };
+        return backtrace(rootWire.from);
+      }
+      return "0.0";
+    };
+
+    const getPrefixedCompId = (compId: string): string => {
+      const currentPrefix = [
+        ...(state.navigationStack || []).map((layer: any) => layer.subsystemId),
+        state.currentSubsystemId
+      ].filter(Boolean).join('.');
+      return currentPrefix && !compId.startsWith(currentPrefix + '.') 
+        ? `${currentPrefix}.${compId}` 
+        : compId;
+    };
+
+    const getSwitchOnAt = (compId: string, compType: string, stepIdx: number) => {
+      const prefId = getPrefixedCompId(compId);
+      const compObj = state.components?.find((c: any) => c.id === compId);
+      const chan = compObj?.channels?.G || compObj?.channels?.Ctrl || compObj?.channels?.Switch;
+      
+      if (chan) {
+        const prefChannel = getPrefixedCompId(chan);
+        if (simResults.signals?.[prefChannel] !== undefined) {
+          return (simResults.signals[prefChannel][stepIdx] ?? 0.0) > 0.5;
+        }
+      }
+
+      const ctrlPlot = simResults.custom_plots?.[`Ctrl_${prefId}`] || simResults.custom_plots?.[`Ctrl_${compId}`];
+      if (ctrlPlot) {
+        return (ctrlPlot[stepIdx] ?? 0.0) > 0.5;
+      }
+
+      const gateSig = getGateSignalName(compId, state.wires, compType);
+      if (gateSig && gateSig !== "0.0") {
+        const prefGateSig = getPrefixedCompId(gateSig);
+        if (simResults.signals?.[prefGateSig] !== undefined) {
+          return (simResults.signals[prefGateSig][stepIdx] ?? 0.0) > 0.5;
+        }
+      }
+
+      const iVal = (simResults.custom_plots?.[`I_${prefId}`]?.[stepIdx] || simResults.custom_plots?.[`I_${compId}`]?.[stepIdx]) ?? 0.0;
+      return Math.abs(iVal) > 1e-3;
+    };
+
+    const uniqueStatesSet = new Set<string>();
+    const uniqueStatesList: boolean[][] = [];
+    const tData = simResults.time || [];
+
+    for (let stepIdx = 0; stepIdx < tData.length; stepIdx++) {
+      const stateArr = switches.map(sw => getSwitchOnAt(sw.id, sw.type || 'SW', stepIdx));
+      const key = stateArr.map(s => s ? '1' : '0').join('');
+      if (!uniqueStatesSet.has(key)) {
+        uniqueStatesSet.add(key);
+        uniqueStatesList.push(stateArr);
+      }
+    }
+
+    return uniqueStatesList;
+  };
+
+  const handleMNAExtraction = () => {
+    try {
+      // Always use the simple/ideal netlist for MNA mode extraction to avoid parasitics/wires as resistors
+      const idealNetlist = exportDualGraphJSON(true);
+      const idealNetlistStr = JSON.stringify(idealNetlist);
+
+      let customActiveSwitchStates: boolean[][] | undefined = undefined;
+      if (extractionModeSource === 'sim' && simResults) {
+        customActiveSwitchStates = getSimulatedSwitchCombinations(idealNetlistStr);
+      }
+
+      const html = generateMNASpaceHTML(idealNetlistStr, customActiveSwitchStates);
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setIsExtractionModalOpen(false);
+    } catch (e: any) {
+      alert(`Failed to extract MNA state-space:\n${e.message}`);
+    }
   };
 
   // Reconfigurable Subplots Layout Operations
@@ -3188,10 +3327,17 @@ export default function App() {
               </button>
               <button
                 onClick={downloadNetlistFile}
-                className="px-3 py-1.5 border border-slate-900 hover:border-slate-800 bg-slate-950 hover:bg-slate-900 transition-all rounded-lg text-slate-300 cursor-pointer text-center select-none col-span-2"
+                className="px-3 py-1.5 border border-slate-900 hover:border-slate-800 bg-slate-950 hover:bg-slate-900 transition-all rounded-lg text-slate-300 cursor-pointer text-center select-none"
                 title="Download active content as a .json file standard"
               >
-                Download Netlist File
+                Download Netlist
+              </button>
+              <button
+                onClick={() => setIsExtractionModalOpen(true)}
+                className="px-3 py-1.5 border border-slate-900 hover:border-emerald-500/40 bg-slate-950 hover:bg-emerald-950/20 text-emerald-455 hover:text-emerald-300 transition-all rounded-lg cursor-pointer text-center select-none font-bold"
+                title="Extract MNA equations for all operating modes (Complete Model + Ideal Switch Modes)"
+              >
+                Extract MNA & Modes
               </button>
             </div>
           </div>
@@ -3486,35 +3632,72 @@ export default function App() {
       </main>
     )}
     {isVisualFlowOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-lg p-4 md:p-6 select-none animate-fade-in">
-          <div className={`w-full h-full max-w-[1700px] max-h-[950px] rounded-3xl overflow-hidden shadow-2xl flex flex-col border ${theme === 'light' ? 'bg-slate-50 border-slate-200 shadow-slate-200/50' : 'bg-[#050711] border-slate-800/85'}`}>
-            
-            {/* Modal Header */}
-            <div className={`px-6 py-4 border-b flex items-center justify-between z-10 shrink-0 ${theme === 'light' ? 'border-slate-200 bg-white' : 'border-slate-900 bg-slate-950/90'}`}>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <h2 className={`text-sm font-extrabold tracking-wider uppercase font-sans ${theme === 'light' ? 'text-slate-850' : 'text-slate-100'}`}>
-                  Real-time Visual Flow & Subplot Analyzer Window
-                </h2>
-              </div>
-              <button
-                onClick={() => setIsVisualFlowOpen(false)}
-                className={`px-3 py-1.5 border rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow flex items-center gap-1.5 ${theme === 'light' ? 'border-slate-200 hover:bg-slate-100 text-slate-600 hover:text-slate-800' : 'border-slate-850 hover:border-slate-800 hover:bg-slate-900/65 text-slate-400 hover:text-slate-100'}`}
-                title="Close Visual Flow Window"
-              >
-                <X className="h-4 w-4" />
-                <span>Close Window</span>
-              </button>
-            </div>
-
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-lg select-none animate-fade-in">
+          <div className={`w-screen h-screen overflow-hidden flex flex-col ${theme === 'light' ? 'bg-slate-50' : 'bg-[#050711]'}`}>
             {/* Modal Body: Renders the SimulationPlayer */}
-            <div className={`flex-1 overflow-y-auto p-6 flex flex-col ${theme === 'light' ? 'bg-slate-50' : 'bg-[#050711]'}`}>
+            <div className={`flex-1 overflow-hidden p-4 flex flex-col ${theme === 'light' ? 'bg-slate-50' : 'bg-[#050711]'}`}>
               <SimulationPlayer 
                 simResults={simResults} 
+                jsonText={jsonText}
                 onRunSimulation={runSchematicSimulation} 
                 subplots={subplots}
                 theme={theme}
+                onClose={() => setIsVisualFlowOpen(false)}
               />
+            </div>
+          </div>
+        </div>
+      )}
+      {isExtractionModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in select-none">
+          <div className={`w-full max-w-sm rounded-2xl p-5 border flex flex-col gap-4 shadow-2xl ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#050711] border-slate-900'}`}>
+            <div className="flex items-center gap-2 border-b border-slate-900/40 pb-2.5">
+              <Activity className="h-4 w-4 text-emerald-400" />
+              <h3 className={`text-xs font-extrabold uppercase tracking-wider ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
+                MNA Mode Extraction Options
+              </h3>
+            </div>
+            
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                Select Modes Source
+              </label>
+              <select
+                value={extractionModeSource}
+                onChange={(e) => setExtractionModeSource(e.target.value as 'auto' | 'sim')}
+                className={`w-full px-3 py-2 border rounded-xl text-xs font-semibold outline-none focus:border-emerald-500 cursor-pointer ${
+                  theme === 'light' 
+                    ? 'bg-slate-50 border-slate-200 text-slate-800' 
+                    : 'bg-slate-950 border-slate-850 text-slate-250'
+                }`}
+              >
+                <option value="auto">Auto permutations (Mathematical topology check)</option>
+                <option value="sim" disabled={!simResults}>From Simulation Results (Only active switch cycles)</option>
+              </select>
+              {!simResults && (
+                <span className="text-[9px] text-rose-500 font-bold leading-tight mt-1">
+                  * Run simulation first to extract operating modes from the timeline data.
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 mt-2">
+              <button
+                onClick={() => setIsExtractionModalOpen(false)}
+                className={`px-3.5 py-1.5 border rounded-lg text-xxs font-bold transition-all active:scale-95 cursor-pointer ${
+                  theme === 'light' 
+                    ? 'border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700' 
+                    : 'border-slate-850 text-slate-400 hover:border-slate-800 hover:bg-slate-900/60 hover:text-slate-200'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleMNAExtraction}
+                className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-lg text-xxs flex items-center gap-1.5 shadow-xl shadow-emerald-500/5 active:scale-95 border border-emerald-400/20 cursor-pointer"
+              >
+                Proceed & Extract
+              </button>
             </div>
           </div>
         </div>
