@@ -10,6 +10,7 @@ import { CIRCUITS_TEMPLATES } from './templates';
 import SchematicEditor from './components/SchematicEditor';
 import SimulationPlayer from './components/SimulationPlayer';
 import PlotlyChart from './components/PlotlyChart';
+import Plotly from 'plotly.js-dist-min';
 import { state } from './schematic/state';
 import { getWireDomain } from './schematic/routing';
 import { triggerImport, exportDualGraphJSON } from './schematic/actions';
@@ -1284,9 +1285,9 @@ export default function App() {
       const results = await Promise.all(
         activeSubplots.map(async (sp) => {
           const plotlyEl = document.getElementById(`plotly-chart-element-${sp.id}`);
-          if (plotlyEl && (window as any).Plotly) {
+          if (plotlyEl) {
             try {
-              const dataUrl = await (window as any).Plotly.toImage(plotlyEl, { format: 'svg' });
+              const dataUrl = await Plotly.toImage(plotlyEl, { format: 'svg' });
               const base64Data = dataUrl.split(',')[1];
               const svgContent = decodeURIComponent(escape(atob(base64Data)));
               
