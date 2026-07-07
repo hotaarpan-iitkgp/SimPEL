@@ -1254,24 +1254,24 @@ export default function App() {
     return Array.from(tracesSet);
   };
 
-  const exportCombinedSVG = async () => {
+  const exportCombinedSVG = () => {
     if (!simResults) {
       alert("No simulation data available to export!");
       return;
     }
-    
+
     try {
       const activeSubplots = getActiveSubplotsForExport();
       if (activeSubplots.length === 0) {
         alert("No subplots active to export!");
         return;
       }
-      
+
       let totalHeight = 0;
-      const spacing = 12;
+      const spacing = 16;
       let combinedContent = "";
       let combinedDefs = "";
-      const width = 800;
+      let exportWidth = 800;
       
       let bgColor = "#020617";
       if (theme === 'light') {
@@ -1280,71 +1280,84 @@ export default function App() {
         bgColor = "#141517";
       }
       
-      let foundAnyElement = false;
+      const validResults: { subplot: typeof activeSubplots[0]; svgStr: string; height: number }[] = [];
       
-      const results = await Promise.all(
-        activeSubplots.map(async (sp) => {
-          const plotlyEl = document.getElementById(`plotly-chart-element-${sp.id}`);
-          console.log(`[SVG Export] Looking for plotly element: plotly-chart-element-${sp.id}. Found:`, !!plotlyEl);
-          if (plotlyEl) {
-            try {
-              const dataUrl = await Plotly.toImage(plotlyEl, { format: 'svg' });
-              const base64Data = dataUrl.split(',')[1];
-              const svgContent = decodeURIComponent(escape(atob(base64Data)));
-              
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(svgContent, 'image/svg+xml');
-              const svgElement = doc.documentElement;
-              return { sp, svgElement };
-            } catch (e: any) {
-              console.error("Plotly SVG export failed for " + sp.id, e);
-              alert("Plotly SVG export failed for subplot " + sp.title + ": " + (e.message || e));
-            }
-          }
-          
+      activeSubplots.forEach((sp) => {
+        const chartEl = document.getElementById(`plotly-chart-${sp.id}`);
+        if (!chartEl) {
+          // SVG Fallback Mode
           const svgEl = document.getElementById(`plot-svg-${sp.id}`);
-          console.log(`[SVG Export] Looking for fallback SVG element: plot-svg-${sp.id}. Found:`, !!svgEl);
           if (svgEl) {
-            return { sp, svgElement: svgEl.cloneNode(true) as SVGSVGElement };
+            const clone = svgEl.cloneNode(true) as SVGSVGElement;
+            const defs = clone.querySelector('defs');
+            if (defs) {
+              combinedDefs += defs.innerHTML;
+              defs.remove();
+            }
+            const viewBox = clone.getAttribute('viewBox');
+            let h = 240;
+            if (viewBox) {
+              const parts = viewBox.split(' ');
+              if (parts.length === 4) {
+                h = parseFloat(parts[3]);
+              }
+            }
+            const svgStr = `
+<!-- Subplot: ${sp.title} (Fallback SVG) -->
+<g transform="translate(0, ${totalHeight})">
+  ${clone.innerHTML}
+</g>`;
+            validResults.push({ subplot: sp, svgStr, height: h });
+            totalHeight += h + spacing;
           }
-          
-          return null;
-        })
-      );
-      
-      results.forEach((item) => {
-        if (!item) return;
-        const { sp, svgElement } = item;
-        foundAnyElement = true;
-        
-        const defs = svgElement.querySelector('defs');
-        if (defs) {
-          combinedDefs += defs.innerHTML;
-          defs.remove();
+          return;
         }
         
-        const viewBox = svgElement.getAttribute('viewBox');
-        let h = 240;
-        if (viewBox) {
-          const parts = viewBox.split(' ');
-          if (parts.length === 4) {
-            h = parseFloat(parts[3]);
-          }
-        } else {
-          const heightAttr = svgElement.getAttribute('height');
-          if (heightAttr) {
-            h = parseFloat(heightAttr);
-          }
+        const w = chartEl.clientWidth || 800;
+        const h = chartEl.clientHeight || 240;
+        
+        exportWidth = w;
+        
+        let svgs = Array.from(chartEl.querySelectorAll('svg.main-svg'));
+        if (svgs.length === 0) {
+          svgs = Array.from(chartEl.querySelectorAll('svg'));
         }
         
-        combinedContent += `\n  <!-- Subplot: ${sp.title} -->\n  <g transform="translate(0, ${totalHeight})">${svgElement.innerHTML}</g>`;
-        totalHeight += h + spacing;
+        let subplotContent = "";
+        let subplotDefs = "";
+        
+        svgs.forEach((svg) => {
+          const clone = svg.cloneNode(true) as SVGSVGElement;
+          const defs = clone.querySelector('defs');
+          if (defs) {
+            subplotDefs += defs.innerHTML;
+            defs.remove();
+          }
+          subplotContent += clone.innerHTML;
+        });
+        
+        if (subplotContent) {
+          const svgStr = `
+<!-- Subplot: ${sp.title} (Plotly Live) -->
+<g transform="translate(0, ${totalHeight})">
+  ${subplotContent}
+</g>`;
+          if (subplotDefs) {
+            combinedDefs += subplotDefs;
+          }
+          validResults.push({ subplot: sp, svgStr, height: h });
+          totalHeight += h + spacing;
+        }
       });
       
-      if (!foundAnyElement) {
+      if (validResults.length === 0) {
         alert("Could not locate the SVG elements of the plot subplots. Please make sure they are visible on screen.");
         return;
       }
+      
+      validResults.forEach((res) => {
+        combinedContent += res.svgStr;
+      });
       
       totalHeight = Math.max(50, totalHeight - spacing);
       
@@ -1362,7 +1375,7 @@ export default function App() {
         </style>
       `;
       
-      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${totalHeight}" width="${width}" height="${totalHeight}" style="background-color: ${bgColor}">
+      const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${exportWidth} ${totalHeight}" width="${exportWidth}" height="${totalHeight}" style="background-color: ${bgColor}">
   <defs>
     ${bgStyle}
     ${combinedDefs}
@@ -1375,7 +1388,7 @@ export default function App() {
       const a = document.createElement('a');
       a.href = url;
       const baseName = activeTab === 'simulator' ? 'waveform_solver' : `${activeTab}_scope`;
-      a.download = `${baseName}_zoomed_view.svg`;
+      a.download = `${baseName}_combined_plots.svg`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -2165,35 +2178,37 @@ export default function App() {
             <p className="text-[9px] text-slate-500 mt-0.5">Toggle variable checkboxes below to render waveforms in this pane!</p>
           </div>
         ) : isPlotlyLoaded ? (
-          <PlotlyChart
-            subplotId={subplot.id}
-            traces={activeTraces}
-            getTraceData={getTraceData}
-            getTraceColor={(trace) => isImPlotTheme 
-              ? ((trace.startsWith('V_') || trace.endsWith('_V')) ? '#eab308' : (trace.startsWith('I_') || trace.endsWith('_I')) ? '#ef4444' : '#10b981')
-              : getTraceColor(trace)}
-            tData={tData}
-            displayXMin={displayXMin}
-            displayXMax={displayXMax}
-            height={height}
-            theme={theme}
-            simResults={simResults}
-            onZoomX={(min, max) => {
-              if (syncXZoom) {
-                if (min === null || max === null) {
-                  setGlobalZoomX(null);
+          <div id={`plotly-chart-${subplot.id}`} className="w-full h-auto">
+            <PlotlyChart
+              subplotId={subplot.id}
+              traces={activeTraces}
+              getTraceData={getTraceData}
+              getTraceColor={(trace) => isImPlotTheme 
+                ? ((trace.startsWith('V_') || trace.endsWith('_V')) ? '#eab308' : (trace.startsWith('I_') || trace.endsWith('_I')) ? '#ef4444' : '#10b981')
+                : getTraceColor(trace)}
+              tData={tData}
+              displayXMin={displayXMin}
+              displayXMax={displayXMax}
+              height={height}
+              theme={theme}
+              simResults={simResults}
+              onZoomX={(min, max) => {
+                if (syncXZoom) {
+                  if (min === null || max === null) {
+                    setGlobalZoomX(null);
+                  } else {
+                    setGlobalZoomX({ min, max });
+                  }
                 } else {
-                  setGlobalZoomX({ min, max });
+                  if (min === null || max === null) {
+                    setZoomRangesX({ ...zoomRangesX, [subplot.id]: null });
+                  } else {
+                    setZoomRangesX({ ...zoomRangesX, [subplot.id]: { min, max } });
+                  }
                 }
-              } else {
-                if (min === null || max === null) {
-                  setZoomRangesX({ ...zoomRangesX, [subplot.id]: null });
-                } else {
-                  setZoomRangesX({ ...zoomRangesX, [subplot.id]: { min, max } });
-                }
-              }
-            }}
-          />
+              }}
+            />
+          </div>
         ) : (
           <svg 
             id={`plot-svg-${subplot.id}`}
