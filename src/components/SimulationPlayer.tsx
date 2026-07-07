@@ -561,6 +561,16 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
         setIsPlotlyLoaded(true);
         clearInterval(checkInterval);
       });
+    } else {
+      const script = document.createElement('script');
+      script.id = 'plotly-cdn-script';
+      script.src = '/plotly.min.js';
+      script.async = true;
+      script.onload = () => {
+        setIsPlotlyLoaded(true);
+        clearInterval(checkInterval);
+      };
+      document.head.appendChild(script);
     }
 
     return () => clearInterval(checkInterval);
