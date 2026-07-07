@@ -9,6 +9,7 @@ import { Component, SolverConfig, SimulationResults } from './types';
 import { CIRCUITS_TEMPLATES } from './templates';
 import SchematicEditor from './components/SchematicEditor';
 import SimulationPlayer from './components/SimulationPlayer';
+import PlotlyChart from './components/PlotlyChart';
 import { state } from './schematic/state';
 import { getWireDomain } from './schematic/routing';
 import { triggerImport, exportDualGraphJSON } from './schematic/actions';
@@ -177,105 +178,6 @@ export default function App() {
     return trace; // fallback to original trace if source not found
   };
 
-interface PlotlyChartComponentProps {
-  subplotId: string;
-  traces: string[];
-  getTraceData: (traceName: string) => number[];
-  getTraceColor: (traceName: string) => string;
-  tData: number[];
-  displayXMin: number;
-  displayXMax: number;
-  height: number;
-  theme: string;
-  simResults: any;
-}
-
-const PlotlyChartComponent: React.FC<PlotlyChartComponentProps> = ({
-  subplotId,
-  traces,
-  getTraceData,
-  getTraceColor,
-  tData,
-  displayXMin,
-  displayXMax,
-  height,
-  theme,
-  simResults
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isLight = theme === 'light';
-
-  useEffect(() => {
-    const w = window as any;
-    if (!w.Plotly || !containerRef.current) return;
-
-    // Filter time range (zoom viewport)
-    const xData: number[] = [];
-    const traceValues: Record<string, number[]> = {};
-    traces.forEach(t => { traceValues[t] = []; });
-
-    for (let i = 0; i < tData.length; i++) {
-      const t = tData[i];
-      if (t >= displayXMin && t <= displayXMax) {
-        xData.push(t);
-        traces.forEach(traceName => {
-          const arr = getTraceData(traceName);
-          traceValues[traceName].push(arr[i] ?? 0.0);
-        });
-      }
-    }
-
-    const data = traces.map(traceName => ({
-      x: xData,
-      y: traceValues[traceName],
-      name: traceName,
-      type: 'scatter',
-      mode: 'lines',
-      line: {
-        color: getTraceColor(traceName),
-        width: 1.8
-      },
-      hoverinfo: 'x+y+name'
-    }));
-
-    // Theme coloring
-    const gridColor = isLight ? '#e2e8f0' : '#1e293b';
-    const textColor = isLight ? '#475569' : '#94a3b8';
-
-    const layout = {
-      margin: { t: 5, r: 15, b: 20, l: 45 },
-      height: height,
-      autosize: true,
-      paper_bgcolor: 'rgba(0,0,0,0)',
-      plot_bgcolor: 'rgba(0,0,0,0)',
-      showlegend: false,
-      xaxis: {
-        range: [displayXMin, displayXMax],
-        gridcolor: gridColor,
-        zeroline: false,
-        tickfont: { size: 8, color: textColor },
-        showline: true,
-        linecolor: gridColor
-      },
-      yaxis: {
-        gridcolor: gridColor,
-        zeroline: false,
-        tickfont: { size: 8, color: textColor },
-        showline: true,
-        linecolor: gridColor
-      }
-    };
-
-    const config = {
-      displayModeBar: true,
-      responsive: true
-    };
-
-    w.Plotly.react(containerRef.current, data, layout as any, config);
-  }, [traces, tData, displayXMin, displayXMax, height, theme, simResults]);
-
-  return <div ref={containerRef} style={{ width: '100%', height: height }} />;
-};
 
 
   const syncSubplotsToGlobalState = (newSubplots: any[]) => {
@@ -2229,7 +2131,7 @@ const PlotlyChartComponent: React.FC<PlotlyChartComponentProps> = ({
             <p className="text-[9px] text-slate-500 mt-0.5">Toggle variable checkboxes below to render waveforms in this pane!</p>
           </div>
         ) : isPlotlyLoaded ? (
-          <PlotlyChartComponent
+          <PlotlyChart
             subplotId={subplot.id}
             traces={activeTraces}
             getTraceData={getTraceData}
