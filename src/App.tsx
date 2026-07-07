@@ -177,6 +177,107 @@ export default function App() {
     return trace; // fallback to original trace if source not found
   };
 
+interface PlotlyChartComponentProps {
+  subplotId: string;
+  traces: string[];
+  getTraceData: (traceName: string) => number[];
+  getTraceColor: (traceName: string) => string;
+  tData: number[];
+  displayXMin: number;
+  displayXMax: number;
+  height: number;
+  theme: string;
+  simResults: any;
+}
+
+const PlotlyChartComponent: React.FC<PlotlyChartComponentProps> = ({
+  subplotId,
+  traces,
+  getTraceData,
+  getTraceColor,
+  tData,
+  displayXMin,
+  displayXMax,
+  height,
+  theme,
+  simResults
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isLight = theme === 'light';
+
+  useEffect(() => {
+    const w = window as any;
+    if (!w.Plotly || !containerRef.current) return;
+
+    // Filter time range (zoom viewport)
+    const xData: number[] = [];
+    const traceValues: Record<string, number[]> = {};
+    traces.forEach(t => { traceValues[t] = []; });
+
+    for (let i = 0; i < tData.length; i++) {
+      const t = tData[i];
+      if (t >= displayXMin && t <= displayXMax) {
+        xData.push(t);
+        traces.forEach(traceName => {
+          const arr = getTraceData(traceName);
+          traceValues[traceName].push(arr[i] ?? 0.0);
+        });
+      }
+    }
+
+    const data = traces.map(traceName => ({
+      x: xData,
+      y: traceValues[traceName],
+      name: traceName,
+      type: 'scatter',
+      mode: 'lines',
+      line: {
+        color: getTraceColor(traceName),
+        width: 1.8
+      },
+      hoverinfo: 'x+y+name'
+    }));
+
+    // Theme coloring
+    const gridColor = isLight ? '#e2e8f0' : '#1e293b';
+    const textColor = isLight ? '#475569' : '#94a3b8';
+
+    const layout = {
+      margin: { t: 5, r: 15, b: 20, l: 45 },
+      height: height,
+      autosize: true,
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      showlegend: false,
+      xaxis: {
+        range: [displayXMin, displayXMax],
+        gridcolor: gridColor,
+        zeroline: false,
+        tickfont: { size: 8, color: textColor },
+        showline: true,
+        linecolor: gridColor
+      },
+      yaxis: {
+        gridcolor: gridColor,
+        zeroline: false,
+        tickfont: { size: 8, color: textColor },
+        showline: true,
+        linecolor: gridColor
+      }
+    };
+
+    const config = {
+      displayModeBar: true,
+      responsive: true
+    };
+
+    w.Plotly.react(containerRef.current, data, layout as any, config);
+  }, [traces, tData, displayXMin, displayXMax, height, theme, simResults]);
+
+  return <div ref={containerRef} style={{ width: '100%', height: height }} />;
+};
+
+
   const syncSubplotsToGlobalState = (newSubplots: any[]) => {
     state.plotConfiguration.plots = newSubplots.map(sp => ({
       title: sp.title,
@@ -187,6 +288,43 @@ export default function App() {
   };
 
   const [activeTab, setActiveTab] = useState<string>('schematic');
+
+  const [isPlotlyLoaded, setIsPlotlyLoaded] = useState(typeof window !== 'undefined' && !!(window as any).Plotly);
+
+  useEffect(() => {
+    const w = window as any;
+    if (w.Plotly) {
+      setIsPlotlyLoaded(true);
+      return;
+    }
+
+    const checkInterval = setInterval(() => {
+      if (w.Plotly) {
+        setIsPlotlyLoaded(true);
+        clearInterval(checkInterval);
+      }
+    }, 100);
+
+    const existingScript = document.getElementById('plotly-cdn-script') || document.querySelector('script[src*="plotly"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => {
+        setIsPlotlyLoaded(true);
+        clearInterval(checkInterval);
+      });
+    } else {
+      const script = document.createElement('script');
+      script.id = 'plotly-cdn-script';
+      script.src = '/plotly.min.js';
+      script.async = true;
+      script.onload = () => {
+        setIsPlotlyLoaded(true);
+        clearInterval(checkInterval);
+      };
+      document.head.appendChild(script);
+    }
+
+    return () => clearInterval(checkInterval);
+  }, []);
   const [openScopeTabs, setOpenScopeTabs] = useState<{ scopeId: string; name: string }[]>([]);
   const [scopeOverlayModes, setScopeOverlayModes] = useState<Record<string, boolean>>({});
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -2090,6 +2228,21 @@ export default function App() {
             <p className="text-[10px] font-semibold text-slate-400">Empty Subplot Lane</p>
             <p className="text-[9px] text-slate-500 mt-0.5">Toggle variable checkboxes below to render waveforms in this pane!</p>
           </div>
+        ) : isPlotlyLoaded ? (
+          <PlotlyChartComponent
+            subplotId={subplot.id}
+            traces={activeTraces}
+            getTraceData={getTraceData}
+            getTraceColor={(trace) => isImPlotTheme 
+              ? ((trace.startsWith('V_') || trace.endsWith('_V')) ? '#eab308' : (trace.startsWith('I_') || trace.endsWith('_I')) ? '#ef4444' : '#10b981')
+              : getTraceColor(trace)}
+            tData={tData}
+            displayXMin={displayXMin}
+            displayXMax={displayXMax}
+            height={height}
+            theme={theme}
+            simResults={simResults}
+          />
         ) : (
           <svg 
             id={`plot-svg-${subplot.id}`}
