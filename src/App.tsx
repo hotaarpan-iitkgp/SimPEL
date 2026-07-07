@@ -1253,7 +1253,7 @@ export default function App() {
     return Array.from(tracesSet);
   };
 
-  const exportCombinedSVG = () => {
+  const exportCombinedSVG = async () => {
     if (!simResults) {
       alert("No simulation data available to export!");
       return;
@@ -1281,29 +1281,59 @@ export default function App() {
       
       let foundAnyElement = false;
       
-      activeSubplots.forEach((sp) => {
-        const svgEl = document.getElementById(`plot-svg-${sp.id}`);
-        if (!svgEl) return;
-        
+      const results = await Promise.all(
+        activeSubplots.map(async (sp) => {
+          const plotlyEl = document.getElementById(`plotly-chart-element-${sp.id}`);
+          if (plotlyEl && (window as any).Plotly) {
+            try {
+              const dataUrl = await (window as any).Plotly.toImage(plotlyEl, { format: 'svg' });
+              const base64Data = dataUrl.split(',')[1];
+              const svgContent = decodeURIComponent(escape(atob(base64Data)));
+              
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(svgContent, 'image/svg+xml');
+              const svgElement = doc.documentElement;
+              return { sp, svgElement };
+            } catch (e) {
+              console.error("Plotly SVG export failed for " + sp.id, e);
+            }
+          }
+          
+          const svgEl = document.getElementById(`plot-svg-${sp.id}`);
+          if (svgEl) {
+            return { sp, svgElement: svgEl.cloneNode(true) as SVGSVGElement };
+          }
+          
+          return null;
+        })
+      );
+      
+      results.forEach((item) => {
+        if (!item) return;
+        const { sp, svgElement } = item;
         foundAnyElement = true;
-        const cloned = svgEl.cloneNode(true) as SVGSVGElement;
         
-        const defs = cloned.querySelector('defs');
+        const defs = svgElement.querySelector('defs');
         if (defs) {
           combinedDefs += defs.innerHTML;
           defs.remove();
         }
         
-        const viewBox = cloned.getAttribute('viewBox');
+        const viewBox = svgElement.getAttribute('viewBox');
         let h = 240;
         if (viewBox) {
           const parts = viewBox.split(' ');
           if (parts.length === 4) {
             h = parseFloat(parts[3]);
           }
+        } else {
+          const heightAttr = svgElement.getAttribute('height');
+          if (heightAttr) {
+            h = parseFloat(heightAttr);
+          }
         }
         
-        combinedContent += `\n  <!-- Subplot: ${sp.title} -->\n  <g transform="translate(0, ${totalHeight})">${cloned.innerHTML}</g>`;
+        combinedContent += `\n  <!-- Subplot: ${sp.title} -->\n  <g transform="translate(0, ${totalHeight})">${svgElement.innerHTML}</g>`;
         totalHeight += h + spacing;
       });
       
