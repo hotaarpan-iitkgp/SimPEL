@@ -542,26 +542,29 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
   const [isPlotlyLoaded, setIsPlotlyLoaded] = useState(typeof window !== 'undefined' && !!(window as any).Plotly);
 
   useEffect(() => {
-    if (isPlotlyLoaded) return;
     const w = window as any;
     if (w.Plotly) {
       setIsPlotlyLoaded(true);
       return;
     }
 
-    const existingScript = document.getElementById('plotly-cdn-script');
+    const checkInterval = setInterval(() => {
+      if (w.Plotly) {
+        setIsPlotlyLoaded(true);
+        clearInterval(checkInterval);
+      }
+    }, 100);
+
+    const existingScript = document.getElementById('plotly-cdn-script') || document.querySelector('script[src*="plotly"]');
     if (existingScript) {
-      existingScript.addEventListener('load', () => setIsPlotlyLoaded(true));
-      return;
+      existingScript.addEventListener('load', () => {
+        setIsPlotlyLoaded(true);
+        clearInterval(checkInterval);
+      });
     }
 
-    const script = document.createElement('script');
-    script.id = 'plotly-cdn-script';
-    script.src = 'https://cdn.plot.ly/plotly-2.24.1.min.js';
-    script.async = true;
-    script.onload = () => setIsPlotlyLoaded(true);
-    document.head.appendChild(script);
-  }, [isPlotlyLoaded]);
+    return () => clearInterval(checkInterval);
+  }, []);
 
   // Playback State
   const [isPlaying, setIsPlaying] = useState(false);
