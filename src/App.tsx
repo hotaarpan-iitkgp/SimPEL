@@ -2144,6 +2144,21 @@ export default function App() {
             height={height}
             theme={theme}
             simResults={simResults}
+            onZoomX={(min, max) => {
+              if (syncXZoom) {
+                if (min === null || max === null) {
+                  setGlobalZoomX(null);
+                } else {
+                  setGlobalZoomX({ min, max });
+                }
+              } else {
+                if (min === null || max === null) {
+                  setZoomRangesX({ ...zoomRangesX, [subplot.id]: null });
+                } else {
+                  setZoomRangesX({ ...zoomRangesX, [subplot.id]: { min, max } });
+                }
+              }
+            }}
           />
         ) : (
           <svg 

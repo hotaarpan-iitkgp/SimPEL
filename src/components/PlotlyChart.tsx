@@ -12,6 +12,7 @@ interface PlotlyChartProps {
   height: number;
   theme: string;
   simResults: any;
+  onZoomX: (min: number | null, max: number | null) => void;
 }
 
 const PlotlyChart: React.FC<PlotlyChartProps> = ({
@@ -24,7 +25,8 @@ const PlotlyChart: React.FC<PlotlyChartProps> = ({
   displayXMax,
   height,
   theme,
-  simResults
+  simResults,
+  onZoomX
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const isLight = theme === 'light';
@@ -95,7 +97,28 @@ const PlotlyChart: React.FC<PlotlyChartProps> = ({
     };
 
     Plotly.react(containerRef.current, data, layout as any, config);
-  }, [traces, tData, displayXMin, displayXMax, height, theme, simResults]);
+
+    const handleRelayout = (eventData: any) => {
+      if (eventData) {
+        if (eventData['xaxis.range[0]'] !== undefined && eventData['xaxis.range[1]'] !== undefined) {
+          onZoomX(eventData['xaxis.range[0]'], eventData['xaxis.range[1]']);
+        } else if (eventData['xaxis.autorange'] === true) {
+          onZoomX(null, null);
+        }
+      }
+    };
+
+    const node = containerRef.current;
+    if (node) {
+      (node as any).on('plotly_relayout', handleRelayout);
+    }
+
+    return () => {
+      if (node) {
+        (node as any).removeAllListeners?.('plotly_relayout');
+      }
+    };
+  }, [traces, tData, displayXMin, displayXMax, height, theme, simResults, onZoomX]);
 
   return <div ref={containerRef} style={{ width: '100%', height: height }} />;
 };
