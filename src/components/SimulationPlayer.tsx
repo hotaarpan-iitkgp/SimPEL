@@ -348,6 +348,146 @@ const resolveInputPinToSource = (trace: string): string => {
   
   return trace; // fallback to original trace if source not found
 };
+interface PlotlyChartComponentProps {
+  subplotId: string;
+  traces: string[];
+  getFullTraceArray: (traceName: string) => number[];
+  getStableTraceColor: (traceName: string) => string;
+  tData: number[];
+  vStart: number;
+  vEnd: number;
+  playTime: number;
+  totalSimDuration: number;
+  isLight: boolean;
+  setPlayTime: (t: number) => void;
+  setIsPlaying: (p: boolean) => void;
+  simResults: any;
+}
+
+const PlotlyChartComponent: React.FC<PlotlyChartComponentProps> = ({
+  subplotId,
+  traces,
+  getFullTraceArray,
+  getStableTraceColor,
+  tData,
+  vStart,
+  vEnd,
+  playTime,
+  totalSimDuration,
+  isLight,
+  setPlayTime,
+  setIsPlaying,
+  simResults
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const w = window as any;
+    if (!w.Plotly || !containerRef.current) return;
+
+    // Filter time range (zoom viewport)
+    const xData: number[] = [];
+    const traceValues: Record<string, number[]> = {};
+    traces.forEach(t => { traceValues[t] = []; });
+
+    for (let i = 0; i < tData.length; i++) {
+      const t = tData[i];
+      if (t >= vStart && t <= vEnd) {
+        xData.push(t);
+        traces.forEach(traceName => {
+          const arr = getFullTraceArray(traceName);
+          traceValues[traceName].push(arr[i] ?? 0.0);
+        });
+      }
+    }
+
+    const data = traces.map(traceName => ({
+      x: xData,
+      y: traceValues[traceName],
+      name: traceName,
+      type: 'scatter',
+      mode: 'lines',
+      line: {
+        color: getStableTraceColor(traceName),
+        width: 1.8
+      },
+      hoverinfo: 'x+y+name'
+    }));
+
+    // Theme coloring
+    const gridColor = isLight ? '#e2e8f0' : '#1e293b';
+    const textColor = isLight ? '#475569' : '#94a3b8';
+
+    const layout = {
+      margin: { t: 5, r: 15, b: 20, l: 45 },
+      height: 95,
+      autosize: true,
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      showlegend: false,
+      xaxis: {
+        range: [vStart, vEnd],
+        gridcolor: gridColor,
+        zeroline: false,
+        tickfont: { size: 8, color: textColor },
+        showline: true,
+        linecolor: gridColor
+      },
+      yaxis: {
+        gridcolor: gridColor,
+        zeroline: false,
+        tickfont: { size: 8, color: textColor },
+        showline: true,
+        linecolor: gridColor
+      },
+      shapes: [
+        // Playhead indicator vertical line
+        {
+          type: 'line',
+          xref: 'x',
+          yref: 'paper',
+          x0: playTime,
+          y0: 0,
+          x1: playTime,
+          y1: 1,
+          line: {
+            color: '#f43f5e',
+            width: 1.5
+          }
+        }
+      ]
+    };
+
+    const config = {
+      displayModeBar: false,
+      responsive: true
+    };
+
+    w.Plotly.react(containerRef.current, data, layout as any, config);
+
+    // Event listener for click interaction
+    const handlePlotlyClick = (eventData: any) => {
+      if (eventData && eventData.points && eventData.points.length > 0) {
+        const clickedX = eventData.points[0].x;
+        setIsPlaying(false);
+        setPlayTime(clickedX);
+      }
+    };
+
+    const node = containerRef.current;
+    if (node) {
+      (node as any).on('plotly_click', handlePlotlyClick);
+    }
+
+    return () => {
+      if (node) {
+        (node as any).removeAllListeners?.('plotly_click');
+      }
+    };
+  }, [traces, tData, vStart, vEnd, playTime, isLight, simResults]);
+
+  return <div ref={containerRef} className="w-full h-[95px]" />;
+};
 
 export default function SimulationPlayer({ simResults, jsonText, onRunSimulation, subplots, theme, onClose }: SimulationPlayerProps) {
   // Check if current simulation results have high-fidelity segmented wire tracks
@@ -397,6 +537,31 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
       alert(`Netlist compiling failure: ${err.message || err}`);
     }
   };
+
+  // Load Plotly CDN script dynamically
+  const [isPlotlyLoaded, setIsPlotlyLoaded] = useState(typeof window !== 'undefined' && !!(window as any).Plotly);
+
+  useEffect(() => {
+    if (isPlotlyLoaded) return;
+    const w = window as any;
+    if (w.Plotly) {
+      setIsPlotlyLoaded(true);
+      return;
+    }
+
+    const existingScript = document.getElementById('plotly-cdn-script');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => setIsPlotlyLoaded(true));
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'plotly-cdn-script';
+    script.src = 'https://cdn.plot.ly/plotly-2.24.1.min.js';
+    script.async = true;
+    script.onload = () => setIsPlotlyLoaded(true);
+    document.head.appendChild(script);
+  }, [isPlotlyLoaded]);
 
   // Playback State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -2381,13 +2546,29 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
           </div>
         )}
 
-        {/* Plot SVG Frame */}
+        {/* Plot SVG Frame / Plotly Chart */}
         <div className="mt-5 relative w-full h-auto">
           {activeTraces.length === 0 ? (
             <div className={`h-[58px] border border-dashed flex flex-col items-center justify-center text-center text-[9px] rounded-lg ${isLight ? 'border-slate-200 bg-slate-50 text-slate-400' : 'border-slate-900 bg-slate-950/40 text-slate-600'}`}>
               <EyeOff className="h-3.5 w-3.5 mb-0.5" />
               <p className="font-bold">No active traces</p>
             </div>
+          ) : isPlotlyLoaded ? (
+            <PlotlyChartComponent
+              subplotId={subplot.id}
+              traces={activeTraces}
+              getFullTraceArray={getFullTraceArray}
+              getStableTraceColor={getStableTraceColor}
+              tData={tData}
+              vStart={vStart}
+              vEnd={vEnd}
+              playTime={playTime}
+              totalSimDuration={totalSimDuration}
+              isLight={isLight}
+              setPlayTime={setPlayTime}
+              setIsPlaying={setIsPlaying}
+              simResults={simResults}
+            />
           ) : (
             <svg 
               id={`plot-svg-${subplot.id}`}
