@@ -1127,10 +1127,35 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
     return { x: scope.x, y: scope.y };
   };
 
+  const getComponentVoltageAtIndex = (compId: string, idx: number): number => {
+    if (!simResults) return 0.0;
+    const currentPrefix = [...state.navigationStack.map((layer: any) => layer.subsystemId), state.currentSubsystemId].filter(Boolean).join('.');
+    const prefixCompId = currentPrefix && !compId.startsWith(currentPrefix + '.') ? `${currentPrefix}.${compId}` : compId;
+    const kv = `V_${prefixCompId}`;
+    if (simResults.custom_plots && simResults.custom_plots[kv]) {
+      return simResults.custom_plots[kv][idx] ?? 0.0;
+    }
+    const kvOrig = `V_${compId}`;
+    if (simResults.custom_plots && simResults.custom_plots[kvOrig]) {
+      return simResults.custom_plots[kvOrig][idx] ?? 0.0;
+    }
+    return 0.0;
+  };
+
   // Helper code to retrieve dynamic sampled waveform points
   const getScopeWaveformYVal = (scopeId: string, scope: any, targetIdx: number): number => {
     if (scope.type === 'component-voltage') {
       const compId = scope.componentId || scopeId;
+      const currentPrefix = [...state.navigationStack.map((layer: any) => layer.subsystemId), state.currentSubsystemId].filter(Boolean).join('.');
+      const prefixCompId = currentPrefix && !compId.startsWith(currentPrefix + '.') ? `${currentPrefix}.${compId}` : compId;
+      const kv = `V_${prefixCompId}`;
+      const kvOrig = `V_${compId}`;
+      const hasDirectLog = simResults && simResults.custom_plots && (simResults.custom_plots[kv] || simResults.custom_plots[kvOrig]);
+      
+      if (hasDirectLog) {
+        return getComponentVoltageAtIndex(compId, targetIdx);
+      }
+      
       const nodeA = getResolvedNodeNamesMap[`${compId}.A`] || getResolvedNodeNamesMap[`${compId}.D`] || getResolvedNodeNamesMap[`${compId}.P1A`] || getResolvedNodeNamesMap[`${compId}.Plus`] || "";
       const nodeB = getResolvedNodeNamesMap[`${compId}.B`] || getResolvedNodeNamesMap[`${compId}.S`] || getResolvedNodeNamesMap[`${compId}.P1B`] || getResolvedNodeNamesMap[`${compId}.Minus`] || "";
       
