@@ -120,7 +120,7 @@ const PlotlyChart: React.FC<PlotlyChartProps> = ({
     };
   }, [traces, tData, displayXMin, displayXMax, height, theme, simResults, onZoomX]);
 
-  return <div ref={containerRef} style={{ width: '100%', height: height }} />;
+  return <div ref={containerRef} id={`plotly-chart-element-${subplotId}`} style={{ width: '100%', height: height }} />;
 };
 
 export default PlotlyChart;
