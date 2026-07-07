@@ -1285,6 +1285,7 @@ export default function App() {
       const results = await Promise.all(
         activeSubplots.map(async (sp) => {
           const plotlyEl = document.getElementById(`plotly-chart-element-${sp.id}`);
+          console.log(`[SVG Export] Looking for plotly element: plotly-chart-element-${sp.id}. Found:`, !!plotlyEl);
           if (plotlyEl) {
             try {
               const dataUrl = await Plotly.toImage(plotlyEl, { format: 'svg' });
@@ -1295,12 +1296,14 @@ export default function App() {
               const doc = parser.parseFromString(svgContent, 'image/svg+xml');
               const svgElement = doc.documentElement;
               return { sp, svgElement };
-            } catch (e) {
+            } catch (e: any) {
               console.error("Plotly SVG export failed for " + sp.id, e);
+              alert("Plotly SVG export failed for subplot " + sp.title + ": " + (e.message || e));
             }
           }
           
           const svgEl = document.getElementById(`plot-svg-${sp.id}`);
+          console.log(`[SVG Export] Looking for fallback SVG element: plot-svg-${sp.id}. Found:`, !!svgEl);
           if (svgEl) {
             return { sp, svgElement: svgEl.cloneNode(true) as SVGSVGElement };
           }
