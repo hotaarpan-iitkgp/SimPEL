@@ -43,6 +43,10 @@ function multCoeffStr(c1: string, c2: string): string {
   return `${c1} \\cdot ${c2}`;
 }
 
+function isNumeric(str: string): boolean {
+  return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(str.trim());
+}
+
 export function simplifyExpr(expr: SymbolicExpr): SymbolicExpr {
   const grouped: Record<string, string[]> = {};
   expr.forEach(t => {
@@ -56,9 +60,8 @@ export function simplifyExpr(expr: SymbolicExpr): SymbolicExpr {
     const symTerms: string[] = [];
 
     coeffs.forEach(c => {
-      const val = parseFloat(c);
-      if (!isNaN(val)) {
-        numericSum += val;
+      if (isNumeric(c)) {
+        numericSum += parseFloat(c);
       } else {
         symTerms.push(c);
       }
@@ -170,7 +173,14 @@ export function formatExprLaTeX(expr: SymbolicExpr): string {
         parts.push(`${signStr}${formattedVar}`);
       } else {
         if (cleanCoeff.includes("\\frac")) {
-          const filledFrac = cleanCoeff.replace("{v}", `{${formattedVar}}`);
+          let filledFrac = cleanCoeff;
+          if (cleanCoeff.includes("\\frac{1}{")) {
+            filledFrac = cleanCoeff.replace("\\frac{1}{", `\\frac{${formattedVar}}{`);
+          } else if (cleanCoeff.includes("{v}")) {
+            filledFrac = cleanCoeff.replace("{v}", `{${formattedVar}}`);
+          } else {
+            filledFrac = `${cleanCoeff} \\cdot ${formattedVar}`;
+          }
           parts.push(`${signStr}${filledFrac}`);
         } else {
           parts.push(`${signStr}${cleanCoeff} \\cdot ${formattedVar}`);
@@ -246,7 +256,7 @@ export function isValidTopology(fixedComps: Component[], activeSwitches: Compone
     }
   }
 
-  const iSources = fixedComps.filter(c => c.type === 'I');
+  const iSources = fixedComps.filter(c => c.type === 'I' || c.type === 'L');
   for (const iSrc of iSources) {
     const otherComps = [...fixedComps.filter(c => c.id !== iSrc.id), ...activeSwitches];
     const fullAdj = buildAdj(otherComps);

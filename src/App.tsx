@@ -586,11 +586,16 @@ export default function App() {
     setGlobalMeasureRange(null);
     setMeasureRanges({});
     setSelectedTemplateKey(key);
-    
     const template = CIRCUITS_TEMPLATES[key];
+    
     if (template) {
       const netlistObj = {
-        simulation_parameters: template.solverConfig,
+        simulation_parameters: template.simulationSettings ? {
+          stop_time: template.simulationSettings.stopTime,
+          step_size: template.simulationSettings.stepSize,
+          solver: template.simulationSettings.solver,
+          step_type: template.simulationSettings.stepType
+        } : (template as any).solverConfig,
         physical_stage: template.components.filter(c => c.nodes && c.nodes.length > 0),
         control_loops: template.components.filter(c => !c.nodes || c.nodes.length === 0)
       };
@@ -726,11 +731,11 @@ export default function App() {
       const layoutObj = {
         components: layoutComponents,
         wires: wires,
-        simulationSettings: {
-          stopTime: String(template.solverConfig.stop_time ?? "0.01"),
-          stepSize: String(template.solverConfig.step_size ?? "10u"),
-          solver: template.solverConfig.solver ?? "euler",
-          stepType: template.solverConfig.step_type ?? "fixed"
+        simulationSettings: template.simulationSettings || {
+          stopTime: String((template as any).solverConfig?.stop_time ?? "0.01"),
+          stepSize: String((template as any).solverConfig?.step_size ?? "10u"),
+          solver: (template as any).solverConfig?.solver ?? "euler",
+          stepType: (template as any).solverConfig?.step_type ?? "fixed"
         }
       };
 
