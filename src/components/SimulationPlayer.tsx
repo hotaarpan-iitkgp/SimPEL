@@ -581,6 +581,7 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
   const [playTime, setPlayTime] = useState(0.0);
   const [speedMultiplier, setSpeedMultiplier] = useState(0.01); // 0.01x lowest start speed
   const [showWireOverlays, setShowWireOverlays] = useState(true);
+  const [flowDotShape, setFlowDotShape] = useState<'circle' | 'triangle'>('circle');
   const [showFlowInspector, setShowFlowInspector] = useState(false);
   const [showModeInspector, setShowModeInspector] = useState(false);
   const [modeInspectorTab, setModeInspectorTab] = useState<'states' | 'equations'>('states');
@@ -2267,6 +2268,24 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
     };
   };
 
+  // Get direction angle (degrees) at a distance along a polyline path
+  const getDirectionAngleAtLength = (pathPoints: Array<{ x: number, y: number }>, distance: number): number => {
+    if (pathPoints.length < 2) return 0;
+    let remaining = distance;
+    for (let i = 0; i < pathPoints.length - 1; i++) {
+      const p1 = pathPoints[i];
+      const p2 = pathPoints[i + 1];
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      if (remaining <= len || i === pathPoints.length - 2) {
+        return Math.atan2(dy, dx) * (180 / Math.PI);
+      }
+      remaining -= len;
+    }
+    return 0;
+  };
+
   const isTraversedPositive = (compId: string, fromNode: string, toNode: string): boolean => {
     const comp = state.components.find((c: any) => c.id === compId);
     if (!comp) return true;
@@ -3272,20 +3291,37 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
 
                       const pt = getPointAtLengthWithOffset(pathPoints, d, 0);
                       if (pt) {
-                        wireDots.push(
-                          <circle
-                            key={`direct-dot-${seg.segmentId}-${wIndex}-${sIdx}-${dIdx}`}
-                            cx={pt.x}
-                            cy={pt.y}
-                            r="4.2"
-                            fill={dotColor}
-                            className="pointer-events-none"
-                            style={{
-                              filter: "url(#neon-glow)",
-                              opacity: 0.95
-                            }}
-                          />
-                        );
+                        if (flowDotShape === 'triangle') {
+                          const angle = getDirectionAngleAtLength(pathPoints, d);
+                          wireDots.push(
+                            <path
+                              key={`direct-dot-${seg.segmentId}-${wIndex}-${sIdx}-${dIdx}`}
+                              d="M4.5,0 L-3,-3.2 Q-1.8,0 -3,3.2 Z"
+                              fill={dotColor}
+                              className="pointer-events-none"
+                              style={{
+                                filter: "url(#neon-glow)",
+                                opacity: 0.95
+                              }}
+                              transform={`translate(${pt.x}, ${pt.y}) rotate(${angle})`}
+                            />
+                          );
+                        } else {
+                          wireDots.push(
+                            <circle
+                              key={`direct-dot-${seg.segmentId}-${wIndex}-${sIdx}-${dIdx}`}
+                              cx={pt.x}
+                              cy={pt.y}
+                              r="4.2"
+                              fill={dotColor}
+                              className="pointer-events-none"
+                              style={{
+                                filter: "url(#neon-glow)",
+                                opacity: 0.95
+                              }}
+                            />
+                          );
+                        }
                       }
                     }
 
@@ -3437,20 +3473,37 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
                           y: p1.y + dy * ratio
                         };
 
-                        internalFlowDots.push(
-                          <circle
-                            key={`${comp.id}-internal-dot-${dIdx}`}
-                            cx={pt.x}
-                            cy={pt.y}
-                            r="4.2"
-                            fill={dotColor}
-                            className="pointer-events-none"
-                            style={{
-                              filter: "url(#neon-glow)",
-                              opacity: 0.95
-                            }}
-                          />
-                        );
+                        if (flowDotShape === 'triangle') {
+                          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                          internalFlowDots.push(
+                            <path
+                              key={`${comp.id}-internal-dot-${dIdx}`}
+                              d="M4.5,0 L-3,-3.2 Q-1.8,0 -3,3.2 Z"
+                              fill={dotColor}
+                              className="pointer-events-none"
+                              style={{
+                                filter: "url(#neon-glow)",
+                                opacity: 0.95
+                              }}
+                              transform={`translate(${pt.x}, ${pt.y}) rotate(${angle})`}
+                            />
+                          );
+                        } else {
+                          internalFlowDots.push(
+                            <circle
+                              key={`${comp.id}-internal-dot-${dIdx}`}
+                              cx={pt.x}
+                              cy={pt.y}
+                              r="4.2"
+                              fill={dotColor}
+                              className="pointer-events-none"
+                              style={{
+                                filter: "url(#neon-glow)",
+                                opacity: 0.95
+                              }}
+                            />
+                          );
+                        }
                       }
                     }
                   }
@@ -4136,6 +4189,25 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
             >
               <Eye className="h-3.5 w-3.5" />
               <span>Wire Info</span>
+            </button>
+
+            {/* Flow Dot Shape Toggle */}
+            <button 
+              onClick={() => setFlowDotShape(flowDotShape === 'circle' ? 'triangle' : 'circle')}
+              className={`px-3 h-9 border rounded-lg text-xs font-sans font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                flowDotShape === 'triangle' 
+                ? (isLight ? 'border-violet-400 bg-violet-50 text-violet-600 shadow-sm' : 'border-violet-500 bg-violet-950/20 text-violet-400 shadow-[0_0_10px_rgba(139,92,246,0.15)]') 
+                : (isLight ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50' : 'border-slate-800 bg-slate-950 text-slate-400 hover:text-white hover:border-slate-700')
+              }`}
+              title={flowDotShape === 'circle' ? 'Switch to directional triangle dots' : 'Switch to circle dots'}
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+                {flowDotShape === 'triangle' 
+                  ? <path d="M13,8 L4,3 Q5.5,8 4,13 Z" strokeLinejoin="round" />
+                  : <circle cx="8" cy="8" r="5.5" />
+                }
+              </svg>
+              <span>{flowDotShape === 'circle' ? 'Circles' : 'Arrows'}</span>
             </button>
 
             {/* Flow Inspector Toggle Panel control */}
