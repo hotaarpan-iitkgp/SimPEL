@@ -1545,6 +1545,131 @@ export default function StudentApp() {
                   });
                 })()}
               </div>
+
+              {/* Divider */}
+              <div className={`my-4 border-t ${theme === 'light' ? 'border-slate-200' : 'border-slate-900'}`} />
+
+              {/* SIMULATION PARAMETERS PANEL */}
+              <div className="flex items-center gap-2 mb-3 pb-1 shrink-0 select-none">
+                <Settings className="h-3.5 w-3.5 text-sky-500" />
+                <h3 className={`font-mono text-[10px] font-bold uppercase tracking-wider flex-1 ${
+                  theme === 'light' ? 'text-slate-700' : 'text-slate-350'
+                }`}>SIMULATION SETTINGS</h3>
+              </div>
+
+              <div className="flex flex-col gap-3.5 mb-2">
+                {/* Stop Time */}
+                <div className="flex flex-col gap-1">
+                  <span className={`text-[9.5px] font-mono font-bold select-none ${
+                    theme === 'light' ? 'text-slate-650' : 'text-slate-400'
+                  }`}>Stop Time (s)</span>
+                  <input
+                    type="text"
+                    value={state.simulationSettings.stopTime || "0.05"}
+                    onChange={(e) => {
+                      state.simulationSettings.stopTime = e.target.value;
+                      saveState();
+                      setAppletUpdateCount(prev => prev + 1);
+                    }}
+                    className={`text-[10px] font-mono rounded px-2 py-1.5 border w-full ${
+                      theme === 'light'
+                        ? 'bg-slate-50 border-slate-300 text-slate-805 hover:bg-slate-100/50 focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none'
+                        : 'bg-slate-950/90 border-slate-900 text-slate-150 hover:bg-slate-900/40 focus:bg-slate-950 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none'
+                    }`}
+                  />
+                </div>
+
+                {/* Step Size */}
+                <div className="flex flex-col gap-1">
+                  <span className={`text-[9.5px] font-mono font-bold select-none ${
+                    theme === 'light' ? 'text-slate-650' : 'text-slate-400'
+                  }`}>Step Size (s)</span>
+                  <input
+                    type="text"
+                    value={state.simulationSettings.stepSize || "10u"}
+                    onChange={(e) => {
+                      state.simulationSettings.stepSize = e.target.value;
+                      saveState();
+                      setAppletUpdateCount(prev => prev + 1);
+                    }}
+                    className={`text-[10px] font-mono rounded px-2 py-1.5 border w-full ${
+                      theme === 'light'
+                        ? 'bg-slate-50 border-slate-300 text-slate-850 hover:bg-slate-100/50 focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none'
+                        : 'bg-slate-950/90 border-slate-900 text-slate-150 hover:bg-slate-900/40 focus:bg-slate-950 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none'
+                    }`}
+                  />
+                </div>
+
+                {/* Solver Method */}
+                <div className="flex flex-col gap-1">
+                  <span className={`text-[9.5px] font-mono font-bold select-none ${
+                    theme === 'light' ? 'text-slate-650' : 'text-slate-400'
+                  }`}>Solver Method</span>
+                  <select
+                    value={state.simulationSettings.solverMethod || "non-ideal"}
+                    onChange={(e) => {
+                      state.simulationSettings.solverMethod = e.target.value as any;
+                      saveState();
+                      setAppletUpdateCount(prev => prev + 1);
+                    }}
+                    className={`text-[10px] font-mono rounded px-2 py-1.5 border w-full cursor-pointer outline-none ${
+                      theme === 'light'
+                        ? 'bg-slate-50 border-slate-300 text-slate-800 focus:border-sky-500'
+                        : 'bg-slate-950/90 border-slate-900 text-slate-150 focus:border-sky-500'
+                    }`}
+                  >
+                    <option value="non-ideal">Non-Ideal Transient</option>
+                    <option value="ideal-pwl">Ideal PWL Solver</option>
+                  </select>
+                </div>
+
+                {/* Step Type */}
+                <div className="flex flex-col gap-1">
+                  <span className={`text-[9.5px] font-mono font-bold select-none ${
+                    theme === 'light' ? 'text-slate-650' : 'text-slate-400'
+                  }`}>Step Type</span>
+                  <select
+                    value={state.simulationSettings.stepType || "fixed"}
+                    onChange={(e) => {
+                      state.simulationSettings.stepType = e.target.value as any;
+                      saveState();
+                      setAppletUpdateCount(prev => prev + 1);
+                    }}
+                    className={`text-[10px] font-mono rounded px-2 py-1.5 border w-full cursor-pointer outline-none ${
+                      theme === 'light'
+                        ? 'bg-slate-50 border-slate-300 text-slate-800 focus:border-sky-500'
+                        : 'bg-slate-950/90 border-slate-900 text-slate-150 focus:border-sky-500'
+                    }`}
+                  >
+                    <option value="fixed">Fixed Timestep</option>
+                    <option value="variable">Variable Timestep</option>
+                  </select>
+                </div>
+
+                {/* Integration Solver */}
+                <div className="flex flex-col gap-1">
+                  <span className={`text-[9.5px] font-mono font-bold select-none ${
+                    theme === 'light' ? 'text-slate-650' : 'text-slate-400'
+                  }`}>Integration Solver</span>
+                  <select
+                    value={state.simulationSettings.solver || "euler"}
+                    onChange={(e) => {
+                      state.simulationSettings.solver = e.target.value as any;
+                      saveState();
+                      setAppletUpdateCount(prev => prev + 1);
+                    }}
+                    className={`text-[10px] font-mono rounded px-2 py-1.5 border w-full cursor-pointer outline-none ${
+                      theme === 'light'
+                        ? 'bg-slate-50 border-slate-300 text-slate-800 focus:border-sky-500'
+                        : 'bg-slate-950/90 border-slate-900 text-slate-150 focus:border-sky-500'
+                    }`}
+                  >
+                    <option value="euler">Euler</option>
+                    <option value="rk45">Runge-Kutta 4/5 (RK45)</option>
+                    <option value="radau">Radau (Implicit)</option>
+                  </select>
+                </div>
+              </div>
             </div>
           )}
 
