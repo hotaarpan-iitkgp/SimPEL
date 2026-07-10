@@ -3,7 +3,7 @@ import {
   Play, RotateCcw, Plus, Trash2, Cpu, Settings, Activity, Zap, CheckCircle, 
   HelpCircle, Sliders, Layers, BarChart2, PlusCircle, Server, Code, FileText,
   SlidersHorizontal, ChevronRight, Check, Database, UploadCloud, X, ArrowUp, ArrowDown,
-  LayoutGrid, Sparkles, RefreshCcw, FileCode, Edit3, Sun, Moon, Pause, StopCircle, Download
+  LayoutGrid, Sparkles, RefreshCcw, FileCode, Edit3, Sun, Moon, Pause, StopCircle, Download, BookOpen
 } from 'lucide-react';
 import { Component, SolverConfig, SimulationResults } from './types';
 import { CIRCUITS_TEMPLATES } from './templates';
@@ -586,202 +586,64 @@ export default function App() {
     setGlobalMeasureRange(null);
     setMeasureRanges({});
     setSelectedTemplateKey(key);
-    const template = CIRCUITS_TEMPLATES[key];
     
+    const template = CIRCUITS_TEMPLATES[key];
     if (template) {
-      const netlistObj = {
-        simulation_parameters: template.simulationSettings ? {
-          stop_time: template.simulationSettings.stopTime,
-          step_size: template.simulationSettings.stepSize,
-          solver: template.simulationSettings.solver,
-          step_type: template.simulationSettings.stepType
-        } : (template as any).solverConfig,
-        physical_stage: template.components.filter(c => c.nodes && c.nodes.length > 0),
-        control_loops: template.components.filter(c => !c.nodes || c.nodes.length === 0)
+      // 1. Build layout object
+      const layoutObj = {
+        components: template.components || [],
+        wires: template.wires || [],
+        plotConfiguration: template.plotConfiguration || { plots: [] },
+        simulationSettings: template.simulationSettings || {
+          stopTime: "0.01",
+          stepSize: "10u",
+          solver: "euler",
+          stepType: "fixed"
+        }
       };
-      const formattedJson = JSON.stringify(netlistObj, null, 2);
-      setJsonText(formattedJson);
-      parseAndSyncNetlist(formattedJson);
+
+      // 2. Import into canvas state
+      triggerImport(JSON.stringify(layoutObj));
+
+      // 3. Compile layout to netlist format for the text editor pane
+      try {
+        const isRegularMode = (layoutObj.simulationSettings.simulationMode || 'regular') === 'regular';
+        const netlist = exportDualGraphJSON(isRegularMode);
+        const netlistStr = JSON.stringify(netlist, null, 2);
+        setJsonText(netlistStr);
+        parseAndSyncNetlist(netlistStr);
+      } catch (err) {
+        console.error("Failed to export compiled netlist for template:", err);
+      }
+
       setSimResults(null);
       setHoveredData(null);
       setHoverTime(null);
       
-      // Setup beautiful initial subplots specifically customized for each template
+      // 4. Setup subplots
       setupDefaultSubplots(key);
-
-      // Map components and generate wires for Schematic Editor
-      const templateTypeToVisualType: Record<string, string> = {
-        "VoltageSource": "V",
-        "ACVoltageSource": "AC_V",
-        "CurrentSource": "I",
-        "Resistor": "R",
-        "Inductor": "L",
-        "Capacitor": "C",
-        "Diode": "D",
-        "Switch": "S",
-        "MOSFET": "MOSFET",
-        "Transformer": "XFMR",
-        "Voltmeter": "VM",
-        "Ammeter": "AM",
-        "Constant": "CONST",
-        "Gain": "GAIN",
-        "PI_Controller": "PID",
-        "SummingJunction": "SUM",
-        "Triangle_Carrier": "TRI",
-        "Comparator": "COMP",
-        "NOT_Gate": "NOT",
-        "NOT": "NOT"
-      };
-
-      const layoutComponents = template.components.map(c => {
-        const visualType = templateTypeToVisualType[c.type] || c.type;
-        return {
-          id: c.id,
-          type: visualType,
-          x: c.x || 150,
-          y: c.y || 100,
-          rotation: c.rotation || 0,
-          parameters: c.parameters || {},
-          label: c.label || `${c.type} (${c.id})`
-        };
-      });
-
-      // Local helper to generate wires from template component connections
-      const wires: any[] = [];
-      let wireIdCounter = 1;
-      const getNextWireId = () => `W_temp_${wireIdCounter++}`;
-
-      // 1. Group electrical terminals by node name
-      const electricalNodes: Record<string, { compId: string; terminal: string }[]> = {};
-
-      template.components.forEach((comp) => {
-        const visualType = templateTypeToVisualType[comp.type] || comp.type;
-        
-        let pinNames: string[] = [];
-        if (['R', 'L', 'C', 'S', 'D', 'V', 'I', 'VM', 'AM', 'AC_V'].includes(visualType)) {
-          pinNames = ['A', 'B'];
-        } else if (visualType === 'MOSFET') {
-          pinNames = ['D', 'S'];
-        } else if (['E_PORT', 'E_LABEL'].includes(visualType)) {
-          pinNames = ['A'];
-        } else if (visualType === 'GND') {
-          pinNames = ['Gnd'];
-        }
-        
-        if (comp.nodes && comp.nodes.length > 0) {
-          comp.nodes.forEach((nodeName: string, idx: number) => {
-            if (!nodeName) return;
-            const terminalName = pinNames[idx];
-            if (terminalName) {
-              if (!electricalNodes[nodeName]) {
-                electricalNodes[nodeName] = [];
-              }
-              electricalNodes[nodeName].push({ compId: comp.id, terminal: terminalName });
-            }
-          });
-        }
-      });
-
-      // Connect electrical pins sharing same node name
-      Object.keys(electricalNodes).forEach((nodeName) => {
-        const pins = electricalNodes[nodeName];
-        if (pins.length > 1) {
-          for (let i = 0; i < pins.length - 1; i++) {
-            wires.push({
-              id: getNextWireId(),
-              from: { type: 'pin', compId: pins[i].compId, terminal: pins[i].terminal },
-              to: { type: 'pin', compId: pins[i + 1].compId, terminal: pins[i + 1].terminal },
-              manualPath: null
-            });
-          }
-        }
-      });
-
-      // 2. Group control terminals by channel name
-      const controlChannels: Record<string, { compId: string; terminal: string }[]> = {};
-
-      template.components.forEach((comp) => {
-        if (comp.channels) {
-          Object.keys(comp.channels).forEach((terminalName) => {
-            const channelName = comp.channels[terminalName];
-            if (!channelName) return;
-            if (!controlChannels[channelName]) {
-              controlChannels[channelName] = [];
-            }
-            controlChannels[channelName].push({ compId: comp.id, terminal: terminalName });
-          });
-        }
-      });
-
-      // Connect control pins sharing same channel name
-      Object.keys(controlChannels).forEach((channelName) => {
-        const pins = controlChannels[channelName];
-        if (pins.length > 1) {
-          for (let i = 0; i < pins.length - 1; i++) {
-            wires.push({
-              id: getNextWireId(),
-              from: { type: 'pin', compId: pins[i].compId, terminal: pins[i].terminal },
-              to: { type: 'pin', compId: pins[i + 1].compId, terminal: pins[i + 1].terminal },
-              manualPath: null
-            });
-          }
-        }
-      });
-
-      const layoutObj = {
-        components: layoutComponents,
-        wires: wires,
-        simulationSettings: template.simulationSettings || {
-          stopTime: String((template as any).solverConfig?.stop_time ?? "0.01"),
-          stepSize: String((template as any).solverConfig?.step_size ?? "10u"),
-          solver: (template as any).solverConfig?.solver ?? "euler",
-          stepType: (template as any).solverConfig?.step_type ?? "fixed"
-        }
-      };
-
-      // Load layout into visual canvas and center/redraw
-      triggerImport(JSON.stringify(layoutObj));
     }
   };
 
   const setupDefaultSubplots = (key: string) => {
     let defaultPlots: any[] = [];
-    if (key === "buck_converter") {
-      defaultPlots = [
-        { id: "sp_1", title: "Output Voltage & Feedbacks (V)", traces: ["V_R_load", "V_ref_Out", "v_feedback"] },
-        { id: "sp_2", title: "Power Stage Switching node (V) & Inductor (I)", traces: ["V_D1", "I_L1"] },
-        { id: "sp_3", title: "PI Controller Loop Control effort (V)", traces: ["control_effort", "pwm_gate"] }
-      ];
-    } else if (key === "lc_resonance") {
-      defaultPlots = [
-        { id: "sp_1", title: "Capacitor Voltage (underdamped ringing)", traces: ["V_C1"] },
-        { id: "sp_2", title: "Inductor Transient Current (I)", traces: ["I_L1"] }
-      ];
-    } else if (key === "ac_rectifier") {
-      defaultPlots = [
-        { id: "sp_1", title: "AC Line Input vs DC Smoothing Bank Voltage (V)", traces: ["V_V_ac", "V_C_reservoir"] },
-        { id: "sp_2", title: "Load Consumption Current Draw (I)", traces: ["I_R_load"] }
-      ];
-    } else if (key === "h_bridge_inverter") {
-      defaultPlots = [
-        { id: "sp_1", title: "Filtered AC Lowpass Output Voltage & Current", traces: ["V_C_filter"] },
-        { id: "sp_2", title: "Sinusoidal modulation reference vs PWM Triangle Carrier", traces: ["sine_mod", "triangle"] },
-        { id: "sp_3", title: "Complementary MOSFET Gate Drives", traces: ["gate_q1", "gate_q2"] }
-      ];
+    const template = CIRCUITS_TEMPLATES[key];
+    if (template && template.plotConfiguration && Array.isArray(template.plotConfiguration.plots)) {
+      defaultPlots = template.plotConfiguration.plots;
     } else {
       defaultPlots = [
         { id: "sp_1", title: "Main Waveform Analysis", traces: [] }
       ];
     }
     
-    const mapped = defaultPlots.map(p => ({
-      id: p.id,
-      title: p.title,
-      traces: p.traces
+    const mapped = defaultPlots.map((p, idx) => ({
+      id: p.id || `sp_${idx + 1}`,
+      title: p.title || `Plot ${idx + 1}`,
+      traces: p.variables || p.traces || []
     }));
     setSubplots(mapped);
 
-    state.plotConfiguration.plots = defaultPlots.map(p => ({
+    state.plotConfiguration.plots = mapped.map(p => ({
       title: p.title,
       variables: p.traces
     }));
@@ -3262,10 +3124,11 @@ export default function App() {
               value={loadedFileName ? "uploaded" : selectedTemplateKey}
             >
               <option value="empty">-- Empty Workspace --</option>
-              <option value="buck_converter">Template: Closed-Loop Buck Converter</option>
-              <option value="lc_resonance">Template: LC Resonance Shock ringing</option>
-              <option value="ac_rectifier">Template: AC to DC Rectifier & Filter</option>
-              <option value="h_bridge_inverter">Template: MOSFET AC H-Bridge Inverter</option>
+              {Object.keys(CIRCUITS_TEMPLATES).filter(k => k !== 'empty').map(key => (
+                <option key={key} value={key}>
+                  Template: {CIRCUITS_TEMPLATES[key].name}
+                </option>
+              ))}
               {loadedFileName && (
                 <option value="uploaded">Uploaded: {loadedFileName}</option>
               )}
@@ -3277,6 +3140,17 @@ export default function App() {
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
               {theme === 'dark' ? <Sun className="h-4 w-4 text-yellow-450 animate-spin-slow" /> : <Moon className="h-4 w-4 text-sky-500" />}
+            </button>
+
+            <button
+              onClick={() => {
+                window.location.search = '?mode=student';
+              }}
+              className="px-3 py-1.5 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] hover:from-[#4f46e5] hover:to-[#4338ca] text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-xl active:scale-95 border border-indigo-450/20 cursor-pointer transition-all"
+              title="Open Student Interactive Simulation Lab"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              <span>STUDENT LAB</span>
             </button>
 
             <button 

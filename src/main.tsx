@@ -1,11 +1,15 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
+import StudentApp from './StudentApp.tsx';
 import './index.css';
+
+const queryParams = new URLSearchParams(window.location.search);
+const mode = queryParams.get('mode') || 'creator';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    {mode === 'student' ? <StudentApp /> : <App />}
   </StrictMode>,
 );
 
