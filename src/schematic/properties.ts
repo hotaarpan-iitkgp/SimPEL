@@ -10,6 +10,8 @@ let activeEditingComp: any = null;
 
 // Update properties panel dynamically based on select items
 export function updatePropertiesPanel(): void {
+  window.dispatchEvent(new CustomEvent('appletStateChanged'));
+
   const panel = document.getElementById('properties-panel');
   if (!panel) return;
   panel.innerHTML = '';
@@ -974,6 +976,7 @@ export function highlightPython(code: string): string {
 // Global script block modal editor handlers
 // Global script block modal editor handlers
 export function openCodeEditorModal(comp: any): void {
+  if (state.appletMode === 'student') return;
   const modal = document.getElementById('code-editor-modal');
   const textarea: any = document.getElementById('code-editor-textarea');
   const saveBtn = document.getElementById('code-editor-save');
@@ -1539,6 +1542,7 @@ export function openMaskEditorModal(comp: any): void {
 }
 
 export function openMaskValuesModal(comp: any): void {
+  if (state.appletMode === 'student') return;
   const modal = document.getElementById('mask-values-modal');
   const title = document.getElementById('mask-values-title');
   const container = document.getElementById('mask-values-container');
@@ -1650,6 +1654,7 @@ export function getComponentProbeSignals(tc: any): { label: string, value: strin
 }
 
 export function openProbeEditorModal(comp: any): void {
+  if (state.appletMode === 'student') return;
   const modal = document.getElementById('probe-editor-modal');
   const title = document.getElementById('probe-editor-title');
   const componentsList = document.getElementById('probe-components-list');
@@ -1888,6 +1893,7 @@ export function openProbeEditorModal(comp: any): void {
 }
 
 export function openPwmMasterModal(comp: any): void {
+  if (state.appletMode === 'student') return;
   const modal = document.getElementById('pwm-master-modal');
   const closeBtn = document.getElementById('pwm-master-close-btn');
   const cancelBtn = document.getElementById('pwm-master-cancel');

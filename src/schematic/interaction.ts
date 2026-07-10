@@ -98,18 +98,20 @@ export function initInteractions(svg: SVGSVGElement): () => void {
         state.selectedWireIds = [];
         updatePropertiesPanel();
         
-        state.isBoxSelecting = true;
-        state.boxSelectStart = mousePos;
-        state.boxSelectEnd = mousePos;
-        
-        // Render box marquee directly in DOM
-        const box = document.getElementById('box-select-marquee');
-        if (box) {
-          box.setAttribute('x', String(Math.min(state.boxSelectStart.x, state.boxSelectEnd.x)));
-          box.setAttribute('y', String(Math.min(state.boxSelectStart.y, state.boxSelectEnd.y)));
-          box.setAttribute('width', '0');
-          box.setAttribute('height', '0');
-          box.setAttribute('display', 'block');
+        if (state.appletMode !== 'student') {
+          state.isBoxSelecting = true;
+          state.boxSelectStart = mousePos;
+          state.boxSelectEnd = mousePos;
+          
+          // Render box marquee directly in DOM
+          const box = document.getElementById('box-select-marquee');
+          if (box) {
+            box.setAttribute('x', String(Math.min(state.boxSelectStart.x, state.boxSelectEnd.x)));
+            box.setAttribute('y', String(Math.min(state.boxSelectStart.y, state.boxSelectEnd.y)));
+            box.setAttribute('width', '0');
+            box.setAttribute('height', '0');
+            box.setAttribute('display', 'block');
+          }
         }
         draw();
       }
@@ -494,6 +496,14 @@ export function initInteractions(svg: SVGSVGElement): () => void {
     if (e.key === ' ') {
       isSpacePressed = true;
       svg.style.cursor = 'grab';
+    }
+    
+    if (state.appletMode === 'student') {
+      if (e.key === 'Escape' && state.activeWire) {
+        state.activeWire = null;
+        draw();
+      }
+      return;
     }
     
     // Escape: cancel active wire drawing loop

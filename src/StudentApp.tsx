@@ -526,7 +526,46 @@ export default function StudentApp() {
 
   const handleRunAppletSimulation = () => {
     try {
-      const netlistObj = exportDualGraphJSON(true);
+      const isRegularMode = (state.simulationSettings.simulationMode || 'regular') === 'regular';
+      const netlistObj = exportDualGraphJSON(isRegularMode);
+
+      // Resolve wanted variables based on subplots and scopes
+      const activePlotVars: string[] = [];
+      subplots.forEach(sp => {
+        if (Array.isArray(sp.traces)) {
+          sp.traces.forEach(t => activePlotVars.push(t));
+        }
+      });
+
+      // Automatically add all scope input channels to wanted variables so they are simulated and plotted
+      state.components.forEach((c: any) => {
+        if (c.type === 'SCOPE') {
+          const numChannels = parseInt(c.parameters?.channels || "2") || 2;
+          for (let i = 1; i <= numChannels; i++) {
+            activePlotVars.push(`${c.id}.In${i}`);
+          }
+        }
+      });
+
+      const resolvedWanted: string[] = [];
+      activePlotVars.forEach(v => {
+        resolvedWanted.push(v);
+        if (v.includes('.')) {
+          const [compId, term] = v.split('.');
+          if (compId && term && term !== 'Out' && !term.startsWith('Out')) {
+            const incoming = resolveInputPinToSource(v);
+            if (incoming && incoming !== v) {
+              resolvedWanted.push(incoming);
+            }
+          }
+        }
+      });
+
+      if (!netlistObj.simulation_parameters) {
+        netlistObj.simulation_parameters = {};
+      }
+      netlistObj.simulation_parameters.wanted_variables = Array.from(new Set(resolvedWanted));
+
       const netlistStr = JSON.stringify(netlistObj, null, 2);
       runSchematicSimulation(netlistStr);
     } catch (err: any) {

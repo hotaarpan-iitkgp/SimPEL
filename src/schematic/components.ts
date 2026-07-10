@@ -580,6 +580,7 @@ export function createTerminalOverlay(compId: string, terminalName: string, cx: 
   
   // Wire drawing start logic
   g.addEventListener('pointerdown', (e: any) => {
+    if (state.appletMode === 'student') return;
     e.stopPropagation();
     const comp = state.components.find((c: any) => c.id === compId);
     if (!comp) return;
@@ -599,6 +600,7 @@ export function createTerminalOverlay(compId: string, terminalName: string, cx: 
   
   // Wire drawing complete via dragging release
   g.addEventListener('pointerup', (e: any) => {
+    if (state.appletMode === 'student') return;
     e.stopPropagation();
     if (state.activeWire && state.activeWire.isDragMode) {
       if (state.activeWire.from.type !== 'pin' || state.activeWire.from.compId !== compId || state.activeWire.from.terminal !== terminalName) {

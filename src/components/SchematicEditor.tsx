@@ -879,165 +879,170 @@ export default function SchematicEditor({
       />
       
       {/* Schematic Editor Toolbar controls */}
-      <div className="sticky top-[57px] z-30 flex flex-wrap items-center justify-between gap-4 p-4 border-b border-slate-900 bg-slate-950/85 backdrop-blur-md rounded-t-xl shadow-md">
-        
-        {/* Actions panel */}
-        <div className="flex flex-wrap items-center gap-2">
+      {state.appletMode !== 'student' && (
+        <div className="sticky top-[57px] z-30 flex flex-wrap items-center justify-between gap-4 p-4 border-b border-slate-900 bg-slate-950/85 backdrop-blur-md rounded-t-xl shadow-md">
           
-          <button 
-            id="btn-undo"
-            onClick={handleUndo}
-            className="p-2 border border-slate-800 hover:border-slate-700 bg-slate-900/20 hover:bg-slate-900/40 text-slate-300 hover:text-sky-400 rounded-lg transition-all cursor-pointer select-none text-xs font-bold flex items-center gap-1.5"
-            title="Ctrl+Z Undo"
-          >
-            <Undo2 className="h-4 w-4 text-sky-400" />
-            <span>Undo</span>
-          </button>
-          
-          <button 
-            id="btn-clear-action"
-            onClick={handleClearWorkspace}
-            className="p-2 border border-slate-800 hover:border-rose-950/50 bg-slate-900/20 text-slate-300 hover:text-rose-400 rounded-lg transition-all cursor-pointer select-none text-xs font-bold flex items-center gap-1.5"
-            title="Delete Canvas Items"
-          >
-            <Trash2 className="h-4 w-4 text-rose-500" />
-            <span>Clear Workspace</span>
-          </button>
-          
-          <div className="h-4 w-[1px] bg-slate-900 mx-1" />
-
-          {/* Import/Export buttons */}
-          <button 
-            onClick={() => importInputRef.current?.click()}
-            className="px-3 py-2 border border-slate-800 hover:border-sky-950 bg-slate-900/60 hover:bg-sky-950/20 hover:text-sky-400 rounded-lg text-xs font-bold font-sans cursor-pointer transition-all flex items-center gap-1.5"
-          >
-            <FolderInput className="h-3.5 w-3.5 text-sky-400" />
-            <span>Open Layout</span>
-          </button>
-
-          <button 
-            onClick={handleExportFile}
-            className="px-3 py-2 border border-slate-800 hover:border-sky-950 bg-slate-900/60 hover:bg-sky-950/20 hover:text-sky-400 rounded-lg text-xs font-bold font-sans cursor-pointer transition-all flex items-center gap-1.5"
-          >
-            <FileJson className="h-3.5 w-3.5 text-amber-500" />
-            <span>Save Schematic</span>
-          </button>
-
-          <button 
-            onClick={handleFitSchematic}
-            className="px-3 py-2 border border-slate-800 hover:border-sky-950 bg-slate-900/60 hover:bg-sky-950/20 hover:text-emerald-400 rounded-lg text-xs font-bold font-sans cursor-pointer transition-all flex items-center gap-1.5"
-            title="Fit Schematic to Window"
-          >
-            <Maximize2 className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Fit Schematic</span>
-          </button>
-
-          {/* Export Menu Dropdown */}
-          <div className="relative flex" ref={exportMenuRef}>
+          {/* Actions panel */}
+          <div className="flex flex-wrap items-center gap-2">
+            
             <button 
-              onClick={() => setShowExportMenu(!showExportMenu)}
+              id="btn-undo"
+              onClick={handleUndo}
+              className="p-2 border border-slate-800 hover:border-slate-700 bg-slate-900/20 hover:bg-slate-900/40 text-slate-350 hover:text-sky-400 rounded-lg transition-all cursor-pointer select-none text-xs font-bold flex items-center gap-1.5"
+              title="Ctrl+Z Undo"
+            >
+              <Undo2 className="h-4 w-4 text-sky-400" />
+              <span>Undo</span>
+            </button>
+            
+            <button 
+              id="btn-clear-action"
+              onClick={handleClearWorkspace}
+              className="p-2 border border-slate-800 hover:border-rose-950/50 bg-slate-900/20 text-slate-300 hover:text-rose-400 rounded-lg transition-all cursor-pointer select-none text-xs font-bold flex items-center gap-1.5"
+              title="Delete Canvas Items"
+            >
+              <Trash2 className="h-4 w-4 text-rose-500" />
+              <span>Clear Workspace</span>
+            </button>
+            
+            <div className="h-4 w-[1px] bg-slate-900 mx-1" />
+
+            {/* Import/Export buttons */}
+            <button 
+              onClick={() => importInputRef.current?.click()}
               className="px-3 py-2 border border-slate-800 hover:border-sky-950 bg-slate-900/60 hover:bg-sky-950/20 hover:text-sky-400 rounded-lg text-xs font-bold font-sans cursor-pointer transition-all flex items-center gap-1.5"
             >
-              <PlusCircle className="h-3.5 w-3.5 text-emerald-400" />
-              <span>Export Schematics</span>
-              <ChevronDown className="h-3 w-3 text-slate-550" />
+              <FolderInput className="h-3.5 w-3.5 text-sky-400" />
+              <span>Open Layout</span>
             </button>
-            {showExportMenu && (
-              <div className="absolute left-0 top-full mt-1.5 w-52 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-50 flex flex-col p-1.5 gap-1 animate-fade-in text-slate-200">
-                <button
-                  onClick={() => {
-                    setShowExportMenu(false);
-                    handleExportCurrentSVG();
-                  }}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-900 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center gap-2 text-slate-300 hover:text-white"
-                >
-                  <ArrowUpRight className="h-3.5 w-3.5 text-sky-450" />
-                  <span>Current View (SVG)</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowExportMenu(false);
-                    handleExportFullZIP();
-                  }}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-900 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center gap-2 text-slate-300 hover:text-white"
-                >
-                  <PlusCircle className="h-3.5 w-3.5 text-emerald-450" />
-                  <span>Full Schematic (ZIP)</span>
-                </button>
+
+            <button 
+              onClick={handleExportFile}
+              className="px-3 py-2 border border-slate-800 hover:border-sky-950 bg-slate-900/60 hover:bg-sky-950/20 hover:text-sky-400 rounded-lg text-xs font-bold font-sans cursor-pointer transition-all flex items-center gap-1.5"
+            >
+              <FileJson className="h-3.5 w-3.5 text-amber-500" />
+              <span>Save Schematic</span>
+            </button>
+
+            <button 
+              onClick={handleFitSchematic}
+              className="px-3 py-2 border border-slate-800 hover:border-sky-950 bg-slate-900/60 hover:bg-sky-950/20 hover:text-emerald-400 rounded-lg text-xs font-bold font-sans cursor-pointer transition-all flex items-center gap-1.5"
+              title="Fit Schematic to Window"
+            >
+              <Maximize2 className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Fit Schematic</span>
+            </button>
+
+            {/* Export Menu Dropdown */}
+            <div className="relative flex" ref={exportMenuRef}>
+              <button 
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="px-3 py-2 border border-slate-800 hover:border-sky-950 bg-slate-900/60 hover:bg-sky-950/20 hover:text-sky-400 rounded-lg text-xs font-bold font-sans cursor-pointer transition-all flex items-center gap-1.5"
+              >
+                <PlusCircle className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Export Schematics</span>
+                <ChevronDown className="h-3 w-3 text-slate-550" />
+              </button>
+              {showExportMenu && (
+                <div className="absolute left-0 top-full mt-1.5 w-52 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-50 flex flex-col p-1.5 gap-1 animate-fade-in text-slate-200">
+                  <button
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      handleExportCurrentSVG();
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-900 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center gap-2 text-slate-300 hover:text-white"
+                  >
+                    <ArrowUpRight className="h-3.5 w-3.5 text-sky-450" />
+                    <span>Current View (SVG)</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      handleExportFullZIP();
+                    }}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-900 rounded-lg text-xs font-bold cursor-pointer transition-colors flex items-center gap-2 text-slate-300 hover:text-white"
+                  >
+                    <PlusCircle className="h-3.5 w-3.5 text-emerald-450" />
+                    <span>Full Schematic (ZIP)</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Modal controls and running buttons */}
+          <div className="flex items-center gap-2">
+            
+            {/* Settings togglers */}
+            <button 
+              onClick={openSimSettings}
+              className="p-2 border border-slate-800 bg-slate-900/40 hover:bg-slate-900 hover:text-sky-400 rounded-lg text-xs font-sans font-bold cursor-pointer transition-all flex items-center gap-1.5"
+              title="Solver & Stop time configs"
+            >
+              <Settings className="h-4 w-4" />
+              <span>Simulation Parameters</span>
+            </button>
+
+            <button 
+              onClick={openPlotConfig}
+              className="p-2 border border-slate-800 bg-slate-900/40 hover:bg-slate-900 hover:text-sky-400 rounded-lg text-xs font-sans font-bold cursor-pointer transition-all flex items-center gap-1.5"
+              title="Subplots overlay layouts settings"
+            >
+              <BarChart3 className="h-4 w-4 text-sky-400" />
+              <span>Plot Configurations</span>
+            </button>
+
+            <div className="h-4 w-[1px] bg-slate-900 mx-1" />
+
+            {/* Run simulated */}
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-2 border border-slate-800 bg-slate-900 text-slate-400 rounded-lg text-xs font-bold flex items-center gap-1.5 animate-pulse select-none">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  {isPaused ? "SIMULATION PAUSED" : "SIMULATION RUNNING..."}
+                </span>
+                
+                {onPauseResume && (
+                  <button 
+                    onClick={onPauseResume}
+                    className="px-3 py-2 border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/25 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 duration-100"
+                    title={isPaused ? "Resume execution" : "Pause execution"}
+                  >
+                    <Pause className="h-4 w-4 text-amber-450 fill-current" />
+                    <span>{isPaused ? "RESUME" : "PAUSE"}</span>
+                  </button>
+                )}
+                
+                {onTerminate && (
+                  <button 
+                    onClick={onTerminate}
+                    className="px-3 py-2 border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/25 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 duration-100"
+                    title="Terminate simulation and plot current data"
+                  >
+                    <StopCircle className="h-4 w-4 text-red-400" />
+                    <span>TERMINATE & PLOT</span>
+                  </button>
+                )}
               </div>
+            ) : (
+              <button 
+                onClick={handleSimulateBtn}
+                className="px-5 py-2 border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/25 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/5 select-none hover:scale-[1.02] active:scale-95 duration-100"
+              >
+                <Play className="h-4.5 w-4.5 fill-current text-emerald-400" />
+                <span>COMPILE & RUN SIMULATION</span>
+              </button>
             )}
           </div>
         </div>
-
-        {/* Modal controls and running buttons */}
-        <div className="flex items-center gap-2">
-          
-          {/* Settings togglers */}
-          <button 
-            onClick={openSimSettings}
-            className="p-2 border border-slate-800 bg-slate-900/40 hover:bg-slate-900 hover:text-sky-400 rounded-lg text-xs font-sans font-bold cursor-pointer transition-all flex items-center gap-1.5"
-            title="Solver & Stop time configs"
-          >
-            <Settings className="h-4 w-4" />
-            <span>Simulation Parameters</span>
-          </button>
-
-          <button 
-            onClick={openPlotConfig}
-            className="p-2 border border-slate-800 bg-slate-900/40 hover:bg-slate-900 hover:text-sky-400 rounded-lg text-xs font-sans font-bold cursor-pointer transition-all flex items-center gap-1.5"
-            title="Subplots overlay layouts settings"
-          >
-            <BarChart3 className="h-4 w-4 text-sky-400" />
-            <span>Plot Configurations</span>
-          </button>
-
-          <div className="h-4 w-[1px] bg-slate-900 mx-1" />
-
-          {/* Run simulated */}
-          {isLoading ? (
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-2 border border-slate-800 bg-slate-900 text-slate-400 rounded-lg text-xs font-bold flex items-center gap-1.5 animate-pulse select-none">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                SIMULATING...
-              </span>
-              {onPauseResume && (
-                <button 
-                  onClick={onPauseResume}
-                  className="px-3 py-2 border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/25 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 duration-100"
-                  title={isPaused ? "Resume simulation" : "Pause simulation"}
-                >
-                  {isPaused ? <Play className="h-4 w-4 fill-current" /> : <Pause className="h-4 w-4 fill-current" />}
-                  <span>{isPaused ? "RESUME" : "PAUSE"}</span>
-                </button>
-              )}
-              {onTerminate && (
-                <button 
-                  onClick={onTerminate}
-                  className="px-3 py-2 border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/25 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 duration-100"
-                  title="Terminate simulation and plot current data"
-                >
-                  <StopCircle className="h-4 w-4 text-red-400" />
-                  <span>TERMINATE & PLOT</span>
-                </button>
-              )}
-            </div>
-          ) : (
-            <button 
-              onClick={handleSimulateBtn}
-              className="px-5 py-2 border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/25 rounded-lg text-xs font-bold cursor-pointer transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/5 select-none hover:scale-[1.02] active:scale-95 duration-100"
-            >
-              <Play className="h-4.5 w-4.5 fill-current text-emerald-400" />
-              <span>COMPILE & RUN SIMULATION</span>
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Main split workbenches layout */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden" style={{ minHeight: "680px", maxHeight: "85vh" }}>
         
         {/* Left drawer panel - components dictionary */}
-        <div className="w-full md:w-64 shrink-0 border-r border-slate-900 bg-slate-950/40 flex flex-col overflow-y-auto max-h-[250px] md:max-h-none">
+        {state.appletMode !== 'student' && (
+          <div className="w-full md:w-64 shrink-0 border-r border-slate-900 bg-slate-950/40 flex flex-col overflow-y-auto max-h-[250px] md:max-h-none">
           {/* Elegant Library Selector Tabs */}
           <div className="flex border-b border-slate-900 bg-slate-950/60 p-1 shrink-0">
             <button
@@ -1305,7 +1310,8 @@ export default function SchematicEditor({
               </div>
             </>
           )}
-        </div>
+          </div>
+        )}
 
         {/* Center workbench - canvas viewer */}
         <div className="flex-1 min-h-[300px] md:min-h-none flex flex-col relative bg-slate-950/10">
@@ -1695,28 +1701,32 @@ export default function SchematicEditor({
         </div>
 
         {/* Right drawer panel - component properties */}
-        <div id="sidebar-right" className="w-full md:w-64 shrink-0 border-t md:border-t-0 md:border-l border-slate-900 bg-slate-950/45 p-4 flex flex-col overflow-y-auto max-h-[300px] md:max-h-none">
-          <div className="mb-3 border-b border-slate-900 pb-2 font-mono text-[10px] uppercase font-bold tracking-wider text-slate-500">
-            ⚙️ PARAMETERS INSPECTOR
-          </div>
-          <div id="properties-panel" className="flex-1">
-            {/* Populated dynamically inside properties.ts */}
-            <div className="text-slate-500 font-mono text-[11px] text-center mt-8">
-              Select component on canvas to edit parameters.
+        {state.appletMode !== 'student' && (
+          <div id="sidebar-right" className="w-full md:w-64 shrink-0 border-t md:border-t-0 md:border-l border-slate-900 bg-slate-950/45 p-4 flex flex-col overflow-y-auto max-h-[300px] md:max-h-none">
+            <div className="mb-3 border-b border-slate-900 pb-2 font-mono text-[10px] uppercase font-bold tracking-wider text-slate-500">
+              ⚙️ PARAMETERS INSPECTOR
+            </div>
+            <div id="properties-panel" className="flex-1">
+              {/* Populated dynamically inside properties.ts */}
+              <div className="text-slate-500 font-mono text-[11px] text-center mt-8">
+                Select component on canvas to edit parameters.
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Bottom Footer status bar */}
-      <footer className="h-9 shrink-0 flex items-center justify-between px-4 bg-slate-950/85 border-t border-slate-950 text-[10px] font-mono text-slate-500 select-none">
-        <div id="selection-display">Selection: None</div>
-        <div className="flex gap-4 items-center">
-          <div id="footer-coord-x">X: 0</div>
-          <div id="footer-coord-y">Y: 0</div>
-          <div className="text-sky-500 font-bold">GRID SILICON 20px</div>
-        </div>
-      </footer>
+      {state.appletMode !== 'student' && (
+        <footer className="h-9 shrink-0 flex items-center justify-between px-4 bg-slate-950/85 border-t border-slate-950 text-[10px] font-mono text-slate-500 select-none">
+          <div id="selection-display">Selection: None</div>
+          <div className="flex gap-4 items-center">
+            <div id="footer-coord-x">X: 0</div>
+            <div id="footer-coord-y">Y: 0</div>
+            <div className="text-sky-500 font-bold">GRID SILICON 20px</div>
+          </div>
+        </footer>
+      )}
 
       {/* ========================================================= */}
       {/* CAD Schematic Overlay Modal Dialog Dialogs */}

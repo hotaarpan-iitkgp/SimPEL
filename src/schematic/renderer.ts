@@ -102,6 +102,7 @@ export function updateAllWirePathsInDOM(): void {
 
 // Render Selected Wire Handles
 export function updateHandlesInDOM(wire: any, pathPoints: Array<{ x: number; y: number }>): void {
+  if (state.appletMode === 'student') return;
   const handlesGroup = document.getElementById('handles-group');
   if (!handlesGroup) return;
   handlesGroup.innerHTML = '';
@@ -557,43 +558,45 @@ export function draw(): void {
         }
       }
       
-      // Initialize dragging for all selected components and rigid wires
-      state.draggingComponent = dragComp;
-      state.dragStartMouse = screenToCanvas(e.clientX, e.clientY);
-      state.draggedComponentsStart = state.selectedComponentIds.map((id: string) => {
-        const c = state.components.find((x: any) => x.id === id);
-        return { id, x: c.x, y: c.y };
-      });
-      
-      state.rigidMovingWireIds = getRigidMovingWires();
-      state.draggedWiresStart = state.rigidMovingWireIds.map((id: string) => {
-        const wire = state.wires.find((w: any) => w.id === id);
+      if (state.appletMode !== 'student') {
+        // Initialize dragging for all selected components and rigid wires
+        state.draggingComponent = dragComp;
+        state.dragStartMouse = screenToCanvas(e.clientX, e.clientY);
+        state.draggedComponentsStart = state.selectedComponentIds.map((id: string) => {
+          const c = state.components.find((x: any) => x.id === id);
+          return { id, x: c.x, y: c.y };
+        });
         
-        let pathPoints = [];
-        if (wire.manualPath) {
-          pathPoints = JSON.parse(JSON.stringify(wire.manualPath));
-        } else {
-          const p1 = getWireEndpointCoords(wire.from);
-          const dir1 = getWireEndpointDir(wire.from);
-          const p2 = getWireEndpointCoords(wire.to);
-          const dir2 = getWireEndpointDir(wire.to);
-          pathPoints = getOrthogonalPath(p1, dir1, p2, dir2);
-        }
+        state.rigidMovingWireIds = getRigidMovingWires();
+        state.draggedWiresStart = state.rigidMovingWireIds.map((id: string) => {
+          const wire = state.wires.find((w: any) => w.id === id);
+          
+          let pathPoints = [];
+          if (wire.manualPath) {
+            pathPoints = JSON.parse(JSON.stringify(wire.manualPath));
+          } else {
+            const p1 = getWireEndpointCoords(wire.from);
+            const dir1 = getWireEndpointDir(wire.from);
+            const p2 = getWireEndpointCoords(wire.to);
+            const dir2 = getWireEndpointDir(wire.to);
+            pathPoints = getOrthogonalPath(p1, dir1, p2, dir2);
+          }
+          
+          return {
+            id: id,
+            initialPath: pathPoints,
+            hasManualPath: !!wire.manualPath,
+            initialFrom: { ...wire.from },
+            initialTo: { ...wire.to }
+          };
+        });
         
-        return {
-          id: id,
-          initialPath: pathPoints,
-          hasManualPath: !!wire.manualPath,
-          initialFrom: { ...wire.from },
-          initialTo: { ...wire.to }
-        };
-      });
-      
-      state.draggedWireEndpointsStart = state.wires.map((w: any) => ({
-        id: w.id,
-        from: { ...w.from },
-        to: { ...w.to }
-      }));
+        state.draggedWireEndpointsStart = state.wires.map((w: any) => ({
+          id: w.id,
+          from: { ...w.from },
+          to: { ...w.to }
+        }));
+      }
       
       draw();
       updatePropertiesPanel();
