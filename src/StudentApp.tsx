@@ -212,10 +212,20 @@ export default function StudentApp() {
   const [appletUpdateCount, setAppletUpdateCount] = useState(0);
   const dynamicRangesRef = useRef<Record<string, { min: number; max: number; step: number }>>({});
 
-  // Plot variables
   const [subplots, setSubplots] = useState<SubplotConfig[]>([
     { id: "sp_1", title: "Waveform analysis", traces: [] }
   ]);
+  const [hiddenTraces, setHiddenTraces] = useState<Record<string, string[]>>({});
+
+  const toggleTraceVisibility = (subplotId: string, traceName: string) => {
+    setHiddenTraces(prev => {
+      const list = prev[subplotId] || [];
+      const updated = list.includes(traceName)
+        ? list.filter(t => t !== traceName)
+        : [...list, traceName];
+      return { ...prev, [subplotId]: updated };
+    });
+  };
   const [plotMode, setPlotMode] = useState<'hover' | 'zoom' | 'pan' | 'measure'>('hover');
   const [globalZoomX, setGlobalZoomX] = useState<{ min: number; max: number } | null>(null);
   const [zoomRangesX, setZoomRangesX] = useState<Record<string, { min: number; max: number } | null>>({});
@@ -882,6 +892,8 @@ export default function StudentApp() {
       ? availableTraces 
       : subplot.traces.filter(t => availableTraces.includes(resolveInputPinToSource(t)));
 
+    const visibleTraces = activeTraces.filter(t => !hiddenTraces[subplot.id]?.includes(t));
+
     const width = 800;
     let height = 240;
     if (layoutMode === 'grid') {
@@ -908,8 +920,6 @@ export default function StudentApp() {
     const displayYMax = zoomRangesY[subplot.id] !== null && zoomRangesY[subplot.id] !== undefined 
       ? zoomRangesY[subplot.id]!.max 
       : undefined;
-
-
 
     return (
       <div 
@@ -938,14 +948,50 @@ export default function StudentApp() {
           theme === 'light' ? 'bg-white border-slate-200 shadow-sm shadow-slate-100' : 'bg-slate-950/80 border-slate-900 shadow-inner'
         }`}
       >
-        <div className="flex items-center justify-between mb-1.5 px-1 select-none">
-          <span className={`text-[10px] font-mono font-extrabold uppercase tracking-wide flex items-center gap-1.5 ${
+        <div className="flex items-center justify-between mb-1.5 px-1 select-none gap-2">
+          <span className={`text-[10px] font-mono font-extrabold uppercase tracking-wide flex items-center gap-1.5 shrink-0 ${
             theme === 'light' ? 'text-slate-700' : 'text-slate-350'
           }`}>
             <span className="text-sky-500">📈</span>
             {subplot.title}
           </span>
-          <div className="flex items-center gap-1.5">
+
+          {/* Subplot variable names interactive legends */}
+          <div className="flex-1 flex flex-wrap items-center justify-end gap-1.5 px-2 select-none overflow-hidden">
+            {activeTraces.map(trace => {
+              const label = trace.includes('.') ? trace.split('.')[1] : trace.replace('_', ' ');
+              const isHidden = hiddenTraces[subplot.id]?.includes(trace);
+              const color = isImPlotTheme 
+                ? ((trace.startsWith('V_') || trace.endsWith('_V')) ? '#eab308' : (trace.startsWith('I_') || trace.endsWith('_I')) ? '#ef4444' : '#10b981')
+                : getTraceColor(trace);
+              
+              return (
+                <button
+                  key={trace}
+                  onClick={() => toggleTraceVisibility(subplot.id, trace)}
+                  className={`px-1.5 py-0.5 rounded text-[8px] font-bold font-mono transition-all flex items-center gap-1 cursor-pointer border ${
+                    isHidden
+                      ? 'bg-slate-500/10 text-slate-500 border-slate-500/20 line-through opacity-50 hover:opacity-75'
+                      : 'hover:scale-[1.02] hover:bg-slate-500/5'
+                  }`}
+                  style={{
+                    borderColor: isHidden ? undefined : `${color}25`,
+                    backgroundColor: isHidden ? undefined : `${color}05`,
+                    color: isHidden ? undefined : color
+                  }}
+                  title={isHidden ? `Click to show ${label}` : `Click to hide ${label}`}
+                >
+                  <span 
+                    className="w-1.5 h-1.5 rounded-full" 
+                    style={{ backgroundColor: isHidden ? '#64748b' : color }}
+                  />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => removeSubplot(subplot.id)}
               className="p-1 rounded hover:bg-rose-550/10 text-slate-500 hover:text-rose-500 transition-colors cursor-pointer"
@@ -970,7 +1016,7 @@ export default function StudentApp() {
         ) : (
           <PlotlyChart
             subplotId={subplot.id}
-            traces={activeTraces}
+            traces={visibleTraces}
             getTraceData={getTraceData}
             getTraceColor={(trace) => isImPlotTheme 
               ? ((trace.startsWith('V_') || trace.endsWith('_V')) ? '#eab308' : (trace.startsWith('I_') || trace.endsWith('_I')) ? '#ef4444' : '#10b981')
