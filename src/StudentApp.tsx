@@ -909,19 +909,7 @@ export default function StudentApp() {
       ? zoomRangesY[subplot.id]!.max 
       : undefined;
 
-    const plotlyTraces = activeTraces.map(tr => {
-      const label = tr.includes('.') ? tr.split('.')[1] : tr.replace('_', ' ');
-      const rawD = getTraceData(tr);
-      return {
-        name: label,
-        y: rawD,
-        color: getTraceColor(tr)
-      };
-    });
 
-    const currentXRange = (displayXMin !== undefined && displayXMax !== undefined) ? { min: displayXMin, max: displayXMax } : null;
-    const currentYRange = (displayYMin !== undefined && displayYMax !== undefined) ? { min: displayYMin, max: displayYMax } : null;
-    const currentMeasureRange = syncXZoom ? globalMeasureRange : (measureRanges[subplot.id] || null);
 
     return (
       <div 
@@ -981,31 +969,31 @@ export default function StudentApp() {
           </div>
         ) : (
           <PlotlyChart
-            id={`plotly-chart-${subplot.id}`}
-            title={subplot.title}
-            x={tData}
-            traces={plotlyTraces}
-            theme={isImPlotTheme ? 'dark' : theme}
+            subplotId={subplot.id}
+            traces={activeTraces}
+            getTraceData={getTraceData}
+            getTraceColor={(trace) => isImPlotTheme 
+              ? ((trace.startsWith('V_') || trace.endsWith('_V')) ? '#eab308' : (trace.startsWith('I_') || trace.endsWith('_I')) ? '#ef4444' : '#10b981')
+              : getTraceColor(trace)}
+            tData={tData}
+            displayXMin={displayXMin}
+            displayXMax={displayXMax}
             height={height}
-            xRange={currentXRange}
-            onXRangeChange={(range) => {
+            theme={theme}
+            simResults={simResults}
+            onZoomX={(min, max) => {
               if (syncXZoom) {
-                setGlobalZoomX(range);
+                if (min === null || max === null) {
+                  setGlobalZoomX(null);
+                } else {
+                  setGlobalZoomX({ min, max });
+                }
               } else {
-                setZoomRangesX(prev => ({ ...prev, [subplot.id]: range }));
-              }
-            }}
-            yRange={currentYRange}
-            onYRangeChange={(range) => {
-              setZoomRangesY(prev => ({ ...prev, [subplot.id]: range }));
-            }}
-            plotMode={plotMode}
-            measureRange={currentMeasureRange}
-            onMeasureRangeChange={(range) => {
-              if (syncXZoom) {
-                setGlobalMeasureRange(range);
-              } else {
-                setMeasureRanges(prev => ({ ...prev, [subplot.id]: range }));
+                if (min === null || max === null) {
+                  setZoomRangesX(prev => ({ ...prev, [subplot.id]: null }));
+                } else {
+                  setZoomRangesX(prev => ({ ...prev, [subplot.id]: { min, max } }));
+                }
               }
             }}
           />
