@@ -3292,7 +3292,8 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
                       const pt = getPointAtLengthWithOffset(pathPoints, d, 0);
                       if (pt) {
                         if (flowDotShape === 'triangle') {
-                          const angle = getDirectionAngleAtLength(pathPoints, d);
+                          const geoAngle = getDirectionAngleAtLength(pathPoints, d);
+                          const angle = wireVal < 0 ? geoAngle + 180 : geoAngle;
                           wireDots.push(
                             <path
                               key={`direct-dot-${seg.segmentId}-${wIndex}-${sIdx}-${dIdx}`}
@@ -3474,7 +3475,8 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
                         };
 
                         if (flowDotShape === 'triangle') {
-                          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                          const geoAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+                          const angle = innerCurrent < 0 ? geoAngle + 180 : geoAngle;
                           internalFlowDots.push(
                             <path
                               key={`${comp.id}-internal-dot-${dIdx}`}
