@@ -13,7 +13,7 @@ import PlotlyChart from './components/PlotlyChart';
 import Plotly from 'plotly.js-dist-min';
 import { state } from './schematic/state';
 import { getWireDomain } from './schematic/routing';
-import { triggerImport, exportDualGraphJSON } from './schematic/actions';
+import { triggerImport, exportDualGraphJSON, exportJSON } from './schematic/actions';
 import { CircuitSimulator } from './solver_ts';
 import { AlternativeCircuitSimulator } from './solver_alt';
 import { generateMNASpaceHTML } from './utils/mnaSolver';
@@ -388,9 +388,41 @@ export default function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load default template on first boot
+  // Load default template or persisted schematic on first boot
   useEffect(() => {
-    loadTemplate("empty");
+    const persisted = localStorage.getItem('circuitsim_persisted_schematic');
+    const persistedTemplateKey = localStorage.getItem('circuitsim_persisted_template_key');
+    if (persisted) {
+      try {
+        const layoutObj = JSON.parse(persisted);
+        triggerImport(persisted);
+        if (persistedTemplateKey) {
+          setSelectedTemplateKey(persistedTemplateKey);
+        }
+        if (layoutObj.plotConfiguration && Array.isArray(layoutObj.plotConfiguration.plots)) {
+          const mapped = layoutObj.plotConfiguration.plots.map((p: any, idx: number) => ({
+            id: `sp_${idx}`,
+            title: p.title || `Plot ${idx + 1}`,
+            traces: p.variables || []
+          }));
+          setSubplots(mapped);
+        }
+        try {
+          const isRegularMode = (layoutObj.simulationSettings?.simulationMode || 'regular') === 'regular';
+          const netlist = exportDualGraphJSON(isRegularMode);
+          const netlistStr = JSON.stringify(netlist, null, 2);
+          setJsonText(netlistStr);
+          parseAndSyncNetlist(netlistStr);
+        } catch (err) {
+          console.error("Failed to compile netlist for persisted schematic:", err);
+        }
+      } catch (err) {
+        console.error("Failed to load persisted schematic:", err);
+        loadTemplate("empty");
+      }
+    } else {
+      loadTemplate("empty");
+    }
   }, []);
 
   // Listen to interactive plot configuration changes designed in schematic editor modal
@@ -3144,6 +3176,12 @@ export default function App() {
 
             <button
               onClick={() => {
+                try {
+                  localStorage.setItem('circuitsim_persisted_schematic', exportJSON());
+                  localStorage.setItem('circuitsim_persisted_template_key', selectedTemplateKey);
+                } catch (err) {
+                  console.error("Failed to save layout before mode change:", err);
+                }
                 window.location.search = '?mode=student';
               }}
               className="px-3 py-1.5 bg-gradient-to-r from-[#6366f1] to-[#4f46e5] hover:from-[#4f46e5] hover:to-[#4338ca] text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-xl active:scale-95 border border-indigo-450/20 cursor-pointer transition-all"

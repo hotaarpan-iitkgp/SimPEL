@@ -61,10 +61,14 @@ export function saveState() {
   if (state.undoStack.length >= 50) {
     state.undoStack.shift();
   }
-  state.undoStack.push(JSON.stringify({
+  const payload = {
     components: state.components,
     wires: state.wires,
     plotConfiguration: state.plotConfiguration,
     simulationSettings: state.simulationSettings
-  }));
+  };
+  state.undoStack.push(JSON.stringify(payload));
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('circuitsim_persisted_schematic', JSON.stringify(payload));
+  }
 }

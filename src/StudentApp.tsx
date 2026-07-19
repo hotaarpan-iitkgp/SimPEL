@@ -15,7 +15,7 @@ import { draw } from './schematic/renderer';
 import { updatePropertiesPanel } from './schematic/properties';
 import { updateViewportTransform } from './schematic/utils';
 import { getWireDomain } from './schematic/routing';
-import { triggerImport, exportDualGraphJSON } from './schematic/actions';
+import { triggerImport, exportDualGraphJSON, exportJSON } from './schematic/actions';
 import { CircuitSimulator } from './solver_ts';
 import { AlternativeCircuitSimulator } from './solver_alt';
 
@@ -327,9 +327,40 @@ export default function StudentApp() {
     };
   }, [isResizing, showControlPanel]);
 
-  // Load first template on mount
+  // Load default template or persisted schematic on mount
   useEffect(() => {
-    loadTemplate("buck_converter");
+    const persisted = localStorage.getItem('circuitsim_persisted_schematic');
+    const persistedTemplateKey = localStorage.getItem('circuitsim_persisted_template_key');
+    if (persisted) {
+      try {
+        const layoutObj = JSON.parse(persisted);
+        triggerImport(persisted);
+        if (persistedTemplateKey) {
+          setSelectedTemplateKey(persistedTemplateKey);
+        }
+        if (layoutObj.plotConfiguration && Array.isArray(layoutObj.plotConfiguration.plots)) {
+          const mapped = layoutObj.plotConfiguration.plots.map((p: any, idx: number) => ({
+            id: p.id || `sp_${idx + 1}`,
+            title: p.title || `Plot ${idx + 1}`,
+            traces: p.variables || p.traces || []
+          }));
+          setSubplots(mapped);
+        }
+        try {
+          const isRegularMode = (layoutObj.simulationSettings?.simulationMode || 'regular') === 'regular';
+          const netlist = exportDualGraphJSON(isRegularMode);
+          const netlistStr = JSON.stringify(netlist, null, 2);
+          setJsonText(netlistStr);
+        } catch (err) {
+          console.error("Failed to compile netlist for persisted schematic in StudentApp:", err);
+        }
+      } catch (err) {
+        console.error("Failed to load persisted schematic in StudentApp:", err);
+        loadTemplate("buck_converter");
+      }
+    } else {
+      loadTemplate("buck_converter");
+    }
   }, []);
 
   const parseMetricValue = (str: string): { value: number; prefix: string } => {
@@ -1117,6 +1148,12 @@ export default function StudentApp() {
 
           <button
             onClick={() => {
+              try {
+                localStorage.setItem('circuitsim_persisted_schematic', exportJSON());
+                localStorage.setItem('circuitsim_persisted_template_key', selectedTemplateKey);
+              } catch (err) {
+                console.error("Failed to save layout before mode change:", err);
+              }
               window.location.search = '?mode=creator';
             }}
             className={`px-3 py-1.5 rounded-lg border text-xs font-bold font-sans transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
