@@ -817,7 +817,7 @@ export default function SchematicEditor({
     { type: 'CONST', label: 'Constant', desc: 'Discrete constant controller level' },
     { type: 'GAIN', label: 'Gain Scalar', desc: 'Proportional gain factor multiplication' },
     { type: 'PID', label: 'PI Controller', desc: 'Closed loop controller gains effort' },
-    { type: 'SUM', label: 'Summing Block', desc: 'Sum or difference junction' },
+    { type: 'SUM_ROUND', label: 'Sum (round)', desc: 'Circular summing junction with configurable inputs and signs' },
     { type: 'PWM', label: 'PWM Gen', desc: 'Pulse width generator carrier compare' },
     { type: 'PWM_MASTER', label: 'Master PWM', desc: 'Configurable Master PWM with dead-time and dynamic phase shifts' },
     { type: 'TRI', label: 'Triangle wave', desc: 'High frequency triangle modulation' },

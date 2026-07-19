@@ -323,15 +323,7 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     symbol: 'K',
     defaultParameters: { K: '2.5' }
   },
-  {
-    type: 'SUM',
-    label: 'Sum',
-    desc: 'Output the sum of the inputs.',
-    category: 'control',
-    subcategory: 'Functions & Tables',
-    symbol: '+',
-    defaultParameters: { signs: '++' }
-  },
+
   {
     type: 'PROD',
     label: 'Product',
