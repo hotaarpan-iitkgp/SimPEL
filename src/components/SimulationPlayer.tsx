@@ -1616,6 +1616,15 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
   // State: Subplots local configurations (custom edits on-screen!)
   const [localSubplots, setLocalSubplots] = useState<any[]>([]);
 
+  // GIF Exporter States
+  const [isGifModalOpen, setIsGifModalOpen] = useState(false);
+  const [gifStart, setGifStart] = useState('0.0');
+  const [gifEnd, setGifEnd] = useState('0.05');
+  const [gifDuration, setGifDuration] = useState('4.0');
+  const [gifFps, setGifFps] = useState(15);
+  const [gifProgress, setGifProgress] = useState('');
+  const [isExportingGif, setIsExportingGif] = useState(false);
+
   useEffect(() => {
     if (subplots && subplots.length > 0) {
       setLocalSubplots(subplots);
@@ -1665,6 +1674,165 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
   const tMin = tData.length > 0 ? tData[0] : 0.0;
   const tMax = tData.length > 0 ? tData[tData.length - 1] : 0.01;
   const totalSimDuration = tMax - tMin;
+
+  useEffect(() => {
+    if (isGifModalOpen) {
+      setGifStart(tMin.toFixed(4));
+      setGifEnd(tMax.toFixed(4));
+      const defDur = Math.max(1, Math.min(10, Math.round(totalSimDuration * 100)));
+      setGifDuration(defDur.toFixed(1));
+      setGifProgress('');
+      setIsExportingGif(false);
+    }
+  }, [isGifModalOpen, tMin, tMax, totalSimDuration]);
+
+  // Step-by-step canvas capture and loopable GIF compilation using gifshot
+  const handleExportGif = async () => {
+    const startVal = parseFloat(gifStart);
+    const endVal = parseFloat(gifEnd);
+    const durationVal = parseFloat(gifDuration);
+    
+    if (isNaN(startVal) || isNaN(endVal) || isNaN(durationVal) || startVal < tMin || endVal > tMax || startVal >= endVal || durationVal <= 0) {
+      alert("Invalid range or duration. Please check your inputs.");
+      return;
+    }
+    
+    setIsExportingGif(true);
+    setGifProgress("Loading GIF encoder...");
+    
+    try {
+      if (!(window as any).gifshot) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.4.5/gifshot.min.js';
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error("Failed to load gifshot encoder library"));
+          document.body.appendChild(script);
+        });
+      }
+      
+      const svg = document.getElementById('visual-flow-svg') as any;
+      if (!svg) {
+        throw new Error("Visual Flow Canvas element not found in DOM");
+      }
+      
+      const originalPlayTime = playTime;
+      const originalIsPlaying = isPlaying;
+      setIsPlaying(false);
+      
+      const totalFrames = Math.max(2, Math.round(durationVal * gifFps));
+      const canvasList: HTMLCanvasElement[] = [];
+      
+      setGifProgress(`Capturing frame 0 of ${totalFrames}...`);
+      
+      // Step-by-step frame capture
+      for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
+        const pct = frameIdx / (totalFrames - 1 || 1);
+        const simTime = startVal + pct * (endVal - startVal);
+        
+        // Update playTime state
+        setPlayTime(simTime);
+        
+        // Manually update scrolling offsets for flow dots per step
+        const dtReal = durationVal / totalFrames;
+        const stepIdx = getClosestTimeIndex(simTime);
+        
+        state.wires.forEach((wire: any) => {
+          const segs = getSegmentsForWire(wire, state.wires);
+          if (segs.length === 0) {
+            const wireVal = getComponentCurrentAtIndex(wire.id, stepIdx);
+            if (Math.abs(wireVal) > 1e-3) {
+              const velocity = 65.0 * Math.sign(wireVal) * Math.min(2.5, Math.pow(Math.abs(wireVal) * 10, 0.4));
+              const oldOffset = wireOffsetsRef.current[`direct_wire_${wire.id}`] || 0.0;
+              wireOffsetsRef.current[`direct_wire_${wire.id}`] = oldOffset + velocity * dtReal;
+            }
+          } else {
+            segs.forEach(seg => {
+              const wireVal = getComponentCurrentAtIndex(seg.segmentId, stepIdx) || getComponentCurrentAtIndex(wire.id, stepIdx);
+              if (Math.abs(wireVal) > 1e-3) {
+                const velocity = 65.0 * Math.sign(wireVal) * Math.min(2.5, Math.pow(Math.abs(wireVal) * 10, 0.4));
+                const oldOffset = wireOffsetsRef.current[`direct_wire_${seg.segmentId}`] || 0.0;
+                wireOffsetsRef.current[`direct_wire_${seg.segmentId}`] = oldOffset + velocity * dtReal;
+              }
+            });
+          }
+        });
+        
+        state.components.forEach((comp: any) => {
+          const compVal = getComponentCurrentAtIndex(comp.id, stepIdx);
+          if (Math.abs(compVal) > 1e-3) {
+            const velocity = 65.0 * Math.sign(compVal) * Math.min(2.5, Math.pow(Math.abs(compVal) * 10, 0.4));
+            const oldOffset = wireOffsetsRef.current[`internal_flow_${comp.id}`] || 0.0;
+            wireOffsetsRef.current[`internal_flow_${comp.id}`] = oldOffset + velocity * dtReal;
+          }
+        });
+        
+        // Wait for render cycles
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        
+        setGifProgress(`Capturing frame ${frameIdx + 1} of ${totalFrames}...`);
+        
+        const svgString = new XMLSerializer().serializeToString(svg);
+        const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        const blobURL = URL.createObjectURL(svgBlob);
+        
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = blobURL;
+        });
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = svg.clientWidth || 800;
+        canvas.height = svg.clientHeight || 500;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = isLight ? '#ffffff' : '#050711';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+        canvasList.push(canvas);
+        URL.revokeObjectURL(blobURL);
+      }
+      
+      setGifProgress("Encoding GIF (this may take a few seconds)...");
+      
+      const imageUrls = canvasList.map(c => c.toDataURL('image/png'));
+      const sampleCanvas = canvasList[0];
+      
+      (window as any).gifshot.createGIF({
+        images: imageUrls,
+        gifWidth: sampleCanvas.width,
+        gifHeight: sampleCanvas.height,
+        interval: durationVal / totalFrames,
+        numWorkers: 2
+      }, (obj: any) => {
+        if (obj.error) {
+          alert(`GIF generation failed: ${obj.errorMsg}`);
+          setIsExportingGif(false);
+          return;
+        }
+        
+        // Restore original playing states
+        setPlayTime(originalPlayTime);
+        setIsPlaying(originalIsPlaying);
+        
+        const link = document.createElement('a');
+        link.download = `flow_animation_${Date.now()}.gif`;
+        link.href = obj.image;
+        link.click();
+        
+        setIsExportingGif(false);
+        setIsGifModalOpen(false);
+      });
+      
+    } catch (err: any) {
+      console.error(err);
+      alert(`Export failed: ${err.message || err}`);
+      setIsExportingGif(false);
+    }
+  };
 
   const visibleDuration = totalSimDuration / timeZoom;
   let vStart: number;
@@ -3157,6 +3325,7 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
           {/* SVG canvas */}
           <div className="flex-1 overflow-hidden relative cursor-grab active:cursor-grabbing">
             <svg
+              id="visual-flow-svg"
               className="w-full h-full select-none outline-none"
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
@@ -4216,6 +4385,16 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
               <span>{flowDotShape === 'circle' ? 'Circles' : 'Arrows'}</span>
             </button>
 
+            {/* Export Animation GIF Button */}
+            <button 
+              onClick={() => setIsGifModalOpen(true)}
+              className={`px-3 h-9 border rounded-lg text-xs font-sans font-bold transition-all cursor-pointer flex items-center gap-1.5 ${isLight ? 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50' : 'border-slate-800 bg-slate-950 text-slate-400 hover:text-white hover:border-slate-700'}`}
+              title="Export current flow animation as loopable GIF"
+            >
+              <Download className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Export GIF</span>
+            </button>
+
             {/* Flow Inspector Toggle Panel control */}
             <button 
               onClick={() => {
@@ -4293,6 +4472,114 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
       </div>
 
 
+      {/* Export GIF Config Modal Overlay */}
+      {isGifModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`w-full max-w-sm rounded-2xl border p-5 shadow-2xl flex flex-col gap-4 transition-all ${isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-950 border-slate-800 text-slate-100'}`}>
+            <div className="flex items-center justify-between border-b pb-2">
+              <div className="flex items-center gap-2">
+                <Download className="h-4 w-4 text-indigo-400" />
+                <h4 className="font-sans text-xs font-bold uppercase tracking-wider">Export Flow GIF</h4>
+              </div>
+              <button 
+                onClick={() => !isExportingGif && setIsGifModalOpen(false)}
+                className={`p-1 rounded transition-all cursor-pointer ${isLight ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-600' : 'hover:bg-slate-900 text-slate-500 hover:text-slate-300'}`}
+                disabled={isExportingGif}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {isExportingGif ? (
+              <div className="flex flex-col items-center justify-center py-6 gap-3">
+                <div className="relative flex items-center justify-center">
+                  <div className="w-10 h-10 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                  <Download className="h-4 w-4 text-indigo-400 absolute" />
+                </div>
+                <div className="text-[10px] font-bold font-mono text-center px-4 animate-pulse">
+                  {gifProgress}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Start Time (s)</label>
+                    <input 
+                      type="number"
+                      min={tMin}
+                      max={tMax}
+                      step="0.0001"
+                      value={gifStart}
+                      onChange={(e) => setGifStart(e.target.value)}
+                      className={`w-full text-xs font-mono font-bold p-2 rounded-lg border outline-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100'}`}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">End Time (s)</label>
+                    <input 
+                      type="number"
+                      min={tMin}
+                      max={tMax}
+                      step="0.0001"
+                      value={gifEnd}
+                      onChange={(e) => setGifEnd(e.target.value)}
+                      className={`w-full text-xs font-mono font-bold p-2 rounded-lg border outline-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100'}`}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">GIF Duration (s)</label>
+                    <input 
+                      type="number"
+                      min="0.5"
+                      max="20"
+                      step="0.5"
+                      value={gifDuration}
+                      onChange={(e) => setGifDuration(e.target.value)}
+                      className={`w-full text-xs font-mono font-bold p-2 rounded-lg border outline-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100'}`}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Frame Rate (FPS)</label>
+                    <select 
+                      value={gifFps}
+                      onChange={(e) => setGifFps(parseInt(e.target.value))}
+                      className={`w-full text-xs font-sans font-bold p-2 rounded-lg border outline-none ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100'}`}
+                    >
+                      <option value={10}>10 FPS (Low weight)</option>
+                      <option value={15}>15 FPS (Balanced)</option>
+                      <option value={20}>20 FPS (High motion)</option>
+                      <option value={25}>25 FPS (Ultra smooth)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="text-[8.5px] text-slate-500 font-bold px-1 bg-slate-500/5 rounded-lg p-1.5 leading-normal">
+                  📌 <span className="uppercase tracking-tight text-[8px]">Tip:</span> The exporter will step through simulation time and record the current flow animations (circles or arrows) dynamically. Keep duration under 5s for fast encoding.
+                </div>
+
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200/10">
+                  <button 
+                    onClick={() => setIsGifModalOpen(false)}
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl border cursor-pointer transition-all ${isLight ? 'border-slate-200 hover:bg-slate-50 text-slate-500' : 'border-slate-800 hover:bg-slate-900 text-slate-450'}`}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleExportGif}
+                    className="flex-1 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer transition-all shadow-lg shadow-indigo-600/15"
+                  >
+                    Start Export
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
