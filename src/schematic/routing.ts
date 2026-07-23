@@ -64,7 +64,7 @@ export function getPinDomain(compType: string, terminalName: string, comp?: any)
   }
 
   // Check if it's a basic control/general component
-  if (['CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'SCOPE', 'CSCRIPT', 'PROBE', 'FROM_SIG', 'GOTO_SIG'].includes(compType)) {
+  if (['CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'SCOPE', 'CSCRIPT', 'PROBE', 'FROM_SIG', 'GOTO_SIG', 'KEY_TRIGGER'].includes(compType)) {
     return 'control';
   }
 

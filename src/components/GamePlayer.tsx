@@ -11,7 +11,7 @@ import { getComponentSVG } from '../schematic/components';
 import { getWirePath, getWireDomain, getWireEndpointCoords } from '../schematic/routing';
 import { pathToString } from '../schematic/utils';
 import { CIRCUITS_TEMPLATES } from '../templates';
-import { COMPONENT_PINS } from '../schematic/config';
+import { COMPONENT_PINS, getComponentPins } from '../schematic/config';
 
 interface Point {
   tSim: number;
@@ -208,6 +208,27 @@ const getWireCurrent = (wireId: string, lastPt: any): number => {
   }
 
   return 0.0;
+};
+
+
+const getComponentInternalPath = (comp: any): { p1: { x: number, y: number }, p2: { x: number, y: number } } | null => {
+  try {
+    const pinMap = getComponentPins(comp);
+    if (!pinMap) return null;
+    if (['R', 'L', 'C', 'V', 'AC_V', 'I', 'S', 'D', 'VM', 'AM'].includes(comp.type)) {
+      const p1Local = pinMap['A'] || { x: 0, y: -40 };
+      const p2Local = pinMap['B'] || { x: 0, y: 40 };
+      return { p1: { x: p1Local.x, y: p1Local.y }, p2: { x: p2Local.x, y: p2Local.y } };
+    }
+    if (comp.type === 'MOSFET' || comp.type === 'vg-FET') {
+      const p1Local = pinMap['D'] || { x: 0, y: -40 };
+      const p2Local = pinMap['S'] || { x: 0, y: 40 };
+      return { p1: { x: p1Local.x, y: p1Local.y }, p2: { x: p2Local.x, y: p2Local.y } };
+    }
+  } catch (e) {
+    // safe fallback
+  }
+  return null;
 };
 
 
@@ -865,8 +886,41 @@ export default function GamePlayer({ onBack }: { onBack?: () => void }) {
     setUpdateTrigger(prev => prev + 1);
   };
 
-  // Auto-load template on mount if global state is empty
+  // Auto-load template on mount or restore persisted schematic from editor
   useEffect(() => {
+    const persisted = localStorage.getItem('circuitsim_persisted_schematic');
+    if (persisted) {
+      try {
+        const layoutObj = JSON.parse(persisted);
+        triggerImport(persisted);
+        
+        // Setup initial triggers based on imported schematic components
+        const triggers = layoutObj.components?.filter((c: any) => c.type === 'KEY_TRIGGER') || [];
+        setKeyTriggers(triggers);
+        
+        // Default key trigger initial states
+        triggers.forEach((trig: any) => {
+          if (toggleStatesRef.current[trig.id] === undefined) {
+            toggleStatesRef.current[trig.id] = false;
+          }
+        });
+        
+        // Extract active template key if stored
+        const persistedTemplateKey = localStorage.getItem('circuitsim_persisted_template_key');
+        if (persistedTemplateKey) {
+          setActiveTemplateKey(persistedTemplateKey);
+        } else {
+          setActiveTemplateKey('custom');
+        }
+        
+        setUpdateTrigger(prev => prev + 1);
+        updateViewBox();
+        return; // Success, skip loading default template
+      } catch (err) {
+        console.error("Failed to restore persisted schematic in Game Mode:", err);
+      }
+    }
+
     if (!state.components || state.components.length === 0) {
       loadGameTemplate('buck_converter');
     }
@@ -1048,9 +1102,16 @@ export default function GamePlayer({ onBack }: { onBack?: () => void }) {
             } else if (comp.type === "VoltageSource" || comp.type === "V" || comp.type === "AC_V" || comp.type === "ACVoltageSource") {
               const idx = sim.V_to_idx[comp.id];
               iVal = (idx !== undefined && idx >= 0) ? sim.w[idx] : 0.0;
-            } else if (comp.type === "Switch" || comp.type === "S" || comp.type === "MOSFET") {
-              const idx = sim.V_to_idx[comp.id];
-              iVal = (idx !== undefined && idx >= 0) ? sim.w[idx] : 0.0;
+            } else if (["Switch", "Diode", "MOSFET", "vg-FET", "S", "D", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"].includes(comp.type)) {
+              const ron = parseFloat(comp.parameters?.Ron ?? "1e-3") || 1e-3;
+              const roff = parseFloat(comp.parameters?.Roff ?? "1e6") || 1e6;
+              const state = sim.sw_states[comp.id] ?? "OFF";
+              if ((comp.type === "Diode" || comp.type === "D") && state === "ON") {
+                const vd_drop = parseFloat(comp.parameters?.Vd ?? "0.7") || 0.7;
+                iVal = (vVal - vd_drop) / ron;
+              } else {
+                iVal = vVal / (state === "ON" ? ron : roff);
+              }
             } else if (comp.type === "Resistor" || comp.type === "R") {
               let rVal = parseFloat(comp.parameters?.value || "1.0");
               if (isNaN(rVal) || rVal < 1e-6) rVal = 1.0;
@@ -1062,6 +1123,8 @@ export default function GamePlayer({ onBack }: { onBack?: () => void }) {
                 const cVal = parseFloat(comp.parameters?.C || "100u") || 100e-6;
                 iVal = cVal * (vVal - hist.v_prev) / dt_step;
               }
+            } else if (comp.type === "CurrentSource" || comp.type === "I") {
+              iVal = parseFloat(comp.parameters?.value || "1.0") || 1.0;
             }
             stepValues[`I_${comp.id}`] = iVal;
           });
@@ -1501,6 +1564,9 @@ export default function GamePlayer({ onBack }: { onBack?: () => void }) {
                     : 'bg-[#142038] border-[#3b82f6]/30 text-white hover:border-sky-400/50'
                 } rounded-lg text-xs font-mono px-3 py-2 outline-none cursor-pointer transition-all focus:border-sky-500`}
               >
+                {activeTemplateKey === 'custom' && (
+                  <option value="custom">Custom Circuit (from Editor)</option>
+                )}
                 {Object.keys(CIRCUITS_TEMPLATES).filter(key => key !== 'empty').map(key => (
                   <option key={key} value={key}>
                     {CIRCUITS_TEMPLATES[key].name}
@@ -2220,36 +2286,45 @@ export default function GamePlayer({ onBack }: { onBack?: () => void }) {
                       }
                     }
 
-                    const isPhysical = ["Resistor", "R", "Inductor", "L", "Capacitor", "C", "Diode", "D", "MOSFET", "Switch", "S", "VoltageSource", "V", "ACVoltageSource", "AC_V"].includes(comp.type);
+                    const internalPath = getComponentInternalPath(comp);
                     const internalFlowDots: React.ReactNode[] = [];
-                    if (isPhysical && Math.abs(compCurrent) > 1e-3) {
-                      const totalLength = 80;
-                      const spacing = 20;
-                      const numDots = Math.floor(totalLength / spacing);
-                      const currentOffset = wireOffsetsRef.current[`comp_internal_${comp.id}`] || 0.0;
+                    if (internalPath && Math.abs(compCurrent) > 1e-3) {
+                      const { p1, p2 } = internalPath;
+                      const dx = p2.x - p1.x;
+                      const dy = p2.y - p1.y;
+                      const totalLength = Math.sqrt(dx * dx + dy * dy);
+                      
+                      if (totalLength > 0) {
+                        const spacing = 18;
+                        const numDots = Math.max(1, Math.floor(totalLength / spacing));
+                        const currentOffset = wireOffsetsRef.current[`comp_internal_${comp.id}`] || 0.0;
+                        const dotColor = "#10b981";
 
-                      for (let dIdx = 0; dIdx < numDots; dIdx++) {
-                        let d = (dIdx * spacing + currentOffset) % totalLength;
-                        if (d < 0) d += totalLength;
-                        
-                        // Line goes from (0, -40) to (0, 40)
-                        const posX = 0;
-                        const posY = -40 + d;
+                        for (let dIdx = 0; dIdx < numDots; dIdx++) {
+                          let d = (dIdx * spacing + currentOffset) % totalLength;
+                          if (d < 0) d += totalLength;
+                          
+                          const ratio = d / totalLength;
+                          const pt = {
+                            x: p1.x + dx * ratio,
+                            y: p1.y + dy * ratio
+                          };
 
-                        internalFlowDots.push(
-                          <circle
-                            key={`comp-dot-${comp.id}-${dIdx}`}
-                            cx={posX}
-                            cy={posY}
-                            r="3"
-                            className="fill-amber-400 stroke-amber-500/50 stroke-[1px]"
-                            style={{
-                              filter: 'drop-shadow(0 0 3px rgba(245,158,11,0.6))',
-                              pointerEvents: 'none',
-                              opacity: 0.95
-                            }}
-                          />
-                        );
+                          internalFlowDots.push(
+                            <circle
+                              key={`comp-dot-${comp.id}-${dIdx}`}
+                              cx={pt.x}
+                              cy={pt.y}
+                              r="3.5"
+                              fill={dotColor}
+                              className="pointer-events-none animate-pulse"
+                              style={{
+                                filter: "drop-shadow(0px 0px 3px rgba(16,185,129,0.9))",
+                                opacity: 0.95
+                              }}
+                            />
+                          );
+                        }
                       }
                     }
 
@@ -2393,6 +2468,9 @@ export default function GamePlayer({ onBack }: { onBack?: () => void }) {
                   }}
                   className={`w-full ${theme === 'light' ? 'bg-slate-100 border-slate-300 text-slate-900' : 'bg-[#1c2a42] border-[#3b82f6]/30 text-white'} border rounded-lg text-xs font-mono px-3 py-2 outline-none focus:border-sky-500 cursor-pointer`}
                 >
+                  {activeTemplateKey === 'custom' && (
+                    <option value="custom">Custom Circuit (from Editor)</option>
+                  )}
                   {Object.keys(CIRCUITS_TEMPLATES).filter(key => key !== 'empty').map(key => (
                     <option key={key} value={key}>
                       {CIRCUITS_TEMPLATES[key].name}

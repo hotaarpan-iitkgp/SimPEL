@@ -362,6 +362,7 @@ interface PlotlyChartComponentProps {
   setPlayTime: (t: number) => void;
   setIsPlaying: (p: boolean) => void;
   simResults: any;
+  height: number;
 }
 
 const PlotlyChartComponent: React.FC<PlotlyChartComponentProps> = ({
@@ -377,7 +378,8 @@ const PlotlyChartComponent: React.FC<PlotlyChartComponentProps> = ({
   isLight,
   setPlayTime,
   setIsPlaying,
-  simResults
+  simResults,
+  height
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -420,7 +422,7 @@ const PlotlyChartComponent: React.FC<PlotlyChartComponentProps> = ({
 
     const layout = {
       margin: { t: 5, r: 15, b: 20, l: 45 },
-      height: 95,
+      height: height,
       autosize: true,
       paper_bgcolor: 'rgba(0,0,0,0)',
       plot_bgcolor: 'rgba(0,0,0,0)',
@@ -486,7 +488,7 @@ const PlotlyChartComponent: React.FC<PlotlyChartComponentProps> = ({
     };
   }, [traces, tData, vStart, vEnd, playTime, isLight, simResults]);
 
-  return <div ref={containerRef} className="w-full h-[95px]" />;
+  return <div ref={containerRef} className="w-full" style={{ height: `${height}px` }} />;
 };
 
 export default function SimulationPlayer({ simResults, jsonText, onRunSimulation, subplots, theme, onClose }: SimulationPlayerProps) {
@@ -2375,7 +2377,8 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
   // Draw stacked subplots
   const renderInteractiveSubplot = (subplot: { id: string; title: string; traces: string[] }, spIdx: number) => {
     const width = 640;
-    const height = 95;
+    const N = localSubplots.length || 1;
+    const height = Math.max(95, Math.min(320, Math.floor(520 / N)));
     const paddingLeft = 55;
     const paddingRight = 20;
     const paddingTop = 10;
@@ -2600,6 +2603,7 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
               setPlayTime={setPlayTime}
               setIsPlaying={setIsPlaying}
               simResults={simResults}
+              height={height}
             />
           ) : (
             <svg 

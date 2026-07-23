@@ -830,6 +830,7 @@ export default function SchematicEditor({
     { type: 'MUX', label: 'Signal Mux', desc: 'Dynamic vector channels bundling' },
     { type: 'DEMUX', label: 'Signal Demux', desc: 'Unpack channel wires to lanes' },
     { type: 'CSCRIPT', label: 'C++ Script', desc: 'Block algorithm in C++ code' },
+    { type: 'KEY_TRIGGER', label: 'Key Trigger', desc: 'Interactive key trigger block mapping keyboard to high/low signal' },
   ];
 
   const libraryProbes = [

@@ -33,7 +33,8 @@ export const COMPONENT_PINS: Record<string, any> = {
   PROD:   { In1: {x: -20, y: -20, dx: -1, dy: 0}, In2: {x: -20, y: 20, dx: -1, dy: 0}, Out: {x: 20, y: 0, dx: 1, dy: 0} },
 
   PROBE:  { OutV: {x: 40, y: -15, dx: 1, dy: 0}, OutI: {x: 40, y: 15, dx: 1, dy: 0} },
-  SCOPE:  { In1: {x: -20, y: -20, dx: -1, dy: 0}, In2: {x: -20, y: 20, dx: -1, dy: 0} }
+  SCOPE:  { In1: {x: -20, y: -20, dx: -1, dy: 0}, In2: {x: -20, y: 20, dx: -1, dy: 0} },
+  KEY_TRIGGER: { Out: {x: 24, y: 0, dx: 1, dy: 0} }
 };
 
 // Helper to parse turns lists (e.g. "[100 100]" or "100 50" or "[100]")
@@ -496,7 +497,8 @@ void step() {
     outputs.set("i2", -v2 / 10.0);
     outputs.set("i3", -v3 / 10.0);
 }`
-  }
+  },
+  KEY_TRIGGER: { key: "Space", active_value: "1.0", inactive_value: "0.0", toggle_mode: "false" }
 };
 
 // Full standard type names for export
@@ -532,7 +534,8 @@ export const EXPORT_TYPE_NAMES: Record<string, string> = {
   MUX:    "Mux",
   DEMUX:  "Demux",
   CSCRIPT: "CustomScript",
-  GEN_EBLOCK: "GeneralizedElectricalBlock"
+  GEN_EBLOCK: "GeneralizedElectricalBlock",
+  KEY_TRIGGER: "KEY_TRIGGER"
 };
 
 // Dynamically populate detailed library default parameters and export names

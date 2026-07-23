@@ -382,6 +382,22 @@ export function updatePropertiesPanel(): void {
           
           inputField.appendChild(optTrue);
           inputField.appendChild(optFalse);
+        } else if (comp.type === 'KEY_TRIGGER' && key === 'toggle_mode') {
+          inputField = document.createElement('select');
+          inputField.className = 'prop-input';
+          
+          const optTrue = document.createElement('option');
+          optTrue.value = 'true';
+          optTrue.textContent = 'Toggle (On/Off)';
+          if (comp.parameters[key] === 'true') optTrue.selected = true;
+          
+          const optFalse = document.createElement('option');
+          optFalse.value = 'false';
+          optFalse.textContent = 'Momentary (Hold)';
+          if (comp.parameters[key] === 'false' || !comp.parameters[key]) optFalse.selected = true;
+          
+          inputField.appendChild(optTrue);
+          inputField.appendChild(optFalse);
         } else if (['inputs', 'outputs', 'channels'].includes(key)) {
           // Number dropdown selectors
           inputField = document.createElement('select');
@@ -658,7 +674,7 @@ export function updatePropertiesPanel(): void {
     }
     
     // Control / Signal types
-    const isBasicControl = ['CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT'].includes(comp.type);
+    const isBasicControl = ['CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'KEY_TRIGGER'].includes(comp.type);
     const isDetailedControl = DETAILED_COMPONENTS.some(dc => dc.type === comp.type && (dc.category === 'control' || dc.subcategory === 'Signal Routing'));
     if (isBasicControl || isDetailedControl) {
       const pinMap = getComponentPins(comp);
@@ -1638,7 +1654,7 @@ export function getComponentProbeSignals(tc: any): { label: string, value: strin
     signals.push({ label: 'Source voltage', value: `V_${id}` });
     signals.push({ label: 'Source power', value: `Power_${id}` });
   } else {
-    const isControl = ['CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'Constant', 'Gain', 'PID_Controller', 'SummingJunction', 'PWM_Generator', 'Triangle_Carrier', 'Comparator', 'Product', 'CustomFunction', 'CustomScript'].includes(type);
+    const isControl = ['CONST', 'GAIN', 'PID', 'SUM', 'PWM', 'TRI', 'COMP', 'AND', 'OR', 'NOT', 'FCN', 'PROD', 'MUX', 'DEMUX', 'CSCRIPT', 'KEY_TRIGGER', 'Constant', 'Gain', 'PID_Controller', 'SummingJunction', 'PWM_Generator', 'Triangle_Carrier', 'Comparator', 'Product', 'CustomFunction', 'CustomScript'].includes(type);
     if (isControl) {
       const pins = getComponentPins(tc);
       Object.keys(pins).forEach(pinName => {
