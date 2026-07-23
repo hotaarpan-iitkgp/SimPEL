@@ -726,6 +726,17 @@ export function triggerImport(jsonStr: string): void {
     centerViewportOnContents();
     draw();
     updatePropertiesPanel();
+    
+    // Persist newly imported layout to localStorage
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('circuitsim_persisted_schematic', JSON.stringify({
+        components: state.components,
+        wires: state.wires,
+        plotConfiguration: state.plotConfiguration,
+        simulationSettings: state.simulationSettings
+      }));
+    }
+    
     showToast('Import successful.');
   } catch (err) {
     showToast('Failed to parse JSON file.');

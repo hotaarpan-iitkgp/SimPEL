@@ -51,7 +51,6 @@ export default function StudentApp() {
   // Set the appletMode to 'student' when mounting, and clean up or redraw
   useEffect(() => {
     state.appletMode = 'student';
-    saveState();
     window.dispatchEvent(new CustomEvent('appletStateChanged'));
     draw();
   }, []);
