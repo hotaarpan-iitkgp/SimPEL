@@ -1624,6 +1624,8 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
   const [gifFps, setGifFps] = useState(15);
   const [gifProgress, setGifProgress] = useState('');
   const [isExportingGif, setIsExportingGif] = useState(false);
+  const [gifIncludeWaveforms, setGifIncludeWaveforms] = useState(false);
+  const isGifExportingRef = useRef(false);
 
   useEffect(() => {
     if (subplots && subplots.length > 0) {
@@ -1687,6 +1689,18 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
   }, [isGifModalOpen, tMin, tMax, totalSimDuration]);
 
   // Step-by-step canvas capture and loopable GIF compilation using gifshot
+  // Load html2canvas library lazily
+  const loadHtml2Canvas = async () => {
+    if ((window as any).html2canvas) return;
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = '/html2canvas.min.js';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load html2canvas library'));
+      document.body.appendChild(script);
+    });
+  };
+
   const handleExportGif = async () => {
     const startVal = parseFloat(gifStart);
     const endVal = parseFloat(gifEnd);
@@ -1698,9 +1712,11 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
     }
     
     setIsExportingGif(true);
-    setGifProgress("Loading GIF encoder...");
+    isGifExportingRef.current = true;
+    setGifProgress("Loading capture libraries...");
     
     try {
+      // Load both libraries
       if (!(window as any).gifshot) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement('script');
@@ -1710,15 +1726,23 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
           document.body.appendChild(script);
         });
       }
+      await loadHtml2Canvas();
       
-      const svg = document.getElementById('visual-flow-svg') as any;
-      if (!svg) {
-        throw new Error("Visual Flow Canvas element not found in DOM");
+      // Determine capture target: schematic only or schematic+waveforms
+      const svgContainer = document.querySelector('.flex-1.overflow-hidden.relative.cursor-grab') as HTMLElement;
+      const sidebarPanel = document.getElementById('sidebar-plots-panel') as HTMLElement;
+      
+      if (!svgContainer) {
+        throw new Error("Visual Flow canvas container not found in DOM");
       }
       
       const originalPlayTime = playTime;
       const originalIsPlaying = isPlaying;
       setIsPlaying(false);
+      
+      // Hide grid background elements during export for clean solid background
+      const gridRects = document.querySelectorAll('[data-gif-grid]');
+      gridRects.forEach(el => (el as HTMLElement).style.display = 'none');
       
       const totalFrames = Math.max(2, Math.round(durationVal * gifFps));
       const canvasList: HTMLCanvasElement[] = [];
@@ -1767,34 +1791,51 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
           }
         });
         
-        // Wait for render cycles
+        // Wait for render cycles to flush React state updates
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         
         setGifProgress(`Capturing frame ${frameIdx + 1} of ${totalFrames}...`);
         
-        const svgString = new XMLSerializer().serializeToString(svg);
-        const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-        const blobURL = URL.createObjectURL(svgBlob);
+        const bgColor = isLight ? '#ffffff' : '#050711';
         
-        const img = new Image();
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = blobURL;
+        // Capture the schematic using html2canvas (preserves all component symbols)
+        const schematicCanvas = await (window as any).html2canvas(svgContainer, {
+          backgroundColor: bgColor,
+          scale: 1,
+          useCORS: true,
+          logging: false,
+          allowTaint: true,
         });
         
-        const canvas = document.createElement('canvas');
-        canvas.width = svg.clientWidth || 800;
-        canvas.height = svg.clientHeight || 500;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.fillStyle = isLight ? '#ffffff' : '#050711';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        if (gifIncludeWaveforms && sidebarPanel && sidebarPanel.offsetWidth > 0) {
+          // Also capture waveform panel and stitch them side by side
+          const waveformCanvas = await (window as any).html2canvas(sidebarPanel, {
+            backgroundColor: bgColor,
+            scale: 1,
+            useCORS: true,
+            logging: false,
+            allowTaint: true,
+          });
+          
+          // Create combined canvas: schematic on left, waveforms on right
+          const combinedCanvas = document.createElement('canvas');
+          combinedCanvas.width = schematicCanvas.width + waveformCanvas.width;
+          combinedCanvas.height = Math.max(schematicCanvas.height, waveformCanvas.height);
+          const cCtx = combinedCanvas.getContext('2d');
+          if (cCtx) {
+            cCtx.fillStyle = bgColor;
+            cCtx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+            cCtx.drawImage(schematicCanvas, 0, 0);
+            cCtx.drawImage(waveformCanvas, schematicCanvas.width, 0);
+          }
+          canvasList.push(combinedCanvas);
+        } else {
+          canvasList.push(schematicCanvas);
         }
-        canvasList.push(canvas);
-        URL.revokeObjectURL(blobURL);
       }
+      
+      // Restore grid
+      gridRects.forEach(el => (el as HTMLElement).style.display = '');
       
       setGifProgress("Encoding GIF (this may take a few seconds)...");
       
@@ -1811,6 +1852,7 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
         if (obj.error) {
           alert(`GIF generation failed: ${obj.errorMsg}`);
           setIsExportingGif(false);
+          isGifExportingRef.current = false;
           return;
         }
         
@@ -1824,13 +1866,18 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
         link.click();
         
         setIsExportingGif(false);
+        isGifExportingRef.current = false;
         setIsGifModalOpen(false);
       });
       
     } catch (err: any) {
       console.error(err);
+      // Restore grid on error too
+      const gridRects = document.querySelectorAll('[data-gif-grid]');
+      gridRects.forEach(el => (el as HTMLElement).style.display = '');
       alert(`Export failed: ${err.message || err}`);
       setIsExportingGif(false);
+      isGifExportingRef.current = false;
     }
   };
 
@@ -3386,7 +3433,7 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
               </defs>
               
               <rect width="100%" height="100%" fill={styles.svgBg} />
-              <rect width="100%" height="100%" fill="url(#sandbox-grid)" />
+              <rect data-gif-grid="true" width="100%" height="100%" fill="url(#sandbox-grid)" />
               
               {/* Scaled transform viewport group */}
               <g transform={`translate(${panX}, ${panY}) scale(${zoom})`}>
@@ -4557,8 +4604,22 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
                   </div>
                 </div>
 
+                {/* Include Waveforms Toggle */}
+                <div className={`flex items-center justify-between p-2 rounded-lg border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-900/50 border-slate-800'}`}>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Include Waveforms</span>
+                    <span className="text-[8px] text-slate-500">Capture plots alongside the schematic</span>
+                  </div>
+                  <button
+                    onClick={() => setGifIncludeWaveforms(!gifIncludeWaveforms)}
+                    className={`relative w-9 h-5 rounded-full transition-all cursor-pointer ${gifIncludeWaveforms ? 'bg-indigo-500' : (isLight ? 'bg-slate-300' : 'bg-slate-700')}`}
+                  >
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${gifIncludeWaveforms ? 'left-[18px]' : 'left-0.5'}`} />
+                  </button>
+                </div>
+
                 <div className="text-[8.5px] text-slate-500 font-bold px-1 bg-slate-500/5 rounded-lg p-1.5 leading-normal">
-                  📌 <span className="uppercase tracking-tight text-[8px]">Tip:</span> The exporter will step through simulation time and record the current flow animations (circles or arrows) dynamically. Keep duration under 5s for fast encoding.
+                  📌 <span className="uppercase tracking-tight text-[8px]">Tip:</span> The exporter captures the full rendered view including circuit symbols and flow dots. Grid background is automatically hidden for clean output. Keep duration under 5s for fast encoding.
                 </div>
 
                 <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200/10">
