@@ -1704,7 +1704,7 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
       if (!(window as any).gifshot) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement('script');
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.4.5/gifshot.min.js';
+          script.src = '/gifshot.min.js';
           script.onload = () => resolve();
           script.onerror = () => reject(new Error("Failed to load gifshot encoder library"));
           document.body.appendChild(script);
