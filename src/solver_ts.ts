@@ -1274,6 +1274,7 @@ export class CircuitSimulator {
     voltmeters_log: Record<string, number[]> = {}; ammeters_log: Record<string, number[]> = {};
     signals_log: Record<string, number[]> = {}; custom_plots_log: Record<string, number[]> = {};
     cap_history: Record<string, { v_prev: number; v_prev_prev: number; dt_prev: number }> = {};
+    key_trigger_states: Record<string, number> = {};
 
     constructor(physical: any, control: any, params: any) {
         let physicalArray: ComponentTS[] = [];
@@ -1854,6 +1855,13 @@ export class CircuitSimulator {
 
     evaluateControls(time: number, w_curr: number[], cs: Record<string, any>, dt: number, ss: Record<string, string>, first = false, integrate = false, is_logging = false): Record<string, number> {
         const signals: Record<string, number> = {};
+        // Inject key trigger states
+        if (this.key_trigger_states) {
+            Object.entries(this.key_trigger_states).forEach(([k, v]) => {
+                signals[k] = v;
+                signals[`${k}.Out`] = v;
+            });
+        }
         for (const b of this.control_loops) {
             const out = b.channels.Out; if (!out && b.type !== "PROBE" && b.type !== "UnifiedProbe") continue;
             if (b.type === "Constant") {

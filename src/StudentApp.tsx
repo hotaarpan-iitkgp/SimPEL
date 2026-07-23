@@ -3,7 +3,7 @@ import {
   Play, RotateCcw, Plus, Trash2, Sliders, Activity, HelpCircle, 
   Download, UploadCloud, SlidersHorizontal, Maximize2, CheckCircle, 
   ChevronLeft, ChevronRight, Check, Eye, Sun, Moon, Edit3, Pause, 
-  BookOpen, Compass, Settings, AlertCircle, Sparkles
+  BookOpen, Compass, Settings, AlertCircle, Sparkles, Gamepad2
 } from 'lucide-react';
 import { Component, SolverConfig, SimulationResults } from './types';
 import { CIRCUITS_TEMPLATES } from './templates';
@@ -1164,6 +1164,26 @@ export default function StudentApp() {
           >
             <Edit3 className="h-3.5 w-3.5" />
             <span>Open Creator App</span>
+          </button>
+
+          <button
+            onClick={() => {
+              try {
+                localStorage.setItem('circuitsim_persisted_schematic', exportJSON());
+                localStorage.setItem('circuitsim_persisted_template_key', selectedTemplateKey);
+              } catch (err) {
+                console.error("Failed to save layout before mode change:", err);
+              }
+              window.location.search = '?mode=game';
+            }}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-bold font-sans transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+              theme === 'light'
+                ? 'bg-amber-50 border-amber-100 text-amber-700 hover:bg-amber-100'
+                : 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+            }`}
+          >
+            <Gamepad2 className="h-3.5 w-3.5" />
+            <span>Game Challenge</span>
           </button>
         </div>
       </header>

@@ -3,7 +3,8 @@ import {
   Play, RotateCcw, Plus, Trash2, Cpu, Settings, Activity, Zap, CheckCircle, 
   HelpCircle, Sliders, Layers, BarChart2, PlusCircle, Server, Code, FileText,
   SlidersHorizontal, ChevronRight, Check, Database, UploadCloud, X, ArrowUp, ArrowDown,
-  LayoutGrid, Sparkles, RefreshCcw, FileCode, Edit3, Sun, Moon, Pause, StopCircle, Download, BookOpen
+  LayoutGrid, Sparkles, RefreshCcw, FileCode, Edit3, Sun, Moon, Pause, StopCircle, Download, BookOpen,
+  Gamepad2
 } from 'lucide-react';
 import { Component, SolverConfig, SimulationResults } from './types';
 import { CIRCUITS_TEMPLATES } from './templates';
@@ -3189,6 +3190,23 @@ export default function App() {
             >
               <BookOpen className="h-3.5 w-3.5" />
               <span>STUDENT LAB</span>
+            </button>
+
+            <button
+              onClick={() => {
+                try {
+                  localStorage.setItem('circuitsim_persisted_schematic', exportJSON());
+                  localStorage.setItem('circuitsim_persisted_template_key', selectedTemplateKey);
+                } catch (err) {
+                  console.error("Failed to save layout before mode change:", err);
+                }
+                window.location.search = '?mode=game';
+              }}
+              className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-xl active:scale-95 border border-amber-450/20 cursor-pointer transition-all"
+              title="Open Game Challenge Mode"
+            >
+              <Gamepad2 className="h-3.5 w-3.5" />
+              <span>GAME CHALLENGE</span>
             </button>
 
             <button 
