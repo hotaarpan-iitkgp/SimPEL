@@ -1319,6 +1319,161 @@ export class Matrix {
     }
 }
 
+export class SparseRow {
+    cols: number[] = [];
+    vals: number[] = [];
+
+    get(c: number): number {
+        const idx = this.cols.indexOf(c);
+        return idx >= 0 ? this.vals[idx] : 0.0;
+    }
+
+    set(c: number, v: number) {
+        const idx = this.cols.indexOf(c);
+        if (idx >= 0) {
+            this.vals[idx] = v;
+        } else {
+            this.cols.push(c);
+            this.vals.push(v);
+        }
+    }
+
+    delete(c: number) {
+        const idx = this.cols.indexOf(c);
+        if (idx >= 0) {
+            this.cols.splice(idx, 1);
+            this.vals.splice(idx, 1);
+        }
+    }
+}
+
+export class SparseLU {
+    static decompose(dense: Matrix): { L: SparseRow[], U: SparseRow[], pivot: number[] } | null {
+        const n = dense.rows;
+        const pivot = new Array(n);
+        for (let i = 0; i < n; i++) pivot[i] = i;
+
+        const A: SparseRow[] = [];
+        for (let r = 0; r < n; r++) {
+            const row = new SparseRow();
+            for (let c = 0; c < n; c++) {
+                const v = dense.get(r, c);
+                if (Math.abs(v) > 1e-15) {
+                    row.cols.push(c);
+                    row.vals.push(v);
+                }
+            }
+            A.push(row);
+        }
+
+        for (let i = 0; i < n; i++) {
+            let max_row = i;
+            let max_val = Math.abs(A[i].get(i));
+            for (let k = i + 1; k < n; k++) {
+                const val = Math.abs(A[k].get(i));
+                if (val > max_val) {
+                    max_val = val;
+                    max_row = k;
+                }
+            }
+
+            if (max_row !== i) {
+                const tempRow = A[i];
+                A[i] = A[max_row];
+                A[max_row] = tempRow;
+
+                const tempP = pivot[i];
+                pivot[i] = pivot[max_row];
+                pivot[max_row] = tempP;
+            }
+
+            const diag = A[i].get(i);
+            if (Math.abs(diag) < 1e-15) return null;
+
+            for (let k = i + 1; k < n; k++) {
+                const aki = A[k].get(i);
+                if (Math.abs(aki) < 1e-15) continue;
+
+                const factor = aki / diag;
+                A[k].set(i, factor);
+
+                const rowI = A[i];
+                for (let idx = 0; idx < rowI.cols.length; idx++) {
+                    const j = rowI.cols[idx];
+                    if (j <= i) continue;
+                    const aij = rowI.vals[idx];
+                    const akj = A[k].get(j);
+                    const val = akj - factor * aij;
+                    if (Math.abs(val) > 1e-15) {
+                        A[k].set(j, val);
+                    } else {
+                        A[k].delete(j);
+                    }
+                }
+            }
+        }
+
+        const L: SparseRow[] = [];
+        const U: SparseRow[] = [];
+        for (let i = 0; i < n; i++) {
+            const lRow = new SparseRow();
+            const uRow = new SparseRow();
+            lRow.cols.push(i);
+            lRow.vals.push(1.0);
+            const row = A[i];
+            for (let idx = 0; idx < row.cols.length; idx++) {
+                const j = row.cols[idx];
+                const val = row.vals[idx];
+                if (j < i) {
+                    lRow.cols.push(j);
+                    lRow.vals.push(val);
+                } else {
+                    uRow.cols.push(j);
+                    uRow.vals.push(val);
+                }
+            }
+            L.push(lRow);
+            U.push(uRow);
+        }
+
+        return { L, U, pivot };
+    }
+
+    static solve(L: SparseRow[], U: SparseRow[], pivot: number[], b: number[]): number[] {
+        const n = L.length;
+        const x = new Array(n);
+        for (let i = 0; i < n; i++) x[i] = b[pivot[i]];
+
+        for (let i = 0; i < n; i++) {
+            const lRow = L[i];
+            let sum = 0.0;
+            for (let idx = 0; idx < lRow.cols.length; idx++) {
+                const j = lRow.cols[idx];
+                if (j < i) sum += lRow.vals[idx] * x[j];
+            }
+            x[i] -= sum;
+        }
+
+        for (let i = n - 1; i >= 0; i--) {
+            const uRow = U[i];
+            let sum = 0.0;
+            let diagVal = 1.0;
+            for (let idx = 0; idx < uRow.cols.length; idx++) {
+                const j = uRow.cols[idx];
+                if (j > i) {
+                    sum += uRow.vals[idx] * x[j];
+                } else if (j === i) {
+                    diagVal = uRow.vals[idx];
+                }
+            }
+            x[i] = (x[i] - sum) / diagVal;
+        }
+
+        return x;
+    }
+}
+
+
 export interface ComponentTS {
     id: string; type: string; nodes: string[]; parameters: Record<string, any>; channels: Record<string, any>;
 }
@@ -3943,6 +4098,10 @@ export class CircuitSimulator {
                 
                 let useCache = (this.sim_params as any).enable_lu_cache;
                 let luResult = null;
+                const inv_dt = 1.0 / dt;
+                const M_data = this.M.data;
+                const dim = this.dim;
+
                 if (useCache && this.variable_resistors.length === 0) {
                     let switchMask = 0;
                     for (let i = 0; i < this.switches.length; i++) {
@@ -3952,11 +4111,14 @@ export class CircuitSimulator {
                     }
                     luResult = this.luCacheArray[switchMask];
                     if (!luResult) {
-                        const Anum = new Matrix(this.dim, this.dim);
-                        for (let r = 0; r < this.dim; r++) {
-                            for (let c = 0; c < this.dim; c++) Anum.set(r, c, this.M.get(r, c) / dt + K.get(r, c));
+                        const Anum = new Matrix(dim, dim);
+                        const K_data = K.data;
+                        const Anum_data = Anum.data;
+                        const size = dim * dim;
+                        for (let i = 0; i < size; i++) {
+                            Anum_data[i] = M_data[i] * inv_dt + K_data[i];
                         }
-                        luResult = Anum.decomposeLU();
+                        luResult = SparseLU.decompose(Anum);
                         if (luResult) {
                             this.luCacheArray[switchMask] = luResult;
                         }
@@ -3976,20 +4138,21 @@ export class CircuitSimulator {
                         this.luCacheHits++;
                     } else {
                         this.luCacheMisses++;
-                        const Anum = new Matrix(this.dim, this.dim);
-                        for (let r = 0; r < this.dim; r++) {
-                            for (let c = 0; c < this.dim; c++) Anum.set(r, c, this.M.get(r, c) / dt + K.get(r, c));
+                        const Anum = new Matrix(dim, dim);
+                        const K_data = K.data;
+                        const Anum_data = Anum.data;
+                        const size = dim * dim;
+                        for (let i = 0; i < size; i++) {
+                            Anum_data[i] = M_data[i] * inv_dt + K_data[i];
                         }
-                        luResult = Anum.decomposeLU();
+                        luResult = SparseLU.decompose(Anum);
                         if (luResult) {
                             this.luCache.set(cacheKey, luResult);
                         }
                     }
                 }
-                const inv_dt = 1.0 / dt;
-                const M_w = new Array(this.dim).fill(0.0);
-                const M_data = this.M.data;
-                const dim = this.dim;
+
+                const M_w = new Array(dim).fill(0.0);
                 for (let r = 0; r < dim; r++) {
                     let s = 0.0;
                     const r_offset = r * dim;
@@ -4002,7 +4165,13 @@ export class CircuitSimulator {
                 const rhs_val = M_w;
 
                 if (useCache && luResult) {
-                    try { wn = luResult.LU.solveLU(rhs_val, luResult); } catch (_) {
+                    try {
+                        if (luResult.L) {
+                            wn = SparseLU.solve(luResult.L, luResult.U, luResult.pivot, rhs_val);
+                        } else {
+                            wn = luResult.LU.solveLU(rhs_val, luResult);
+                        }
+                    } catch (_) {
                         const Anum = new Matrix(dim, dim);
                         const K_data = K.data;
                         const Anum_data = Anum.data;
@@ -4010,7 +4179,14 @@ export class CircuitSimulator {
                         for (let i = 0; i < size; i++) {
                             Anum_data[i] = M_data[i] * inv_dt + K_data[i];
                         }
-                        try { wn = Anum.solve(rhs_val); } catch (__) {}
+                        try {
+                            const sparseLU = SparseLU.decompose(Anum);
+                            if (sparseLU) {
+                                wn = SparseLU.solve(sparseLU.L, sparseLU.U, sparseLU.pivot, rhs_val);
+                            } else {
+                                wn = Anum.solve(rhs_val);
+                            }
+                        } catch (__) {}
                     }
                 } else {
                     const Anum = new Matrix(dim, dim);
@@ -4020,7 +4196,14 @@ export class CircuitSimulator {
                     for (let i = 0; i < size; i++) {
                         Anum_data[i] = M_data[i] * inv_dt + K_data[i];
                     }
-                    try { wn = Anum.solve(rhs_val); } catch (_) {}
+                    try {
+                        const sparseLU = SparseLU.decompose(Anum);
+                        if (sparseLU) {
+                            wn = SparseLU.solve(sparseLU.L, sparseLU.U, sparseLU.pivot, rhs_val);
+                        } else {
+                            wn = Anum.solve(rhs_val);
+                        }
+                    } catch (_) {}
                 }
                 sigs = sigs_start;
                 let any_ch = false; const next_sw: Record<string, string> = {};
