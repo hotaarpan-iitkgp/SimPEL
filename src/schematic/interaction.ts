@@ -1,6 +1,6 @@
 import { state, saveState } from './state';
 import { screenToCanvas, updateViewportTransform, pathToString } from './utils';
-import { draw, updateAllWirePathsInDOM } from './renderer';
+import { draw, updateAllWirePathsInDOM, applySelectionInDOM } from './renderer';
 import { 
   resolveRoutingSnap, 
   getWireEndpointCoords, 
@@ -113,7 +113,8 @@ export function initInteractions(svg: SVGSVGElement): () => void {
             box.setAttribute('display', 'block');
           }
         }
-        draw();
+        // Fast-path deselect: only patch CSS classes, avoid full SVG rebuild
+        applySelectionInDOM();
       }
     }
   };

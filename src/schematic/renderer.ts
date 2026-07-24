@@ -221,6 +221,27 @@ export function updateHandlesInDOM(wire: any, pathPoints: Array<{ x: number; y: 
   }
 }
 
+// ── Performance: Cache rendered SVG strings per component (invalidated on param/rotation change) ──
+const _svgCache = new Map<string, string>();
+
+export function invalidateSVGCache(compId?: string): void {
+  if (!compId) {
+    _svgCache.clear();
+    return;
+  }
+  for (const key of _svgCache.keys()) {
+    if (key.startsWith(compId + '::')) { _svgCache.delete(key); }
+  }
+}
+
+function getComponentSVGCached(comp: any): string {
+  const key = `${comp.id}::${comp.type}::${comp.rotation}::${JSON.stringify(comp.parameters)}`;
+  if (!_svgCache.has(key)) {
+    _svgCache.set(key, getComponentSVG(comp));
+  }
+  return _svgCache.get(key)!;
+}
+
 // Redraw Entire Canvas Items
 export function draw(): void {
   const componentsGroup = document.getElementById('components-group');
@@ -328,6 +349,13 @@ export function draw(): void {
     }
   }
   
+  // ── Build O(1) pin-connectivity lookup once (replaces O(N_wires) scan per pin per component) ──
+  const connectedPinSet = new Set<string>();
+  state.wires.forEach((w: any) => {
+    if (w.from?.type === 'pin') connectedPinSet.add(`${w.from.compId}::${w.from.terminal}`);
+    if (w.to?.type === 'pin') connectedPinSet.add(`${w.to.compId}::${w.to.terminal}`);
+  });
+
   // Render Components
   state.components.forEach((comp: any) => {
     const isSelected = state.selectedComponentIds.includes(comp.id);
@@ -336,17 +364,14 @@ export function draw(): void {
     g.setAttribute('data-id', comp.id);
     g.setAttribute('transform', `translate(${comp.x}, ${comp.y}) rotate(${comp.rotation})`);
     
-    // Component Body SVG
-    g.innerHTML = getComponentSVG(comp);
+    // Component Body SVG (cached — only recomputed when component params/rotation change)
+    g.innerHTML = getComponentSVGCached(comp);
     
-    // Terminals overlays
+    // Terminals overlays (use pre-built O(1) connectedPinSet)
     const pinMap = getComponentPins(comp);
     Object.keys(pinMap).forEach(terminalName => {
       const pin = pinMap[terminalName];
-      const isConnected = state.wires.some((w: any) => 
-        (w.from.type === 'pin' && w.from.compId === comp.id && w.from.terminal === terminalName) ||
-        (w.to.type === 'pin' && w.to.compId === comp.id && w.to.terminal === terminalName)
-      );
+      const isConnected = connectedPinSet.has(`${comp.id}::${terminalName}`);
       const termOverlay = createTerminalOverlay(comp.id, terminalName, pin.x, pin.y, isConnected);
       g.appendChild(termOverlay);
     });
@@ -598,7 +623,8 @@ export function draw(): void {
         }));
       }
       
-      draw();
+      // Fast-path: only update selection CSS classes, not full SVG rebuild
+      applySelectionInDOM();
       updatePropertiesPanel();
     });
     
@@ -671,4 +697,49 @@ export function updateFooterInfo(): void {
   } else {
     selectionDisplay.textContent = `Selection: None`;
   }
+}
+
+/**
+ * Fast-path selection update: patches only the 'selected' CSS class on existing SVG DOM nodes.
+ * Call this instead of draw() for pure selection-only changes to avoid a full SVG teardown/rebuild.
+ */
+export function applySelectionInDOM(): void {
+  // Patch component selection classes
+  document.querySelectorAll<Element>('.component').forEach(el => {
+    const id = el.getAttribute('data-id');
+    if (!id) return;
+    if (state.selectedComponentIds.includes(id)) {
+      el.classList.add('selected');
+    } else {
+      el.classList.remove('selected');
+    }
+  });
+
+  // Patch wire selection classes
+  document.querySelectorAll<Element>('.wire').forEach(el => {
+    const id = el.getAttribute('data-id');
+    if (!id) return;
+    if (state.selectedWireIds.includes(id)) {
+      el.classList.add('selected');
+    } else {
+      el.classList.remove('selected');
+    }
+  });
+
+  // Refresh handles overlay (lightweight — only update, don't rebuild wires/components)
+  const handlesGroup = document.getElementById('handles-group');
+  if (handlesGroup) handlesGroup.innerHTML = '';
+  if (state.selectedWireIds.length === 1 && state.selectedComponentIds.length === 0) {
+    const wire = state.wires.find((w: any) => w.id === state.selectedWireIds[0]);
+    if (wire) {
+      const p1 = getWireEndpointCoords(wire.from);
+      const dir1 = getWireEndpointDir(wire.from);
+      const p2 = getWireEndpointCoords(wire.to);
+      const dir2 = getWireEndpointDir(wire.to);
+      const pathPoints = wire.manualPath ? wire.manualPath : getOrthogonalPath(p1, dir1, p2, dir2);
+      updateHandlesInDOM(wire, pathPoints);
+    }
+  }
+
+  updateFooterInfo();
 }
