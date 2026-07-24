@@ -1,14 +1,22 @@
 import { discoverPortsJS } from "./schematic/config";
 
+const parseScientificCache = new Map<string, number>();
 export function parseScientific(str: any): number {
     if (typeof str === 'number') return str;
     if (str === undefined || str === null || str === '') return 0.0;
-    let s = String(str).trim();
+    const cacheKey = String(str);
+    const cached = parseScientificCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+
+    let s = cacheKey.trim();
     if (!s) return 0.0;
 
     // Strip trailing units like ohm, v, a, hz, f, h, w, etc. case-insensitively
     s = s.replace(/\s*(?:ohms?|ohm|Ω|hz|hertz|v(?:olts?)?|a(?:mps?)?|f(?:arads?)?|h(?:enrys?)?|w(?:atts?))\s*$/i, '');
-    if (!s) return 0.0;
+    if (!s) {
+        parseScientificCache.set(cacheKey, 0.0);
+        return 0.0;
+    }
     
     // Support simple division (e.g. "1/10000" or "1/10k")
     if (s.includes('/')) {
@@ -16,7 +24,9 @@ export function parseScientific(str: any): number {
         if (parts.length === 2) {
             const num = parseScientific(parts[0]);
             const den = parseScientific(parts[1]);
-            return den !== 0.0 ? num / den : 0.0;
+            const res = den !== 0.0 ? num / den : 0.0;
+            parseScientificCache.set(cacheKey, res);
+            return res;
         }
     }
     
@@ -32,7 +42,9 @@ export function parseScientific(str: any): number {
     else if (lastChar === 'G') { multiplier = 1e9; hasSuffix = true; }
     if (hasSuffix) s = s.slice(0, -1).trim();
     const val = parseFloat(s);
-    return isNaN(val) ? 0.0 : val * multiplier;
+    const result = isNaN(val) ? 0.0 : val * multiplier;
+    parseScientificCache.set(cacheKey, result);
+    return result;
 }
 
 export class ExpressionEvaluator {
@@ -1247,6 +1259,56 @@ export class Matrix {
         }
         return res;
     }
+    decomposeLU(): { LU: Matrix; pivot: number[] } | null {
+        const n = this.rows;
+        const LU = new Matrix(n, n);
+        LU.data = [...this.data];
+        const pivot = Array.from({ length: n }, (_, i) => i);
+        const cols = this.cols;
+        for (let i = 0; i < n; i++) {
+            let maxRow = i;
+            let maxVal = Math.abs(LU.data[i * cols + i]);
+            for (let k = i + 1; k < n; k++) {
+                const val = Math.abs(LU.data[k * cols + i]);
+                if (val > maxVal) { maxVal = val; maxRow = k; }
+            }
+            if (maxRow !== i) {
+                for (let j = 0; j < n; j++) {
+                    const temp = LU.data[i * cols + j];
+                    LU.data[i * cols + j] = LU.data[maxRow * cols + j];
+                    LU.data[maxRow * cols + j] = temp;
+                }
+                const tempP = pivot[i]; pivot[i] = pivot[maxRow]; pivot[maxRow] = tempP;
+            }
+            if (Math.abs(LU.data[i * cols + i]) < 1e-15) return null;
+            for (let k = i + 1; k < n; k++) {
+                const factor = LU.data[k * cols + i] / LU.data[i * cols + i];
+                LU.data[k * cols + i] = factor;
+                for (let j = i + 1; j < n; j++) {
+                    LU.data[k * cols + j] -= factor * LU.data[i * cols + j];
+                }
+            }
+        }
+        return { LU, pivot };
+    }
+    solveLU(b: number[], luResult: { LU: Matrix; pivot: number[] }): number[] {
+        const n = this.rows;
+        const { LU, pivot } = luResult;
+        const x = new Array(n);
+        const cols = this.cols;
+        for (let i = 0; i < n; i++) x[i] = b[pivot[i]];
+        for (let i = 0; i < n; i++) {
+            let sum = 0.0;
+            for (let j = 0; j < i; j++) sum += LU.data[i * cols + j] * x[j];
+            x[i] -= sum;
+        }
+        for (let i = n - 1; i >= 0; i--) {
+            let sum = 0.0;
+            for (let j = i + 1; j < n; j++) sum += LU.data[i * cols + j] * x[j];
+            x[i] = (x[i] - sum) / LU.data[i * cols + i];
+        }
+        return x;
+    }
 }
 
 export interface ComponentTS {
@@ -1257,7 +1319,7 @@ export const ANALOG_SWITCH_TYPES = ["MOSFET", "vg-FET", "IGBT", "IGBT_DIODE", "I
 
 export class CircuitSimulator {
     physical_stage: ComponentTS[] = []; control_loops: ComponentTS[] = [];
-    sim_params = { t_end: 0.05, h: 1e-5, solver: "euler", step_type: "fixed" };
+    sim_params = { t_end: 0.05, h: 1e-5, solver: "euler", step_type: "fixed", enable_lu_cache: false };
     node_to_idx: Record<string, number> = {}; L_to_idx: Record<string, number> = {}; V_to_idx: Record<string, number> = {};
     active_nodes: string[] = []; num_nodes = 0; num_L = 0; num_V = 0; dim = 0;
     M = new Matrix(0, 0); K_static = new Matrix(0, 0); w: number[] = [];
@@ -1266,6 +1328,10 @@ export class CircuitSimulator {
     voltage_sources: ComponentTS[] = []; switches: ComponentTS[] = []; voltmeters: ComponentTS[] = [];
     transformers: ComponentTS[] = []; all_windings: any[] = []; num_XFMR_windings = 0;
     sw_states: Record<string, string> = {}; control_states: Record<string, any> = {};
+    luCache = new Map<string, { LU: Matrix; pivot: number[] }>();
+    luCacheArray: ({ LU: Matrix; pivot: number[] } | null)[] = [];
+    luCacheHits = 0;
+    luCacheMisses = 0;
     custom_blocks: Record<string, CustomScriptBlock> = {};
     custom_eblocks: Record<string, CustomEBlock> = {};
     custom_eblocks_state: Record<string, any> = {};
@@ -1596,6 +1662,8 @@ export class CircuitSimulator {
             this.sim_params.h = parseScientific(params.step_size ?? "1e-5");
             this.sim_params.solver = params.solver ?? "euler";
             this.sim_params.step_type = params.step_type ?? "fixed";
+            (this.sim_params as any).enable_lu_cache = !!(params.enable_lu_cache || params.enableLuCache);
+            (this.sim_params as any).simulationMode = params.simulationMode ?? "regular";
             if (Array.isArray(params.wanted_variables)) {
                 this.wanted_variables = new Set(params.wanted_variables);
             }
@@ -1603,6 +1671,10 @@ export class CircuitSimulator {
     }
 
     initializeNetwork() {
+        this.luCache.clear();
+        this.luCacheArray = [];
+        this.luCacheHits = 0;
+        this.luCacheMisses = 0;
         this.active_nodes = []; this.node_to_idx = {}; this.L_to_idx = {}; this.V_to_idx = {};
         this.resistors = []; this.variable_resistors = []; this.capacitors = []; this.inductors = []; this.voltage_sources = []; this.switches = []; this.voltmeters = [];
         this.transformers = []; this.all_windings = [];
@@ -3804,8 +3876,22 @@ export class CircuitSimulator {
         return dw;
     }
 
+    private cloneControlStates(cs: any): any {
+        if (!cs) return {};
+        const copy: any = {};
+        for (const key of Object.keys(cs)) {
+            const val = cs[key];
+            if (val && typeof val === 'object') {
+                copy[key] = { ...val };
+            } else {
+                copy[key] = val;
+            }
+        }
+        return copy;
+    }
+
     takeStep(time: number, w_curr: number[], dt: number, solver: string, cs: Record<string, Record<string, number>>, ss: Record<string, string>) {
-        const out_trans: any[] = []; let wn = [...w_curr]; let ctrl_n = JSON.parse(JSON.stringify(cs)); let sw_n = { ...ss };
+        const out_trans: any[] = []; let wn = [...w_curr]; let ctrl_n = this.cloneControlStates(cs); let sw_n = { ...ss };
         if (solver === "euler") {
             let s_stage = { ...ss }; let s_ch = true; let loop = 0;
             let sigs = this.evaluateControls(time + dt, wn, cs, dt, s_stage, false, false);
@@ -3828,16 +3914,72 @@ export class CircuitSimulator {
                     });
                 }
                 
-                const Anum = new Matrix(this.dim, this.dim);
-                for (let r = 0; r < this.dim; r++) {
-                    for (let c = 0; c < this.dim; c++) Anum.set(r, c, this.M.get(r, c) / dt + K.get(r, c));
+                let useCache = (this.sim_params as any).enable_lu_cache;
+                let luResult = null;
+                if (useCache && this.variable_resistors.length === 0) {
+                    let switchMask = 0;
+                    for (let i = 0; i < this.switches.length; i++) {
+                        if (s_stage[this.switches[i].id] === "ON") {
+                            switchMask |= (1 << i);
+                        }
+                    }
+                    luResult = this.luCacheArray[switchMask];
+                    if (!luResult) {
+                        const Anum = new Matrix(this.dim, this.dim);
+                        for (let r = 0; r < this.dim; r++) {
+                            for (let c = 0; c < this.dim; c++) Anum.set(r, c, this.M.get(r, c) / dt + K.get(r, c));
+                        }
+                        luResult = Anum.decomposeLU();
+                        if (luResult) {
+                            this.luCacheArray[switchMask] = luResult;
+                        }
+                        this.luCacheMisses++;
+                    } else {
+                        this.luCacheHits++;
+                    }
+                } else if (useCache) {
+                    const swKey = this.switches.map(sw => s_stage[sw.id] ?? "OFF").join(",");
+                    const vrKey = this.variable_resistors.map(vr => {
+                        const ctrl = vr.channels.Ctrl || vr.channels.Res;
+                        return String(sigs[ctrl] ?? 0.0);
+                    }).join(",");
+                    const cacheKey = `${dt}|${swKey}|${vrKey}`;
+                    luResult = this.luCache.get(cacheKey);
+                    if (luResult) {
+                        this.luCacheHits++;
+                    } else {
+                        this.luCacheMisses++;
+                        const Anum = new Matrix(this.dim, this.dim);
+                        for (let r = 0; r < this.dim; r++) {
+                            for (let c = 0; c < this.dim; c++) Anum.set(r, c, this.M.get(r, c) / dt + K.get(r, c));
+                        }
+                        luResult = Anum.decomposeLU();
+                        if (luResult) {
+                            this.luCache.set(cacheKey, luResult);
+                        }
+                    }
                 }
                 const M_w = new Array(this.dim).fill(0.0);
                 for (let r = 0; r < this.dim; r++) {
                     let s = 0.0; for (let c = 0; c < this.dim; c++) s += (this.M.get(r, c) / dt) * w_curr[c];
                     M_w[r] = s;
                 }
-                try { wn = Anum.solve(M_w.map((v, i) => v + b[i])); } catch (_) {}
+                const rhs_val = M_w.map((v, i) => v + b[i]);
+                if (useCache && luResult) {
+                    try { wn = luResult.LU.solveLU(rhs_val, luResult); } catch (_) {
+                        const Anum = new Matrix(this.dim, this.dim);
+                        for (let r = 0; r < this.dim; r++) {
+                            for (let c = 0; c < this.dim; c++) Anum.set(r, c, this.M.get(r, c) / dt + K.get(r, c));
+                        }
+                        try { wn = Anum.solve(rhs_val); } catch (__) {}
+                    }
+                } else {
+                    const Anum = new Matrix(this.dim, this.dim);
+                    for (let r = 0; r < this.dim; r++) {
+                        for (let c = 0; c < this.dim; c++) Anum.set(r, c, this.M.get(r, c) / dt + K.get(r, c));
+                    }
+                    try { wn = Anum.solve(rhs_val); } catch (_) {}
+                }
                 sigs = this.evaluateControls(time + dt, wn, cs, dt, s_stage, false, false);
                 let any_ch = false; const next_sw: Record<string, string> = {};
                 for (const sw of this.switches) {
@@ -4012,7 +4154,7 @@ export class CircuitSimulator {
             }
             sw_n = s_stage;
         }
-        const final_ctrl = JSON.parse(JSON.stringify(cs));
+        const final_ctrl = this.cloneControlStates(cs);
         this.evaluateControls(time + dt, wn, final_ctrl, dt, sw_n, false, true);
         ctrl_n = final_ctrl;
         return { w_new: wn, ctrl_new: ctrl_n, sw_new: sw_n, out_trans };
@@ -4021,27 +4163,39 @@ export class CircuitSimulator {
     logAcceptedState(time: number, w_val: number[], sigs: Record<string, number>, ss: Record<string, string>, dt: number) {
         this.time_log.push(time);
         
+        const isCurrentFlow = (this.sim_params as any).simulationMode === "current_flow";
+
         for (const node of this.active_nodes) {
+            const logV = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(node) || this.wanted_variables.has("V_" + node);
+            if (!logV) continue;
             const idx = this.node_to_idx[node]; if (!this.voltages_log[node]) this.voltages_log[node] = [];
             this.voltages_log[node].push(w_val[idx]);
         }
         for (const ind of this.inductors) {
+            const logI = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(ind.id) || this.wanted_variables.has("I_" + ind.id);
+            if (!logI) continue;
             const idx = this.L_to_idx[ind.id]; if (!this.inductors_log[ind.id]) this.inductors_log[ind.id] = [];
             this.inductors_log[ind.id].push(w_val[idx]);
         }
         for (const comp of this.voltage_sources) {
             if (comp.type === "Ammeter") {
+                const logI = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(comp.id) || this.wanted_variables.has("I_" + comp.id);
+                if (!logI) continue;
                 const idx = this.V_to_idx[comp.id]; if (!this.ammeters_log[comp.id]) this.ammeters_log[comp.id] = [];
                 this.ammeters_log[comp.id].push(w_val[idx]);
             }
         }
         for (const vm of this.voltmeters) {
+            const logV = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(vm.id) || this.wanted_variables.has("V_" + vm.id);
+            if (!logV) continue;
             const n1 = vm.nodes[0] ?? "node_0", n2 = vm.nodes[1] ?? "node_0";
             const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
             if (!this.voltmeters_log[vm.id]) this.voltmeters_log[vm.id] = [];
             this.voltmeters_log[vm.id].push(((i1 >= 0) ? w_val[i1] : 0.0) - ((i2 >= 0) ? w_val[i2] : 0.0));
         }
         for (const [k, v] of Object.entries(sigs)) {
+            const logS = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(k);
+            if (!logS) continue;
             if (!this.signals_log[k]) this.signals_log[k] = [];
             this.signals_log[k].push(v);
         }
@@ -4051,9 +4205,9 @@ export class CircuitSimulator {
             const ki = "I_" + comp.id; 
             const kc = "Ctrl_" + comp.id;
             
-            const logV = true; // Log unconditionally for current flow animations
-            const logI = true; // Log unconditionally for current flow animations
-            const logC = true; // Log unconditionally for control signals
+            const logV = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(kv) || this.wanted_variables.has(comp.id);
+            const logI = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(ki);
+            const logC = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(kc);
             
             const ctrlChan = comp.channels.Ctrl || comp.channels.Switch || comp.channels.G;
             if (logC && ctrlChan !== undefined) {
@@ -4063,9 +4217,10 @@ export class CircuitSimulator {
             }
 
             if (comp.type === "XFMR") {
+                const logTxV = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(kv);
+                const logTxI = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(ki);
                 const txWindings = this.all_windings.filter(w => w.transformer_id === comp.id);
                 
-                // Log overall/first winding as default for V_comp.id / I_comp.id
                 if (txWindings.length > 0) {
                     const w0 = txWindings[0];
                     const wn1 = w0.nodes[0] ?? "node_0", wn2 = w0.nodes[1] ?? "node_0";
@@ -4074,28 +4229,38 @@ export class CircuitSimulator {
                     const v0 = ((wi1 >= 0) ? w_val[wi1] : 0.0) - ((wi2 >= 0) ? w_val[wi2] : 0.0);
                     const curr0 = w_val[w0.idx];
                     
-                    if (!this.custom_plots_log[kv]) this.custom_plots_log[kv] = [];
-                    this.custom_plots_log[kv].push(v0);
-                    if (!this.custom_plots_log[ki]) this.custom_plots_log[ki] = [];
-                    this.custom_plots_log[ki].push(curr0);
+                    if (logTxV) {
+                        if (!this.custom_plots_log[kv]) this.custom_plots_log[kv] = [];
+                        this.custom_plots_log[kv].push(v0);
+                    }
+                    if (logTxI) {
+                        if (!this.custom_plots_log[ki]) this.custom_plots_log[ki] = [];
+                        this.custom_plots_log[ki].push(curr0);
+                    }
                 }
                 
-                // Log individual winding voltages and currents
                 for (const w of txWindings) {
+                    const label = `${comp.id}_${w.type === "primary" ? "P" : "S"}${w.winding_index}`;
+                    const w_kv = "V_" + label;
+                    const w_ki = "I_" + label;
+                    const logW_V = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(w_kv);
+                    const logW_I = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(w_ki);
+                    if (!logW_V && !logW_I) continue;
+
                     const wn1 = w.nodes[0] ?? "node_0", wn2 = w.nodes[1] ?? "node_0";
                     const wi1 = (wn1 !== "node_0") ? this.node_to_idx[wn1] : -1;
                     const wi2 = (wn2 !== "node_0") ? this.node_to_idx[wn2] : -1;
                     const vw = ((wi1 >= 0) ? w_val[wi1] : 0.0) - ((wi2 >= 0) ? w_val[wi2] : 0.0);
                     const currw = w_val[w.idx];
                     
-                    const label = `${comp.id}_${w.type === "primary" ? "P" : "S"}${w.winding_index}`;
-                    const w_kv = "V_" + label;
-                    const w_ki = "I_" + label;
-                    
-                    if (!this.custom_plots_log[w_kv]) this.custom_plots_log[w_kv] = [];
-                    this.custom_plots_log[w_kv].push(vw);
-                    if (!this.custom_plots_log[w_ki]) this.custom_plots_log[w_ki] = [];
-                    this.custom_plots_log[w_ki].push(currw);
+                    if (logW_V) {
+                        if (!this.custom_plots_log[w_kv]) this.custom_plots_log[w_kv] = [];
+                        this.custom_plots_log[w_kv].push(vw);
+                    }
+                    if (logW_I) {
+                        if (!this.custom_plots_log[w_ki]) this.custom_plots_log[w_ki] = [];
+                        this.custom_plots_log[w_ki].push(currw);
+                    }
                 }
                 continue;
             }

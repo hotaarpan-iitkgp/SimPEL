@@ -52,7 +52,8 @@ export const state: any = {
     stepType: "fixed", // "fixed" | "variable"
     solver: "euler",    // "euler" | "rk45" | "radau"
     simulationMode: "regular", // "regular" | "current_flow"
-    solverMethod: "non-ideal" // "non-ideal" | "ideal-pwl"
+    solverMethod: "non-ideal", // "non-ideal" | "ideal-pwl"
+    enableLuCache: false
   }
 };
 

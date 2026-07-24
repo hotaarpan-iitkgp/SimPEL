@@ -1763,7 +1763,7 @@ export default function SchematicEditor({
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-slate-400">Solver Integration Core</label>
                 <select id="sim-solver" className="px-3 py-2 bg-slate-950 border border-slate-800 rounded outline-none focus:border-emerald-500 text-xs">
-                  <option value="euler">Euler Forward Method</option>
+                  <option value="euler">Euler Method (Backward Euler)</option>
                   <option value="rk45">Runge-Kutta Cash-Karp (RK45)</option>
                   <option value="radau">Implicit Radau solver</option>
                 </select>
@@ -1782,6 +1782,12 @@ export default function SchematicEditor({
                 <option value="non-ideal">Non-Ideal (DAE solver with ESR/parasitics)</option>
                 <option value="ideal-pwl">Ideal PWL (High-speed node-collapsing solver)</option>
               </select>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <input id="sim-lu-cache" type="checkbox" className="rounded bg-slate-950 border-slate-800 text-emerald-500 focus:ring-emerald-500 h-4 w-4 cursor-pointer" />
+              <label className="text-xs text-slate-350 cursor-pointer select-none" htmlFor="sim-lu-cache">
+                Enable LU Decomposition Caching (Significant Speedup)
+              </label>
             </div>
           </div>
           <div className="p-4 border-t border-slate-800 flex justify-end gap-2 bg-slate-900/10">

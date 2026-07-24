@@ -11,6 +11,7 @@ export function openSimSettings(): void {
   const solverSelect: any = document.getElementById('sim-solver');
   const simModeSelect: any = document.getElementById('sim-mode');
   const solverMethodSelect: any = document.getElementById('sim-solver-method');
+  const luCacheCheckbox: any = document.getElementById('sim-lu-cache');
   
   if (stopTimeInput) stopTimeInput.value = state.simulationSettings.stopTime;
   if (stepSizeInput) stepSizeInput.value = state.simulationSettings.stepSize;
@@ -18,6 +19,7 @@ export function openSimSettings(): void {
   if (solverSelect) solverSelect.value = state.simulationSettings.solver;
   if (simModeSelect) simModeSelect.value = state.simulationSettings.simulationMode || 'regular';
   if (solverMethodSelect) solverMethodSelect.value = state.simulationSettings.solverMethod || 'non-ideal';
+  if (luCacheCheckbox) luCacheCheckbox.checked = !!state.simulationSettings.enableLuCache;
   
   modal.classList.add('show');
 }
@@ -37,8 +39,7 @@ export function saveSimSettings(): void {
   const solverSelect: any = document.getElementById('sim-solver');
   const simModeSelect: any = document.getElementById('sim-mode');
   const solverMethodSelect: any = document.getElementById('sim-solver-method');
-  
-  saveState();
+  const luCacheCheckbox: any = document.getElementById('sim-lu-cache');
   
   if (stopTimeInput) state.simulationSettings.stopTime = stopTimeInput.value;
   if (stepSizeInput) state.simulationSettings.stepSize = stepSizeInput.value;
@@ -46,6 +47,8 @@ export function saveSimSettings(): void {
   if (solverSelect) state.simulationSettings.solver = solverSelect.value;
   if (simModeSelect) state.simulationSettings.simulationMode = simModeSelect.value;
   if (solverMethodSelect) state.simulationSettings.solverMethod = solverMethodSelect.value;
+  if (luCacheCheckbox) state.simulationSettings.enableLuCache = luCacheCheckbox.checked;
   
+  saveState();
   closeSimSettings();
 }
