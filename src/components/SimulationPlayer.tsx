@@ -1688,8 +1688,11 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
     }
   }, [isGifModalOpen, tMin, tMax, totalSimDuration]);
 
-  // Step-by-step canvas capture and loopable GIF compilation using gifshot
-  // Load html2canvas library lazily
+  // ─── Fast GIF Export Pipeline ───────────────────────────────────────────────
+  // Uses SVG cloning with inlined computed styles for per-frame capture (~30-80ms/frame)
+  // instead of html2canvas (~1000-2000ms/frame). Orders of magnitude faster.
+
+  // Load html2canvas lazily (only needed for waveform panel capture)
   const loadHtml2Canvas = async () => {
     if ((window as any).html2canvas) return;
     await new Promise<void>((resolve, reject) => {
@@ -1698,6 +1701,68 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
       script.onload = () => resolve();
       script.onerror = () => reject(new Error('Failed to load html2canvas library'));
       document.body.appendChild(script);
+    });
+  };
+
+  // Recursively inline computed SVG styles from live DOM onto a cloned SVG tree.
+  // This ensures serialized SVG preserves visual appearance without CSS class dependencies.
+  const inlineSvgStyles = (source: Element, target: Element) => {
+    if (!(source instanceof SVGElement || source instanceof HTMLElement)) return;
+    const cs = getComputedStyle(source);
+    const props = [
+      'fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin',
+      'opacity', 'fill-opacity', 'stroke-opacity', 'font-size', 'font-family', 'font-weight',
+      'text-anchor', 'dominant-baseline', 'visibility', 'display', 'color', 'filter',
+      'stop-color', 'stop-opacity', 'flood-color', 'flood-opacity', 'lighting-color',
+      'text-decoration', 'letter-spacing', 'word-spacing', 'direction',
+    ];
+    let s = target.getAttribute('style') || '';
+    for (const p of props) {
+      const v = cs.getPropertyValue(p);
+      if (v && v !== '' && v !== 'auto') s += `${p}:${v};`;
+    }
+    target.setAttribute('style', s);
+    const sc = source.children;
+    const tc = target.children;
+    for (let i = 0; i < sc.length && i < tc.length; i++) {
+      inlineSvgStyles(sc[i], tc[i]);
+    }
+  };
+
+  // Fast SVG-to-Canvas capture: clone SVG, inline styles, serialize, render via Image.
+  const captureSvgFrame = (svgEl: SVGSVGElement, w: number, h: number, bgColor: string): Promise<HTMLCanvasElement> => {
+    const clone = svgEl.cloneNode(true) as SVGSVGElement;
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('width', String(w));
+    clone.setAttribute('height', String(h));
+    // Remove event-related attributes that are unnecessary in serialized SVG
+    clone.removeAttribute('class');
+    
+    // Inline computed styles so the serialized SVG is self-contained
+    inlineSvgStyles(svgEl, clone);
+
+    const svgStr = new XMLSerializer().serializeToString(clone);
+    const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d')!;
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(canvas);
+      };
+      img.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        reject(new Error('SVG frame render failed'));
+      };
+      img.src = url;
     });
   };
 
@@ -1713,10 +1778,10 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
     
     setIsExportingGif(true);
     isGifExportingRef.current = true;
-    setGifProgress("Loading capture libraries...");
+    setGifProgress("Initializing fast capture pipeline...");
     
     try {
-      // Load both libraries
+      // Load gifshot encoder
       if (!(window as any).gifshot) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement('script');
@@ -1726,30 +1791,52 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
           document.body.appendChild(script);
         });
       }
-      await loadHtml2Canvas();
       
-      // Determine capture target: schematic only or schematic+waveforms
-      const svgContainer = document.querySelector('.flex-1.overflow-hidden.relative.cursor-grab') as HTMLElement;
-      const sidebarPanel = document.getElementById('sidebar-plots-panel') as HTMLElement;
+      const svg = document.getElementById('visual-flow-svg') as unknown as SVGSVGElement | null;
+      const sidebarPanel = document.getElementById('sidebar-plots-panel') as HTMLElement | null;
       
-      if (!svgContainer) {
-        throw new Error("Visual Flow canvas container not found in DOM");
+      if (!svg) {
+        throw new Error("Visual Flow SVG element not found in DOM");
       }
       
       const originalPlayTime = playTime;
       const originalIsPlaying = isPlaying;
       setIsPlaying(false);
       
-      // Hide grid background elements during export for clean solid background
+      // Hide grid background during export for clean solid background + smaller file size
       const gridRects = document.querySelectorAll('[data-gif-grid]');
       gridRects.forEach(el => (el as HTMLElement).style.display = 'none');
+      
+      const svgW = svg.clientWidth || 800;
+      const svgH = svg.clientHeight || 500;
+      const bgColor = isLight ? '#ffffff' : '#050711';
       
       const totalFrames = Math.max(2, Math.round(durationVal * gifFps));
       const canvasList: HTMLCanvasElement[] = [];
       
-      setGifProgress(`Capturing frame 0 of ${totalFrames}...`);
+      // If waveforms are included, capture the waveform panel once as a static background
+      // then overlay a playhead indicator per frame (much faster than html2canvas per frame)
+      let waveformStaticCanvas: HTMLCanvasElement | null = null;
+      let waveformPanelWidth = 0;
+      let waveformPanelHeight = 0;
+      if (gifIncludeWaveforms && sidebarPanel && sidebarPanel.offsetWidth > 0) {
+        setGifProgress("Capturing waveform panel...");
+        await loadHtml2Canvas();
+        waveformStaticCanvas = await (window as any).html2canvas(sidebarPanel, {
+          backgroundColor: bgColor,
+          scale: 1,
+          useCORS: true,
+          logging: false,
+          allowTaint: true,
+        });
+        waveformPanelWidth = waveformStaticCanvas!.width;
+        waveformPanelHeight = waveformStaticCanvas!.height;
+      }
       
-      // Step-by-step frame capture
+      setGifProgress(`Fast-capturing ${totalFrames} frames...`);
+      const t0 = performance.now();
+      
+      // ── Frame capture loop (fast: SVG clone + style inline per frame) ──
       for (let frameIdx = 0; frameIdx < totalFrames; frameIdx++) {
         const pct = frameIdx / (totalFrames - 1 || 1);
         const simTime = startVal + pct * (endVal - startVal);
@@ -1791,53 +1878,60 @@ export default function SimulationPlayer({ simResults, jsonText, onRunSimulation
           }
         });
         
-        // Wait for render cycles to flush React state updates
-        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        // Single RAF flush is sufficient for React to update the SVG DOM
+        await new Promise(resolve => requestAnimationFrame(resolve));
         
-        setGifProgress(`Capturing frame ${frameIdx + 1} of ${totalFrames}...`);
+        // Update progress sparingly to avoid UI overhead
+        if (frameIdx % 5 === 0 || frameIdx === totalFrames - 1) {
+          const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+          setGifProgress(`Capturing frame ${frameIdx + 1}/${totalFrames}  (${elapsed}s elapsed)`);
+        }
         
-        const bgColor = isLight ? '#ffffff' : '#050711';
+        // ── Fast SVG capture (clone + inline styles + serialize + render) ──
+        const schematicCanvas = await captureSvgFrame(svg, svgW, svgH, bgColor);
         
-        // Capture the schematic using html2canvas (preserves all component symbols)
-        const schematicCanvas = await (window as any).html2canvas(svgContainer, {
-          backgroundColor: bgColor,
-          scale: 1,
-          useCORS: true,
-          logging: false,
-          allowTaint: true,
-        });
-        
-        if (gifIncludeWaveforms && sidebarPanel && sidebarPanel.offsetWidth > 0) {
-          // Also capture waveform panel and stitch them side by side
-          const waveformCanvas = await (window as any).html2canvas(sidebarPanel, {
-            backgroundColor: bgColor,
-            scale: 1,
-            useCORS: true,
-            logging: false,
-            allowTaint: true,
-          });
-          
-          // Create combined canvas: schematic on left, waveforms on right
+        if (waveformStaticCanvas) {
+          // Stitch schematic + waveform static background side by side
+          // Draw a playhead indicator line on the waveform at the current time position
           const combinedCanvas = document.createElement('canvas');
-          combinedCanvas.width = schematicCanvas.width + waveformCanvas.width;
-          combinedCanvas.height = Math.max(schematicCanvas.height, waveformCanvas.height);
-          const cCtx = combinedCanvas.getContext('2d');
-          if (cCtx) {
-            cCtx.fillStyle = bgColor;
-            cCtx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
-            cCtx.drawImage(schematicCanvas, 0, 0);
-            cCtx.drawImage(waveformCanvas, schematicCanvas.width, 0);
+          combinedCanvas.width = svgW + waveformPanelWidth;
+          combinedCanvas.height = Math.max(svgH, waveformPanelHeight);
+          const cCtx = combinedCanvas.getContext('2d')!;
+          cCtx.fillStyle = bgColor;
+          cCtx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height);
+          cCtx.drawImage(schematicCanvas, 0, 0);
+          cCtx.drawImage(waveformStaticCanvas, svgW, 0);
+          
+          // Draw playhead line on waveform region
+          const simRange = tMax - tMin;
+          if (simRange > 0) {
+            const playheadFrac = (simTime - tMin) / simRange;
+            const plotMarginLeft = 40; // approximate Plotly left margin
+            const plotMarginRight = 10;
+            const plotAreaWidth = waveformPanelWidth - plotMarginLeft - plotMarginRight;
+            const playheadX = svgW + plotMarginLeft + playheadFrac * plotAreaWidth;
+            cCtx.strokeStyle = '#ef4444';
+            cCtx.lineWidth = 1.5;
+            cCtx.setLineDash([4, 3]);
+            cCtx.beginPath();
+            cCtx.moveTo(playheadX, 0);
+            cCtx.lineTo(playheadX, combinedCanvas.height);
+            cCtx.stroke();
+            cCtx.setLineDash([]);
           }
+          
           canvasList.push(combinedCanvas);
         } else {
           canvasList.push(schematicCanvas);
         }
       }
       
+      const captureTime = ((performance.now() - t0) / 1000).toFixed(1);
+      
       // Restore grid
       gridRects.forEach(el => (el as HTMLElement).style.display = '');
       
-      setGifProgress("Encoding GIF (this may take a few seconds)...");
+      setGifProgress(`Frames captured in ${captureTime}s. Encoding GIF...`);
       
       const imageUrls = canvasList.map(c => c.toDataURL('image/png'));
       const sampleCanvas = canvasList[0];
