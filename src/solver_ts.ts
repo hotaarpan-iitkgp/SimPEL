@@ -900,10 +900,18 @@ export class CustomScriptBlock {
             footerJs += `}\n`;
             
             footerJs += `const last_vars = { time };\n`;
-            footerJs += `for (const [k, v] of Object.entries(params)) last_vars["params_" + k] = v;\n`;
-            footerJs += `for (const [k, v] of Object.entries(state)) last_vars["state_" + k] = v;\n`;
-            footerJs += `for (let i = 0; i < input_names.length; i++) last_vars["inputs_" + input_names[i]] = inputs[i] ?? 0.0;\n`;
-            footerJs += `for (let i = 0; i < output_names.length; i++) last_vars["outputs_" + output_names[i]] = outputs[i] ?? 0.0;\n`;
+            for (const k of Object.keys(this.params)) {
+                footerJs += `last_vars["params_${k}"] = params["${k}"] ?? 0.0;\n`;
+            }
+            for (const k of Object.keys(this.state)) {
+                footerJs += `last_vars["state_${k}"] = state["${k}"] ?? 0.0;\n`;
+            }
+            for (let i = 0; i < this.inputs.length; i++) {
+                footerJs += `last_vars["inputs_${this.inputs[i]}"] = inputs[${i}] ?? 0.0;\n`;
+            }
+            for (let i = 0; i < this.outputs.length; i++) {
+                footerJs += `last_vars["outputs_${this.outputs[i]}"] = outputs[${i}] ?? 0.0;\n`;
+            }
             
             for (const v of localVars) {
                 footerJs += `last_vars["${v}"] = (typeof ${v} !== 'undefined') ? ${v} : 0.0;\n`;
@@ -1909,6 +1917,23 @@ export class CircuitSimulator {
             this.cap_history[cap.id] = { v_prev: v, v_prev_prev: v, dt_prev: this.sim_params.h };
         }
 
+        // Pre-parse numeric parameters to avoid costly string operations during step execution
+        for (const c of this.physical_stage) {
+            if (c.parameters) {
+                (c as any).value_numeric = parseScientific(c.parameters.value ?? "10");
+                (c as any).L_numeric = parseScientific(c.parameters.L ?? "10m");
+                (c as any).C_numeric = parseScientific(c.parameters.C ?? "100u");
+                (c as any).esr_numeric = parseScientific(c.parameters.esr ?? "0.05");
+                (c as any).ron_numeric = parseScientific(c.parameters.Ron ?? "1e-3");
+                (c as any).roff_numeric = parseScientific(c.parameters.Roff ?? "1e6");
+                (c as any).vd_numeric = parseScientific(c.parameters.Vd ?? "0.7");
+                (c as any).gain_numeric = parseScientific(c.parameters.gain ?? "1e5");
+                (c as any).amplitude_numeric = parseScientific(c.parameters.amplitude ?? "12");
+                (c as any).frequency_numeric = parseScientific(c.parameters.frequency ?? "50");
+                (c as any).phase_numeric = parseScientific(c.parameters.phase ?? "0");
+            }
+        }
+
         // Add a tiny conductance to ground (gmin shunt) for every node to prevent singular matrices on floating nodes
         for (let i = 0; i < this.num_nodes; i++) {
             this.K_static.add(i, i, 1e-12);
@@ -1916,8 +1941,8 @@ export class CircuitSimulator {
     }
 
     stampSwitch(K: Matrix, sw: ComponentTS, state: string) {
-        const ron = parseScientific(sw.parameters.Ron ?? "1e-3");
-        const roff = parseScientific(sw.parameters.Roff ?? "1e6");
+        const ron = (sw as any).ron_numeric ?? parseScientific(sw.parameters.Ron ?? "1e-3");
+        const roff = (sw as any).roff_numeric ?? parseScientific(sw.parameters.Roff ?? "1e6");
         const g = 1.0 / (state === "ON" ? ron : roff);
         const n1 = sw.nodes[0] ?? "node_0", n2 = sw.nodes[1] ?? "node_0";
         const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
@@ -3471,7 +3496,7 @@ export class CircuitSimulator {
                         }
                         
                         // Store internal states and local variables in the signals dictionary
-                        if (inst.last_vars) {
+                        if (is_logging && inst.last_vars) {
                             for (const [varKey, varVal] of Object.entries(inst.last_vars)) {
                                 if (varKey.startsWith("state_")) {
                                     signals[`${b.id}.${varKey.substring(6)}`] = varVal;
@@ -3653,7 +3678,7 @@ export class CircuitSimulator {
             }
 
             // Store internal states and local variables in the signals dictionary
-            if (inst.last_vars) {
+            if (is_logging && inst.last_vars) {
                 for (const [varKey, varVal] of Object.entries(inst.last_vars)) {
                     if (varKey.startsWith("state_")) {
                         signals[`${ebId}.${varKey.substring(6)}`] = varVal;
@@ -3683,13 +3708,13 @@ export class CircuitSimulator {
             if (["VoltageSource", "ControlledVoltageSource", "OPAMP", "E_COMP"].includes(src.type)) {
                 const srcType = src.parameters.src_type;
                 if (srcType === "controlled" || src.type === "ControlledVoltageSource") {
-                    const gain = parseScientific(src.parameters.value ?? "1.0");
+                    const gain = (src as any).value_numeric ?? parseScientific(src.parameters.value ?? "1.0");
                     const ctrlSig = src.channels.Ctrl;
                     const ctrlVal = (ctrlSig && sigs[ctrlSig] !== undefined) ? sigs[ctrlSig] : 0.0;
                     b[idx] = ctrlVal * gain;
                 } else if (srcType === "opamp" || src.type === "OPAMP") {
-                    const gain = parseScientific(src.parameters.gain ?? "1e5");
-                    const vsat = parseScientific(src.parameters.value ?? "12.0");
+                    const gain = (src as any).gain_numeric ?? parseScientific(src.parameters.gain ?? "1e5");
+                    const vsat = (src as any).value_numeric ?? parseScientific(src.parameters.value ?? "12.0");
                     const nPlus = src.parameters.plus_node;
                     const nMinus = src.parameters.minus_node;
                     const idxPlus = (nPlus !== "node_0" && nPlus !== undefined) ? this.node_to_idx[nPlus] : -1;
@@ -3702,7 +3727,7 @@ export class CircuitSimulator {
                     else if (vout < -vsat) vout = -vsat;
                     b[idx] = vout;
                 } else if (srcType === "e_comp" || src.type === "E_COMP") {
-                    const vsat = parseScientific(src.parameters.value ?? "12.0");
+                    const vsat = (src as any).value_numeric ?? parseScientific(src.parameters.value ?? "12.0");
                     const nPlus = src.parameters.plus_node;
                     const nMinus = src.parameters.minus_node;
                     const idxPlus = (nPlus !== "node_0" && nPlus !== undefined) ? this.node_to_idx[nPlus] : -1;
@@ -3711,11 +3736,12 @@ export class CircuitSimulator {
                     const vMinus = idxMinus >= 0 ? w_stage[idxMinus] : 0.0;
                     b[idx] = vPlus > vMinus ? vsat : -vsat;
                 } else {
-                    b[idx] = parseScientific(src.parameters.value ?? "24");
+                    b[idx] = (src as any).value_numeric ?? parseScientific(src.parameters.value ?? "24");
                 }
             } else if (src.type === "ACVoltageSource") {
-                const amp = parseScientific(src.parameters.amplitude ?? "12"), freq = parseScientific(src.parameters.frequency ?? "50");
-                const phase = parseScientific(src.parameters.phase ?? "0");
+                const amp = (src as any).amplitude_numeric ?? parseScientific(src.parameters.amplitude ?? "12");
+                const freq = (src as any).frequency_numeric ?? parseScientific(src.parameters.frequency ?? "50");
+                const phase = (src as any).phase_numeric ?? parseScientific(src.parameters.phase ?? "0");
                 b[idx] = amp * Math.sin(2.0 * Math.PI * freq * t_stage + phase * Math.PI / 180.0);
             }
         }
@@ -3726,16 +3752,17 @@ export class CircuitSimulator {
                 let iv = 0.0;
                 const srcType = c.parameters.src_type;
                 if (c.type === "ControlledCurrentSource" || srcType === "controlled") {
-                    const gain = parseScientific(c.parameters.value ?? "1.0");
+                    const gain = (c as any).value_numeric ?? parseScientific(c.parameters.value ?? "1.0");
                     const ctrlSig = c.channels.Ctrl;
                     const ctrlVal = (ctrlSig && sigs[ctrlSig] !== undefined) ? sigs[ctrlSig] : 0.0;
                     iv = ctrlVal * gain;
                 } else if (c.type === "ACCurrentSource" || srcType === "ac") {
-                    const amp = parseScientific(c.parameters.amplitude ?? "1.0"), freq = parseScientific(c.parameters.frequency ?? "50.0");
-                    const phase = parseScientific(c.parameters.phase ?? "0.0");
+                    const amp = (c as any).amplitude_numeric ?? parseScientific(c.parameters.amplitude ?? "1.0");
+                    const freq = (c as any).frequency_numeric ?? parseScientific(c.parameters.frequency ?? "50.0");
+                    const phase = (c as any).phase_numeric ?? parseScientific(c.parameters.phase ?? "0.0");
                     iv = amp * Math.sin(2.0 * Math.PI * freq * t_stage + phase * Math.PI / 180.0);
                 } else {
-                    iv = parseScientific(c.parameters.value ?? "1.0");
+                    iv = (c as any).value_numeric ?? parseScientific(c.parameters.value ?? "1.0");
                 }
                 if (i1 >= 0) b[i1] -= iv; if (i2 >= 0) b[i2] += iv;
             }
@@ -3771,7 +3798,7 @@ export class CircuitSimulator {
 
     stampVariableResistors(K: Matrix, sigs: Record<string, number>) {
         for (const vr of this.variable_resistors) {
-            const baseVal = parseScientific(vr.parameters.value ?? "10");
+            const baseVal = (vr as any).value_numeric ?? parseScientific(vr.parameters.value ?? "10");
             const ctrlSig = vr.channels.Ctrl;
             const ctrlVal = (ctrlSig && sigs[ctrlSig] !== undefined) ? sigs[ctrlSig] : baseVal;
             let r_val = ctrlVal;
@@ -3980,7 +4007,7 @@ export class CircuitSimulator {
                     }
                     try { wn = Anum.solve(rhs_val); } catch (_) {}
                 }
-                sigs = this.evaluateControls(time + dt, wn, cs, dt, s_stage, false, false);
+                sigs = sigs_start;
                 let any_ch = false; const next_sw: Record<string, string> = {};
                 for (const sw of this.switches) {
                     const n1 = sw.nodes[0] ?? "node_0", n2 = sw.nodes[1] ?? "node_0";
@@ -3990,12 +4017,12 @@ export class CircuitSimulator {
                     let swn = "OFF";
                     if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
                         const gate_on = (sigs_start[sw.channels.G] ?? 0) > 0.5;
-                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                        const vd_drop = (sw as any).vd_numeric ?? parseScientific(sw.parameters.Vd ?? "0.7");
                         const diode_on = -vd > vd_drop;
                         swn = (gate_on || diode_on) ? "ON" : "OFF";
                     }
                     else if (sw.type === "Diode") {
-                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+                        const vd_drop = (sw as any).vd_numeric ?? parseScientific(sw.parameters.Vd ?? "0.7");
                         swn = vd > vd_drop ? "ON" : "OFF";
                     }
                     else if (sw.type === "Switch") {
@@ -4003,7 +4030,7 @@ export class CircuitSimulator {
                         if (swCtrl && sigs_start[swCtrl] !== undefined) {
                             swn = sigs_start[swCtrl] > 0.5 ? "ON" : "OFF";
                         } else {
-                            swn = parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
+                            swn = (sw as any).value_numeric ?? parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
                         }
                     }
                     next_sw[sw.id] = swn; if (swn !== old) any_ch = true;
@@ -4277,13 +4304,13 @@ export class CircuitSimulator {
             if (logI) {
                 let curr = 0.0;
                 if (comp.type === "Resistor" || comp.type === "R") { 
-                    let val = parseScientific(comp.parameters.value ?? "10"); 
+                    let val = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "10"); 
                     if (val < 1e-6) val = 1e-6; 
                     curr = v / val; 
                 }
                 else if (comp.type === "VariableResistor") {
                     const ctrlSig = comp.channels.Ctrl;
-                    const baseVal = parseScientific(comp.parameters.value ?? "10");
+                    const baseVal = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "10");
                     const ctrlVal = (ctrlSig && sigs[ctrlSig] !== undefined) ? sigs[ctrlSig] : baseVal;
                     let r_val = ctrlVal;
                     if (r_val < 1e-6) r_val = 1e-6;
@@ -4294,7 +4321,7 @@ export class CircuitSimulator {
                     curr = (idx !== undefined) ? w_val[idx] : 0.0; 
                 }
                 else if (comp.type === "Capacitor" || comp.type === "C") {
-                    const cv = parseScientific(comp.parameters.C ?? "100u");
+                    const cv = (comp as any).C_numeric ?? parseScientific(comp.parameters.C ?? "100u");
                     if (this.cap_history[comp.id]) curr = cv / dt * (v - this.cap_history[comp.id].v_prev);
                 } 
                 else if (["VoltageSource", "ACVoltageSource", "Ammeter", "V", "AC_V", "AM", "ControlledVoltageSource", "OPAMP", "E_COMP"].includes(comp.type)) { 
@@ -4302,10 +4329,10 @@ export class CircuitSimulator {
                     curr = (idx !== undefined) ? w_val[idx] : 0.0; 
                 } 
                 else if (["Switch", "Diode", "MOSFET", "vg-FET", "S", "D", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"].includes(comp.type)) {
-                    const ron = parseScientific(comp.parameters.Ron ?? "1e-3"), roff = parseScientific(comp.parameters.Roff ?? "1e6");
+                    const ron = (comp as any).ron_numeric ?? parseScientific(comp.parameters.Ron ?? "1e-3"), roff = (comp as any).roff_numeric ?? parseScientific(comp.parameters.Roff ?? "1e6");
                     const state = ss[comp.id] ?? "OFF";
                     if (comp.type === "Diode" && state === "ON") {
-                        const vd_drop = parseScientific(comp.parameters.Vd ?? "0.7");
+                        const vd_drop = (comp as any).vd_numeric ?? parseScientific(comp.parameters.Vd ?? "0.7");
                         curr = (v - vd_drop) / ron;
                     } else {
                         curr = v / (state === "ON" ? ron : roff);
@@ -4314,16 +4341,16 @@ export class CircuitSimulator {
                 else if (comp.type === "CurrentSource" || comp.type === "I" || comp.type === "ControlledCurrentSource" || comp.type === "ACCurrentSource") { 
                     const srcType = comp.parameters.src_type;
                     if (comp.type === "ControlledCurrentSource" || srcType === "controlled") {
-                        const gain = parseScientific(comp.parameters.value ?? "1.0");
+                        const gain = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "1.0");
                         const ctrlSig = comp.channels.Ctrl;
                         const ctrlVal = (ctrlSig && sigs[ctrlSig] !== undefined) ? sigs[ctrlSig] : 0.0;
                         curr = ctrlVal * gain;
                     } else if (comp.type === "ACCurrentSource" || srcType === "ac") {
-                        const amp = parseScientific(comp.parameters.amplitude ?? "1.0"), freq = parseScientific(comp.parameters.frequency ?? "50.0");
-                        const phase = parseScientific(comp.parameters.phase ?? "0.0");
+                        const amp = (comp as any).amplitude_numeric ?? parseScientific(comp.parameters.amplitude ?? "1.0"), freq = (comp as any).frequency_numeric ?? parseScientific(comp.parameters.frequency ?? "50.0");
+                        const phase = (comp as any).phase_numeric ?? parseScientific(comp.parameters.phase ?? "0.0");
                         curr = amp * Math.sin(2.0 * Math.PI * freq * time + phase * Math.PI / 180.0);
                     } else {
-                        curr = parseScientific(comp.parameters.value ?? "1.0");
+                        curr = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "1.0");
                     }
                 }
                 
