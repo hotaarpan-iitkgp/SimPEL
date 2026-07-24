@@ -3986,24 +3986,39 @@ export class CircuitSimulator {
                         }
                     }
                 }
+                const inv_dt = 1.0 / dt;
                 const M_w = new Array(this.dim).fill(0.0);
-                for (let r = 0; r < this.dim; r++) {
-                    let s = 0.0; for (let c = 0; c < this.dim; c++) s += (this.M.get(r, c) / dt) * w_curr[c];
-                    M_w[r] = s;
+                const M_data = this.M.data;
+                const dim = this.dim;
+                for (let r = 0; r < dim; r++) {
+                    let s = 0.0;
+                    const r_offset = r * dim;
+                    for (let c = 0; c < dim; c++) {
+                        s += M_data[r_offset + c] * w_curr[c];
+                    }
+                    M_w[r] = s * inv_dt;
                 }
-                const rhs_val = M_w.map((v, i) => v + b[i]);
+                for (let i = 0; i < dim; i++) M_w[i] += b[i];
+                const rhs_val = M_w;
+
                 if (useCache && luResult) {
                     try { wn = luResult.LU.solveLU(rhs_val, luResult); } catch (_) {
-                        const Anum = new Matrix(this.dim, this.dim);
-                        for (let r = 0; r < this.dim; r++) {
-                            for (let c = 0; c < this.dim; c++) Anum.set(r, c, this.M.get(r, c) / dt + K.get(r, c));
+                        const Anum = new Matrix(dim, dim);
+                        const K_data = K.data;
+                        const Anum_data = Anum.data;
+                        const size = dim * dim;
+                        for (let i = 0; i < size; i++) {
+                            Anum_data[i] = M_data[i] * inv_dt + K_data[i];
                         }
                         try { wn = Anum.solve(rhs_val); } catch (__) {}
                     }
                 } else {
-                    const Anum = new Matrix(this.dim, this.dim);
-                    for (let r = 0; r < this.dim; r++) {
-                        for (let c = 0; c < this.dim; c++) Anum.set(r, c, this.M.get(r, c) / dt + K.get(r, c));
+                    const Anum = new Matrix(dim, dim);
+                    const K_data = K.data;
+                    const Anum_data = Anum.data;
+                    const size = dim * dim;
+                    for (let i = 0; i < size; i++) {
+                        Anum_data[i] = M_data[i] * inv_dt + K_data[i];
                     }
                     try { wn = Anum.solve(rhs_val); } catch (_) {}
                 }
@@ -4424,6 +4439,7 @@ export class CircuitSimulator {
         let rejects = 0;
         let iterations = 0;
         const max_iterations = 200000;
+        let lastYieldTime = performance.now();
         while (t < t_end) {
             iterations++;
             if (iterations > max_iterations) {
@@ -4431,8 +4447,10 @@ export class CircuitSimulator {
                 break;
             }
 
-            if (iterations % 200 === 0) {
+            const now = performance.now();
+            if (now - lastYieldTime > 50) {
                 await new Promise(resolve => setTimeout(resolve, 0));
+                lastYieldTime = performance.now();
                 if (shouldCancel()) {
                     console.log("runAsync simulation cancelled.");
                     break;
