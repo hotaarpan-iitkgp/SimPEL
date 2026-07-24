@@ -4193,36 +4193,26 @@ export class CircuitSimulator {
         const isCurrentFlow = (this.sim_params as any).simulationMode === "current_flow";
 
         for (const node of this.active_nodes) {
-            const logV = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(node) || this.wanted_variables.has("V_" + node);
-            if (!logV) continue;
             const idx = this.node_to_idx[node]; if (!this.voltages_log[node]) this.voltages_log[node] = [];
             this.voltages_log[node].push(w_val[idx]);
         }
         for (const ind of this.inductors) {
-            const logI = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(ind.id) || this.wanted_variables.has("I_" + ind.id);
-            if (!logI) continue;
             const idx = this.L_to_idx[ind.id]; if (!this.inductors_log[ind.id]) this.inductors_log[ind.id] = [];
             this.inductors_log[ind.id].push(w_val[idx]);
         }
         for (const comp of this.voltage_sources) {
             if (comp.type === "Ammeter") {
-                const logI = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(comp.id) || this.wanted_variables.has("I_" + comp.id);
-                if (!logI) continue;
                 const idx = this.V_to_idx[comp.id]; if (!this.ammeters_log[comp.id]) this.ammeters_log[comp.id] = [];
                 this.ammeters_log[comp.id].push(w_val[idx]);
             }
         }
         for (const vm of this.voltmeters) {
-            const logV = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(vm.id) || this.wanted_variables.has("V_" + vm.id);
-            if (!logV) continue;
             const n1 = vm.nodes[0] ?? "node_0", n2 = vm.nodes[1] ?? "node_0";
             const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
             if (!this.voltmeters_log[vm.id]) this.voltmeters_log[vm.id] = [];
             this.voltmeters_log[vm.id].push(((i1 >= 0) ? w_val[i1] : 0.0) - ((i2 >= 0) ? w_val[i2] : 0.0));
         }
         for (const [k, v] of Object.entries(sigs)) {
-            const logS = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(k);
-            if (!logS) continue;
             if (!this.signals_log[k]) this.signals_log[k] = [];
             this.signals_log[k].push(v);
         }
@@ -4232,20 +4222,14 @@ export class CircuitSimulator {
             const ki = "I_" + comp.id; 
             const kc = "Ctrl_" + comp.id;
             
-            const logV = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(kv) || this.wanted_variables.has(comp.id);
-            const logI = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(ki);
-            const logC = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(kc);
-            
             const ctrlChan = comp.channels.Ctrl || comp.channels.Switch || comp.channels.G;
-            if (logC && ctrlChan !== undefined) {
+            if (ctrlChan !== undefined) {
                 const ctrlVal = sigs[ctrlChan] !== undefined ? sigs[ctrlChan] : 0.0;
                 if (!this.custom_plots_log[kc]) this.custom_plots_log[kc] = [];
                 this.custom_plots_log[kc].push(ctrlVal);
             }
 
             if (comp.type === "XFMR") {
-                const logTxV = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(kv);
-                const logTxI = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(ki);
                 const txWindings = this.all_windings.filter(w => w.transformer_id === comp.id);
                 
                 if (txWindings.length > 0) {
@@ -4256,23 +4240,17 @@ export class CircuitSimulator {
                     const v0 = ((wi1 >= 0) ? w_val[wi1] : 0.0) - ((wi2 >= 0) ? w_val[wi2] : 0.0);
                     const curr0 = w_val[w0.idx];
                     
-                    if (logTxV) {
-                        if (!this.custom_plots_log[kv]) this.custom_plots_log[kv] = [];
-                        this.custom_plots_log[kv].push(v0);
-                    }
-                    if (logTxI) {
-                        if (!this.custom_plots_log[ki]) this.custom_plots_log[ki] = [];
-                        this.custom_plots_log[ki].push(curr0);
-                    }
+                    if (!this.custom_plots_log[kv]) this.custom_plots_log[kv] = [];
+                    this.custom_plots_log[kv].push(v0);
+
+                    if (!this.custom_plots_log[ki]) this.custom_plots_log[ki] = [];
+                    this.custom_plots_log[ki].push(curr0);
                 }
                 
                 for (const w of txWindings) {
                     const label = `${comp.id}_${w.type === "primary" ? "P" : "S"}${w.winding_index}`;
                     const w_kv = "V_" + label;
                     const w_ki = "I_" + label;
-                    const logW_V = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(w_kv);
-                    const logW_I = isCurrentFlow || this.wanted_variables.size === 0 || this.wanted_variables.has(w_ki);
-                    if (!logW_V && !logW_I) continue;
 
                     const wn1 = w.nodes[0] ?? "node_0", wn2 = w.nodes[1] ?? "node_0";
                     const wi1 = (wn1 !== "node_0") ? this.node_to_idx[wn1] : -1;
@@ -4280,14 +4258,11 @@ export class CircuitSimulator {
                     const vw = ((wi1 >= 0) ? w_val[wi1] : 0.0) - ((wi2 >= 0) ? w_val[wi2] : 0.0);
                     const currw = w_val[w.idx];
                     
-                    if (logW_V) {
-                        if (!this.custom_plots_log[w_kv]) this.custom_plots_log[w_kv] = [];
-                        this.custom_plots_log[w_kv].push(vw);
-                    }
-                    if (logW_I) {
-                        if (!this.custom_plots_log[w_ki]) this.custom_plots_log[w_ki] = [];
-                        this.custom_plots_log[w_ki].push(currw);
-                    }
+                    if (!this.custom_plots_log[w_kv]) this.custom_plots_log[w_kv] = [];
+                    this.custom_plots_log[w_kv].push(vw);
+
+                    if (!this.custom_plots_log[w_ki]) this.custom_plots_log[w_ki] = [];
+                    this.custom_plots_log[w_ki].push(currw);
                 }
                 continue;
             }
@@ -4296,67 +4271,63 @@ export class CircuitSimulator {
             const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
             const v = ((i1 >= 0) ? w_val[i1] : 0.0) - ((i2 >= 0) ? w_val[i2] : 0.0);
             
-            if (logV) {
-                if (!this.custom_plots_log[kv]) this.custom_plots_log[kv] = []; 
-                this.custom_plots_log[kv].push(v);
+            if (!this.custom_plots_log[kv]) this.custom_plots_log[kv] = []; 
+            this.custom_plots_log[kv].push(v);
+            
+            let curr = 0.0;
+            if (comp.type === "Resistor" || comp.type === "R") { 
+                let val = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "10"); 
+                if (val < 1e-6) val = 1e-6; 
+                curr = v / val; 
+            }
+            else if (comp.type === "VariableResistor") {
+                const ctrlSig = comp.channels.Ctrl;
+                const baseVal = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "10");
+                const ctrlVal = (ctrlSig && sigs[ctrlSig] !== undefined) ? sigs[ctrlSig] : baseVal;
+                let r_val = ctrlVal;
+                if (r_val < 1e-6) r_val = 1e-6;
+                curr = v / r_val;
+            }
+            else if (comp.type === "Inductor" || comp.type === "L") { 
+                const idx = this.L_to_idx[comp.id]; 
+                curr = (idx !== undefined) ? w_val[idx] : 0.0; 
+            }
+            else if (comp.type === "Capacitor" || comp.type === "C") {
+                const cv = (comp as any).C_numeric ?? parseScientific(comp.parameters.C ?? "100u");
+                if (this.cap_history[comp.id]) curr = cv / dt * (v - this.cap_history[comp.id].v_prev);
+            } 
+            else if (["VoltageSource", "ACVoltageSource", "Ammeter", "V", "AC_V", "AM", "ControlledVoltageSource", "OPAMP", "E_COMP"].includes(comp.type)) { 
+                const idx = this.V_to_idx[comp.id]; 
+                curr = (idx !== undefined) ? w_val[idx] : 0.0; 
+            } 
+            else if (["Switch", "Diode", "MOSFET", "vg-FET", "S", "D", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"].includes(comp.type)) {
+                const ron = (comp as any).ron_numeric ?? parseScientific(comp.parameters.Ron ?? "1e-3"), roff = (comp as any).roff_numeric ?? parseScientific(comp.parameters.Roff ?? "1e6");
+                const state = ss[comp.id] ?? "OFF";
+                if (comp.type === "Diode" && state === "ON") {
+                    const vd_drop = (comp as any).vd_numeric ?? parseScientific(comp.parameters.Vd ?? "0.7");
+                    curr = (v - vd_drop) / ron;
+                } else {
+                    curr = v / (state === "ON" ? ron : roff);
+                }
+            } 
+            else if (comp.type === "CurrentSource" || comp.type === "I" || comp.type === "ControlledCurrentSource" || comp.type === "ACCurrentSource") { 
+                const srcType = comp.parameters.src_type;
+                if (comp.type === "ControlledCurrentSource" || srcType === "controlled") {
+                    const gain = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "1.0");
+                    const ctrlSig = comp.channels.Ctrl;
+                    const ctrlVal = (ctrlSig && sigs[ctrlSig] !== undefined) ? sigs[ctrlSig] : 0.0;
+                    curr = ctrlVal * gain;
+                } else if (comp.type === "ACCurrentSource" || srcType === "ac") {
+                    const amp = (comp as any).amplitude_numeric ?? parseScientific(comp.parameters.amplitude ?? "1.0"), freq = (comp as any).frequency_numeric ?? parseScientific(comp.parameters.frequency ?? "50.0");
+                    const phase = (comp as any).phase_numeric ?? parseScientific(comp.parameters.phase ?? "0.0");
+                    curr = amp * Math.sin(2.0 * Math.PI * freq * time + phase * Math.PI / 180.0);
+                } else {
+                    curr = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "1.0");
+                }
             }
             
-            if (logI) {
-                let curr = 0.0;
-                if (comp.type === "Resistor" || comp.type === "R") { 
-                    let val = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "10"); 
-                    if (val < 1e-6) val = 1e-6; 
-                    curr = v / val; 
-                }
-                else if (comp.type === "VariableResistor") {
-                    const ctrlSig = comp.channels.Ctrl;
-                    const baseVal = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "10");
-                    const ctrlVal = (ctrlSig && sigs[ctrlSig] !== undefined) ? sigs[ctrlSig] : baseVal;
-                    let r_val = ctrlVal;
-                    if (r_val < 1e-6) r_val = 1e-6;
-                    curr = v / r_val;
-                }
-                else if (comp.type === "Inductor" || comp.type === "L") { 
-                    const idx = this.L_to_idx[comp.id]; 
-                    curr = (idx !== undefined) ? w_val[idx] : 0.0; 
-                }
-                else if (comp.type === "Capacitor" || comp.type === "C") {
-                    const cv = (comp as any).C_numeric ?? parseScientific(comp.parameters.C ?? "100u");
-                    if (this.cap_history[comp.id]) curr = cv / dt * (v - this.cap_history[comp.id].v_prev);
-                } 
-                else if (["VoltageSource", "ACVoltageSource", "Ammeter", "V", "AC_V", "AM", "ControlledVoltageSource", "OPAMP", "E_COMP"].includes(comp.type)) { 
-                    const idx = this.V_to_idx[comp.id]; 
-                    curr = (idx !== undefined) ? w_val[idx] : 0.0; 
-                } 
-                else if (["Switch", "Diode", "MOSFET", "vg-FET", "S", "D", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"].includes(comp.type)) {
-                    const ron = (comp as any).ron_numeric ?? parseScientific(comp.parameters.Ron ?? "1e-3"), roff = (comp as any).roff_numeric ?? parseScientific(comp.parameters.Roff ?? "1e6");
-                    const state = ss[comp.id] ?? "OFF";
-                    if (comp.type === "Diode" && state === "ON") {
-                        const vd_drop = (comp as any).vd_numeric ?? parseScientific(comp.parameters.Vd ?? "0.7");
-                        curr = (v - vd_drop) / ron;
-                    } else {
-                        curr = v / (state === "ON" ? ron : roff);
-                    }
-                } 
-                else if (comp.type === "CurrentSource" || comp.type === "I" || comp.type === "ControlledCurrentSource" || comp.type === "ACCurrentSource") { 
-                    const srcType = comp.parameters.src_type;
-                    if (comp.type === "ControlledCurrentSource" || srcType === "controlled") {
-                        const gain = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "1.0");
-                        const ctrlSig = comp.channels.Ctrl;
-                        const ctrlVal = (ctrlSig && sigs[ctrlSig] !== undefined) ? sigs[ctrlSig] : 0.0;
-                        curr = ctrlVal * gain;
-                    } else if (comp.type === "ACCurrentSource" || srcType === "ac") {
-                        const amp = (comp as any).amplitude_numeric ?? parseScientific(comp.parameters.amplitude ?? "1.0"), freq = (comp as any).frequency_numeric ?? parseScientific(comp.parameters.frequency ?? "50.0");
-                        const phase = (comp as any).phase_numeric ?? parseScientific(comp.parameters.phase ?? "0.0");
-                        curr = amp * Math.sin(2.0 * Math.PI * freq * time + phase * Math.PI / 180.0);
-                    } else {
-                        curr = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "1.0");
-                    }
-                }
-                
-                if (!this.custom_plots_log[ki]) this.custom_plots_log[ki] = []; 
-                this.custom_plots_log[ki].push(curr);
-            }
+            if (!this.custom_plots_log[ki]) this.custom_plots_log[ki] = []; 
+            this.custom_plots_log[ki].push(curr);
         }
 
         // Update capacitor history at the end of logged accepted states
