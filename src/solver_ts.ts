@@ -895,9 +895,9 @@ export class CustomScriptBlock {
             }
             
             footerJs += `const run_outputs = {};\n`;
-            for (let i = 0; i < output_names.length; i++) {
-                footerJs += `  run_outputs[output_names[i]] = outputs[i] ?? 0.0;\n`;
-            }
+            footerJs += `for (let i = 0; i < output_names.length; i++) {\n`;
+            footerJs += `  run_outputs[output_names[i]] = outputs[i] ?? 0.0;\n`;
+            footerJs += `}\n`;
             
             footerJs += `const last_vars = { time, dt };\n`;
             for (const k of Object.keys(this.params)) {
