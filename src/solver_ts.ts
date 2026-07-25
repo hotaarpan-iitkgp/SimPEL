@@ -4596,13 +4596,14 @@ export class CircuitSimulator {
         let rejects = 0;
         let iterations = 0;
         const max_iterations = 200000;
-        while (t < t_end) {
+        while (t < t_end - 1e-12) {
             iterations++;
             if (iterations > max_iterations) {
                 console.warn(`Simulation terminated early: exceeded max iterations (${max_iterations})`);
                 break;
             }
             if (t + h > t_end) h = t_end - t;
+            if (h < 1e-12) break;
             try {
                 const step = this.takeStep(t, this.w, h, this.sim_params.solver, this.control_states, this.sw_states);
                 if (this.sim_params.step_type === "variable") {
@@ -4667,7 +4668,7 @@ export class CircuitSimulator {
         let iterations = 0;
         const max_iterations = 200000;
         let lastYieldTime = performance.now();
-        while (t < t_end) {
+        while (t < t_end - 1e-12) {
             iterations++;
             if (iterations > max_iterations) {
                 console.warn(`Simulation terminated early in runAsync: exceeded max iterations (${max_iterations})`);
@@ -4689,6 +4690,7 @@ export class CircuitSimulator {
             }
 
             if (t + h > t_end) h = t_end - t;
+            if (h < 1e-12) break;
             try {
                 const step = this.takeStep(t, this.w, h, this.sim_params.solver, this.control_states, this.sw_states);
                 if (this.sim_params.step_type === "variable") {
