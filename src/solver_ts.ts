@@ -1049,6 +1049,7 @@ export class CustomEBlock {
     init_statements: Statement[] = []; step_statements: Statement[] = [];
     last_vars: Record<string, number> = {};
     terminalsCount: number;
+    compiled_step_fn: ((time: number, inputs_dict: Record<string, number>, state: Record<string, number>, params: Record<string, number>) => Record<string, number>) | null = null;
 
     constructor(code: string, inputParams: Record<string, number>, terminalsCount: number) {
         let processedCode = code || "";
@@ -1164,6 +1165,59 @@ export class CustomEBlock {
             if (in_init) this.parse_statement(clean, this.init_statements);
             else if (in_step) this.parse_statement(clean, this.step_statements);
         }
+        this.build_compiled_step();
+    }
+    build_compiled_step() {
+        try {
+            let jsLines: string[] = [];
+            jsLines.push('const outputs = {};');
+            for (const out of this.outputs) {
+                jsLines.push(`outputs["${out}"] = 0.0;`);
+                jsLines.push(`let outputs_${out} = 0.0;`);
+            }
+            for (const inp of this.inputs) {
+                jsLines.push(`let inputs_${inp} = inputs_dict["${inp}"] ?? 0.0;`);
+            }
+            for (const [k, v] of Object.entries(this.params)) {
+                jsLines.push(`let params_${k} = ${v};`);
+            }
+            for (const [k, v] of Object.entries(this.state)) {
+                jsLines.push(`let state_${k} = state["${k}"] ?? ${v};`);
+            }
+
+            for (const s of this.step_statements) {
+                let expr = s.rhs_expr
+                    .replace(/\b(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|sqrt|exp|log|log10|abs|floor|ceil|round)\b/g, 'Math.$1')
+                    .replace(/\bpow\(([^,]+),([^)]+)\)/g, 'Math.pow($1, $2)')
+                    .replace(/\bmin\(([^,]+),([^)]+)\)/g, 'Math.min($1, $2)')
+                    .replace(/\bmax\(([^,]+),([^)]+)\)/g, 'Math.max($1, $2)');
+
+                let lhsVar = s.lhs_key;
+                if (s.lhs_type === "state") {
+                    lhsVar = `state_${s.lhs_key}`;
+                } else if (s.lhs_type === "outputs") {
+                    lhsVar = `outputs_${s.lhs_key}`;
+                }
+
+                if (s.op === "=") {
+                    jsLines.push(`let ${lhsVar} = ${expr};`);
+                } else {
+                    jsLines.push(`${lhsVar} ${s.op} ${expr};`);
+                }
+
+                if (s.lhs_type === "state") {
+                    jsLines.push(`state["${s.lhs_key}"] = ${lhsVar};`);
+                } else if (s.lhs_type === "outputs") {
+                    jsLines.push(`outputs["${s.lhs_key}"] = ${lhsVar};`);
+                }
+            }
+
+            jsLines.push('return outputs;');
+            const body = jsLines.join('\n');
+            this.compiled_step_fn = new Function('time', 'inputs_dict', 'state', 'params', body) as any;
+        } catch (e) {
+            this.compiled_step_fn = null;
+        }
     }
     reset() {
         this.state = {};
@@ -1177,8 +1231,16 @@ export class CustomEBlock {
             }
         }
         this.last_vars = { ...vars };
+        this.build_compiled_step();
     }
     step(time: number, inputs_dict: Record<string, number>): Record<string, number> {
+        if (this.compiled_step_fn) {
+            try {
+                return this.compiled_step_fn(time, inputs_dict, this.state, this.params);
+            } catch (_) {
+                this.compiled_step_fn = null;
+            }
+        }
         const run_outputs: Record<string, number> = {};
         for (const out of this.outputs) run_outputs[out] = 0.0;
         const vars: Record<string, number> = { time };
@@ -1323,23 +1385,36 @@ export class SparseRow {
     cols: number[] = [];
     vals: number[] = [];
 
+    private findIdx(c: number): number {
+        let low = 0, high = this.cols.length - 1;
+        while (low <= high) {
+            const mid = (low + high) >> 1;
+            const midVal = this.cols[mid];
+            if (midVal === c) return mid;
+            if (midVal < c) low = mid + 1;
+            else high = mid - 1;
+        }
+        return -(low + 1);
+    }
+
     get(c: number): number {
-        const idx = this.cols.indexOf(c);
+        const idx = this.findIdx(c);
         return idx >= 0 ? this.vals[idx] : 0.0;
     }
 
     set(c: number, v: number) {
-        const idx = this.cols.indexOf(c);
+        const idx = this.findIdx(c);
         if (idx >= 0) {
             this.vals[idx] = v;
         } else {
-            this.cols.push(c);
-            this.vals.push(v);
+            const insPos = -(idx + 1);
+            this.cols.splice(insPos, 0, c);
+            this.vals.splice(insPos, 0, v);
         }
     }
 
     delete(c: number) {
-        const idx = this.cols.indexOf(c);
+        const idx = this.findIdx(c);
         if (idx >= 0) {
             this.cols.splice(idx, 1);
             this.vals.splice(idx, 1);
