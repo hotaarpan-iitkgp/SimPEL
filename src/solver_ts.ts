@@ -2430,7 +2430,7 @@ export class CircuitSimulator {
                                 const idxL = this.L_to_idx[tc.id]; i = (idxL !== undefined) ? w_curr[idxL] : 0.0;
                             } else if (tc.type === "Capacitor") {
                                 const cv = parseScientific(tc.parameters.C ?? "100u");
-                                if (!first && this.cap_history[tc.id]) i = cv / this.cap_history[tc.id].dt_prev * (v - this.cap_history[tc.id].v_prev);
+                                if (!first && this.cap_history[tc.id]) i = cv / (dt > 0 ? dt : (this.cap_history[tc.id].dt_prev || 1e-5)) * (v - this.cap_history[tc.id].v_prev);
                             } else if (["VoltageSource", "ACVoltageSource", "Ammeter"].includes(tc.type)) {
                                 const idxV = this.V_to_idx[tc.id]; i = (idxV !== undefined) ? w_curr[idxV] : 0.0;
                             } else if (["Switch", "Diode", "MOSFET", "vg-FET"].includes(tc.type)) {
@@ -3919,7 +3919,8 @@ export class CircuitSimulator {
                                 } else if (tc.type === "Capacitor" || tc.type === "C") {
                                     const cv = parseScientific(tc.parameters.C ?? "100u");
                                     if (!first && this.cap_history[tc.id]) {
-                                        i = cv / this.cap_history[tc.id].dt_prev * (v - this.cap_history[tc.id].v_prev);
+                                        const dt_denom = dt > 0 ? dt : (this.cap_history[tc.id].dt_prev || 1e-5);
+                                        i = cv / dt_denom * (v - this.cap_history[tc.id].v_prev);
                                     }
                                 } else if (["VoltageSource", "ACVoltageSource", "Ammeter", "V", "AC_V", "AM", "ControlledVoltageSource", "OPAMP", "E_COMP"].includes(tc.type)) {
                                     const idxV = this.V_to_idx[tc.id];
@@ -4324,22 +4325,43 @@ export class CircuitSimulator {
                             switchMask |= (1 << i);
                         }
                     }
-                    luResult = this.luCacheArray[switchMask];
-                    if (!luResult) {
-                        const Anum = new Matrix(dim, dim);
-                        const K_data = K.data;
-                        const Anum_data = Anum.data;
-                        const size = dim * dim;
-                        for (let i = 0; i < size; i++) {
-                            Anum_data[i] = M_data[i] * inv_dt + K_data[i];
+                    if (this.sim_params.step_type === "variable") {
+                        const cacheKey = `${switchMask}_${dt.toExponential(4)}`;
+                        luResult = this.luCache.get(cacheKey) || null;
+                        if (!luResult) {
+                            const Anum = new Matrix(dim, dim);
+                            const K_data = K.data;
+                            const Anum_data = Anum.data;
+                            const size = dim * dim;
+                            for (let i = 0; i < size; i++) {
+                                Anum_data[i] = M_data[i] * inv_dt + K_data[i];
+                            }
+                            luResult = SparseLU.decompose(Anum);
+                            if (luResult) {
+                                this.luCache.set(cacheKey, luResult);
+                            }
+                            this.luCacheMisses++;
+                        } else {
+                            this.luCacheHits++;
                         }
-                        luResult = SparseLU.decompose(Anum);
-                        if (luResult) {
-                            this.luCacheArray[switchMask] = luResult;
-                        }
-                        this.luCacheMisses++;
                     } else {
-                        this.luCacheHits++;
+                        luResult = this.luCacheArray[switchMask];
+                        if (!luResult) {
+                            const Anum = new Matrix(dim, dim);
+                            const K_data = K.data;
+                            const Anum_data = Anum.data;
+                            const size = dim * dim;
+                            for (let i = 0; i < size; i++) {
+                                Anum_data[i] = M_data[i] * inv_dt + K_data[i];
+                            }
+                            luResult = SparseLU.decompose(Anum);
+                            if (luResult) {
+                                this.luCacheArray[switchMask] = luResult;
+                            }
+                            this.luCacheMisses++;
+                        } else {
+                            this.luCacheHits++;
+                        }
                     }
                 } else if (useCache) {
                     // Variable resistors have continuous resistance values.
@@ -4751,7 +4773,16 @@ export class CircuitSimulator {
         const init_sigs = this.evaluateControls(0.0, this.w, this.control_states, h, this.sw_states, true, false);
         this.logAcceptedState(0.0, this.w, init_sigs, this.sw_states, h);
         const atol = 1e-4, rtol = 1e-3;
-        const h_min = Math.max(this.sim_params.h * 1e-4, 1e-12), h_max = this.sim_params.h * 50.0;
+        let h_max = this.sim_params.h * 10.0;
+        for (const b of this.control_loops) {
+            if (b.type === "Triangle_Carrier" || (b.parameters && b.parameters.original_type === "TRI_GEN")) {
+                const freq = (b as any).frequency_numeric ?? parseScientific(b.parameters.frequency ?? "10000");
+                if (freq > 0) {
+                    h_max = Math.min(h_max, 1.0 / (freq * 10.0));
+                }
+            }
+        }
+        const h_min = Math.max(this.sim_params.h * 1e-4, 1e-12);
         let rejects = 0;
         let iterations = 0;
         const max_iterations = 200000;
@@ -4812,7 +4843,12 @@ export class CircuitSimulator {
                     this.logAcceptedState(t_new, this.w, final_sigs, this.sw_states, h);
                     t = t_new;
                 }
-            } catch (_) { if (this.sim_params.step_type === "variable") { h *= 0.5; if (h < 1e-15) break; } else break; }
+            } catch (simErr) {
+                console.error("SIM ERROR STACK:", simErr);
+                if (this.sim_params.step_type === "variable") {
+                    h *= 0.5; if (h < 1e-15) { console.error("Step size reduced below minimum:", simErr); break; }
+                } else { console.error("Step execution failed:", simErr); break; }
+            }
         }
         return {
             time: this.time_log, voltages: this.voltages_log, inductors: this.inductors_log,
@@ -4828,7 +4864,16 @@ export class CircuitSimulator {
         const init_sigs = this.evaluateControls(0.0, this.w, this.control_states, h, this.sw_states, true, false);
         this.logAcceptedState(0.0, this.w, init_sigs, this.sw_states, h);
         const atol = 1e-4, rtol = 1e-3;
-        const h_min = Math.max(this.sim_params.h * 1e-4, 1e-12), h_max = this.sim_params.h * 50.0;
+        let h_max = this.sim_params.h * 10.0;
+        for (const b of this.control_loops) {
+            if (b.type === "Triangle_Carrier" || (b.parameters && b.parameters.original_type === "TRI_GEN")) {
+                const freq = (b as any).frequency_numeric ?? parseScientific(b.parameters.frequency ?? "10000");
+                if (freq > 0) {
+                    h_max = Math.min(h_max, 1.0 / (freq * 10.0));
+                }
+            }
+        }
+        const h_min = Math.max(this.sim_params.h * 1e-4, 1e-12);
         let rejects = 0;
         let iterations = 0;
         const max_iterations = 200000;
@@ -4905,7 +4950,11 @@ export class CircuitSimulator {
                     this.logAcceptedState(t_new, this.w, final_sigs, this.sw_states, h);
                     t = t_new;
                 }
-            } catch (_) { if (this.sim_params.step_type === "variable") { h *= 0.5; if (h < 1e-15) break; } else break; }
+            } catch (simErr) {
+                if (this.sim_params.step_type === "variable") {
+                    h *= 0.5; if (h < 1e-15) { console.error("Step size reduced below minimum in runAsync:", simErr); break; }
+                } else { console.error("Step execution failed in runAsync:", simErr); break; }
+            }
         }
         return {
             time: this.time_log, voltages: this.voltages_log, inductors: this.inductors_log,
