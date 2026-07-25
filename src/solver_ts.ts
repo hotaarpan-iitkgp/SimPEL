@@ -1504,6 +1504,8 @@ export class CircuitSimulator {
     signals_log: Record<string, number[]> = {}; custom_plots_log: Record<string, number[]> = {};
     cap_history: Record<string, { v_prev: number; v_prev_prev: number; dt_prev: number }> = {};
     key_trigger_states: Record<string, number> = {};
+    physical_stage_map: Map<string, ComponentTS> = new Map();
+    b_rhs_buf: number[] = [];
 
     constructor(physical: any, control: any, params: any) {
         let physicalArray: ComponentTS[] = [];
@@ -2072,7 +2074,29 @@ export class CircuitSimulator {
             this.cap_history[cap.id] = { v_prev: v, v_prev_prev: v, dt_prev: this.sim_params.h };
         }
 
-        // Pre-parse numeric parameters to avoid costly string operations during step execution
+        // Add a tiny conductance to ground (gmin shunt) for every node to prevent singular matrices on floating nodes
+        for (let i = 0; i < this.num_nodes; i++) {
+            this.K_static.add(i, i, 1e-12);
+        }
+
+        this.physical_stage_map = new Map(this.physical_stage.map(c => [c.id, c]));
+
+        const parseVectorStatic = (s: any) => {
+            if (s === null || s === undefined) return [];
+            let str = String(s).trim();
+            let clean = str.replace(/[\[\]]/g, '');
+            return clean.split(/[\s,;]+/).filter(x => x.trim() !== '').map(x => parseFloat(x) || 0.0);
+        };
+        const parseMatrixStatic = (s: any) => {
+            if (s === null || s === undefined) return [];
+            let str = String(s).trim();
+            let clean = str.replace(/[\[\]]/g, '').trim();
+            if (!clean) return [];
+            let rows = clean.split(';');
+            return rows.map(r => r.split(/[\s,]+/).filter(x => x.trim() !== '').map(x => parseFloat(x) || 0.0));
+        };
+
+        // Pre-parse numeric parameters for physical components
         for (const c of this.physical_stage) {
             if (c.parameters) {
                 (c as any).value_numeric = parseScientific(c.parameters.value ?? "10");
@@ -2089,9 +2113,36 @@ export class CircuitSimulator {
             }
         }
 
-        // Add a tiny conductance to ground (gmin shunt) for every node to prevent singular matrices on floating nodes
-        for (let i = 0; i < this.num_nodes; i++) {
-            this.K_static.add(i, i, 1e-12);
+        // Pre-parse vectors, matrices, JSON configs for control loops
+        for (const b of this.control_loops) {
+            if (b.parameters) {
+                if (b.type === "PWM_MASTER") {
+                    try {
+                        (b as any)._config_cache = JSON.parse(b.parameters.config || '[]');
+                    } catch (_) { (b as any)._config_cache = []; }
+                }
+                const orig = b.parameters.original_type;
+                if (orig === "LUT_1D") {
+                    (b as any)._vx_cache = parseVectorStatic(b.parameters.x ?? "[0, 1]");
+                    (b as any)._vy_cache = parseVectorStatic(b.parameters.y ?? "[0, 1]");
+                } else if (orig === "LUT_2D") {
+                    (b as any)._vx_cache = parseVectorStatic(b.parameters.x ?? "[0, 1]");
+                    (b as any)._vy_cache = parseVectorStatic(b.parameters.y ?? "[0, 1]");
+                    (b as any)._mz_cache = parseMatrixStatic(b.parameters.z ?? "[0 0; 0 0]");
+                } else if (orig === "TRANSFER_FCN") {
+                    (b as any)._num_cache = parseVectorStatic(b.parameters.num ?? "[1]");
+                    (b as any)._den_cache = parseVectorStatic(b.parameters.den ?? "[1 1]");
+                } else if (orig === "DISCRETE_TF") {
+                    (b as any)._num_cache = parseVectorStatic(b.parameters.num ?? "[1]");
+                    (b as any)._den_cache = parseVectorStatic(b.parameters.den ?? "[1 -0.9]");
+                } else if (orig === "STATE_SPACE" || orig === "DISCRETE_SS") {
+                    (b as any)._A_cache = parseMatrixStatic(b.parameters.A ?? "[-1]");
+                    (b as any)._B_cache = parseMatrixStatic(b.parameters.B ?? "[1]");
+                    (b as any)._C_cache = parseMatrixStatic(b.parameters.C ?? "[1]");
+                    (b as any)._D_cache = parseMatrixStatic(b.parameters.D ?? "[0]");
+                    (b as any)._x0_cache = parseVectorStatic(b.parameters.x0 ?? "0");
+                }
+            }
         }
     }
 
@@ -2208,7 +2259,7 @@ export class CircuitSimulator {
                         const idParts = c.id.split('.');
                         const prefixPath = idParts.slice(0, -1).join('.');
                         const fullTid = prefixPath ? `${prefixPath}.${tid}` : tid;
-                        const tc = this.physical_stage.find(x => x.id === fullTid);
+                        const tc = this.physical_stage_map ? this.physical_stage_map.get(fullTid) : this.physical_stage.find(x => x.id === fullTid);
                         if (tc) {
                             const n1 = tc.nodes[0] ?? "node_0", n2 = tc.nodes[1] ?? "node_0";
                             const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
@@ -3529,7 +3580,7 @@ export class CircuitSimulator {
                             const prefix = parts[0];
                             const compId = parts.slice(1).join("_");
                             
-                            const tc = this.physical_stage.find(x => x.id === compId);
+                            const tc = this.physical_stage_map ? this.physical_stage_map.get(compId) : this.physical_stage.find(x => x.id === compId);
                             if (tc) {
                                 const n1 = tc.nodes[0] ?? "node_0", n2 = tc.nodes[1] ?? "node_0";
                                 const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1;
@@ -3682,7 +3733,7 @@ export class CircuitSimulator {
                             const prefix = parts[0];
                             const compId = parts.slice(1).join("_");
                             const fullCompId = prefixPath ? `${prefixPath}.${compId}` : compId;
-                            const tc = this.physical_stage.find(x => x.id === fullCompId);
+                            const tc = this.physical_stage_map ? this.physical_stage_map.get(fullCompId) : this.physical_stage.find(x => x.id === fullCompId);
                             if (tc) {
                                 const n1 = tc.nodes[0] ?? "node_0", n2 = tc.nodes[1] ?? "node_0";
                                 const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1;
@@ -3781,7 +3832,7 @@ export class CircuitSimulator {
             const next_t = stateObj.next_trigger_time ?? 0.0;
 
             const ind: Record<string, number> = {};
-            const comp = this.physical_stage.find(p => p.id === ebId);
+            const comp = this.physical_stage_map ? this.physical_stage_map.get(ebId) : this.physical_stage.find(p => p.id === ebId);
             if (comp) {
                 const termCount = inst.terminalsCount;
                 for (let i = 1; i <= termCount; i++) {
@@ -3855,7 +3906,12 @@ export class CircuitSimulator {
     }
 
     buildRHS(t_stage: number, w_stage: number[], sigs: Record<string, number>, ss?: Record<string, string>): number[] {
-        const b = new Array(this.dim).fill(0.0);
+        if (!this.b_rhs_buf || this.b_rhs_buf.length !== this.dim) {
+            this.b_rhs_buf = new Array(this.dim).fill(0.0);
+        } else {
+            this.b_rhs_buf.fill(0.0);
+        }
+        const b = this.b_rhs_buf;
         for (const src of this.voltage_sources) {
             const idx = this.V_to_idx[src.id];
             if (idx === undefined) continue;
@@ -4073,7 +4129,7 @@ export class CircuitSimulator {
     }
 
     takeStep(time: number, w_curr: number[], dt: number, solver: string, cs: Record<string, Record<string, number>>, ss: Record<string, string>) {
-        const out_trans: any[] = []; let wn = [...w_curr]; let ctrl_n = this.cloneControlStates(cs); let sw_n = { ...ss };
+        const out_trans: any[] = []; let wn = [...w_curr]; let ctrl_n = (solver === "euler") ? cs : this.cloneControlStates(cs); let sw_n = { ...ss };
         if (solver === "euler") {
             let s_stage = { ...ss }; let s_ch = true; let loop = 0;
             let sigs = this.evaluateControls(time + dt, wn, cs, dt, s_stage, false, false);
@@ -4127,29 +4183,16 @@ export class CircuitSimulator {
                         this.luCacheHits++;
                     }
                 } else if (useCache) {
-                    const swKey = this.switches.map(sw => s_stage[sw.id] ?? "OFF").join(",");
-                    const vrKey = this.variable_resistors.map(vr => {
-                        const ctrl = vr.channels.Ctrl || vr.channels.Res;
-                        return String(sigs[ctrl] ?? 0.0);
-                    }).join(",");
-                    const cacheKey = `${dt}|${swKey}|${vrKey}`;
-                    luResult = this.luCache.get(cacheKey);
-                    if (luResult) {
-                        this.luCacheHits++;
-                    } else {
-                        this.luCacheMisses++;
-                        const Anum = new Matrix(dim, dim);
-                        const K_data = K.data;
-                        const Anum_data = Anum.data;
-                        const size = dim * dim;
-                        for (let i = 0; i < size; i++) {
-                            Anum_data[i] = M_data[i] * inv_dt + K_data[i];
-                        }
-                        luResult = SparseLU.decompose(Anum);
-                        if (luResult) {
-                            this.luCache.set(cacheKey, luResult);
-                        }
+                    // Variable resistors have continuous resistance values.
+                    // Directly decompose using SparseLU without creating unbounded string keys.
+                    const Anum = new Matrix(dim, dim);
+                    const K_data = K.data;
+                    const Anum_data = Anum.data;
+                    const size = dim * dim;
+                    for (let i = 0; i < size; i++) {
+                        Anum_data[i] = M_data[i] * inv_dt + K_data[i];
                     }
+                    luResult = SparseLU.decompose(Anum);
                 }
 
                 const M_w = new Array(dim).fill(0.0);
@@ -4410,7 +4453,8 @@ export class CircuitSimulator {
             if (!this.voltmeters_log[vm.id]) this.voltmeters_log[vm.id] = [];
             this.voltmeters_log[vm.id].push(((i1 >= 0) ? w_val[i1] : 0.0) - ((i2 >= 0) ? w_val[i2] : 0.0));
         }
-        for (const [k, v] of Object.entries(sigs)) {
+        for (const k in sigs) {
+            const v = sigs[k];
             if (!this.signals_log[k]) this.signals_log[k] = [];
             this.signals_log[k].push(v);
         }
