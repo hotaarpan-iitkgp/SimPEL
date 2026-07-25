@@ -2144,6 +2144,91 @@ export class CircuitSimulator {
                 }
             }
         }
+
+        this.sortControlLoopsTopologically();
+    }
+
+    sortControlLoopsTopologically() {
+        if (!this.control_loops || this.control_loops.length === 0) return;
+
+        const producerMap = new Map<string, string>();
+        for (const b of this.control_loops) {
+            for (const key in b.channels) {
+                if (key === "Out" || key.startsWith("Out") || key === "Q" || key === "Q_bar" || key === "Mag" || key === "Phase") {
+                    const sigName = b.channels[key];
+                    if (typeof sigName === 'string' && sigName) {
+                        producerMap.set(sigName, b.id);
+                    }
+                }
+            }
+        }
+
+        const blockMap = new Map<string, ComponentTS>();
+        const inDegree = new Map<string, number>();
+        const graph = new Map<string, Set<string>>();
+
+        for (const b of this.control_loops) {
+            blockMap.set(b.id, b);
+            inDegree.set(b.id, 0);
+            graph.set(b.id, new Set());
+        }
+
+        for (const b of this.control_loops) {
+            const inputs: string[] = [];
+            for (const key in b.channels) {
+                if (key === "In" || key.startsWith("In") || key === "Plus" || key === "Minus" || key === "Ctrl" || key === "Switch" || key === "G" || key === "D" || key === "J" || key === "K" || key === "Phase" || key === "Freq" || key === "Va" || key === "Vb" || key === "Vc") {
+                    const sigName = b.channels[key];
+                    if (typeof sigName === 'string' && sigName) {
+                        inputs.push(sigName);
+                    }
+                }
+            }
+
+            const orig = b.parameters?.original_type;
+            const isStateDelay = ["UNIT_DELAY", "MEMORY_BLOCK", "DELAY", "TRANSPORT_DELAY", "INTEGRATOR", "DISCRETE_INT", "DISCRETE_TF", "DISCRETE_SS", "RATE_LIMITER"].includes(orig) || b.type === "PI_Controller";
+
+            if (!isStateDelay) {
+                for (const inputSig of inputs) {
+                    const producerId = producerMap.get(inputSig);
+                    if (producerId && producerId !== b.id) {
+                        if (!graph.get(producerId)!.has(b.id)) {
+                            graph.get(producerId)!.add(b.id);
+                            inDegree.set(b.id, (inDegree.get(b.id) || 0) + 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        const queue: string[] = [];
+        for (const [id, deg] of inDegree.entries()) {
+            if (deg === 0) queue.push(id);
+        }
+
+        const sorted: ComponentTS[] = [];
+        while (queue.length > 0) {
+            const currId = queue.shift()!;
+            const block = blockMap.get(currId);
+            if (block) sorted.push(block);
+
+            const neighbors = graph.get(currId);
+            if (neighbors) {
+                for (const neighborId of neighbors) {
+                    const newDeg = (inDegree.get(neighborId) || 1) - 1;
+                    inDegree.set(neighborId, newDeg);
+                    if (newDeg === 0) queue.push(neighborId);
+                }
+            }
+        }
+
+        if (sorted.length < this.control_loops.length) {
+            const sortedIds = new Set(sorted.map(b => b.id));
+            for (const b of this.control_loops) {
+                if (!sortedIds.has(b.id)) sorted.push(b);
+            }
+        }
+
+        this.control_loops = sorted;
     }
 
     stampSwitch(K: Matrix, sw: ComponentTS, state: string) {
@@ -2243,8 +2328,8 @@ export class CircuitSimulator {
                 signals[out] = (t_norm < 0.5) ? min + (max - min) * (t_norm / 0.5) : max - (max - min) * ((t_norm - 0.5) / 0.5);
             }
         }
-        for (let iter = 0; iter < 3; iter++) {
-            for (const c of this.physical_stage) {
+        const iter = 2;
+        for (const c of this.physical_stage) {
                 const outVM = c.channels.OutV || c.channels.Out;
                 const outAM = c.channels.OutI || c.channels.Out;
                 if (c.type === "Voltmeter" && outVM) {
@@ -3814,7 +3899,6 @@ export class CircuitSimulator {
                     });
                 }
             }
-        }
         
         // Post-process to record all block terminal values explicitly for plotting
         for (const b of this.control_loops) {
