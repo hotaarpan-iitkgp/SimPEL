@@ -868,7 +868,7 @@ export class CustomScriptBlock {
             if (localVars.size > 0) {
                 headerJs += `let ${Array.from(localVars).join(', ')};\n`;
             }
-            
+            headerJs += `let dt = dt_val;\n`;
             headerJs += `const inputs = [];\n`;
             headerJs += `for (let i = 0; i < input_names.length; i++) {\n`;
             headerJs += `  inputs[i] = inputs_dict[input_names[i]] ?? 0.0;\n`;
@@ -895,11 +895,11 @@ export class CustomScriptBlock {
             }
             
             footerJs += `const run_outputs = {};\n`;
-            footerJs += `for (let i = 0; i < output_names.length; i++) {\n`;
-            footerJs += `  run_outputs[output_names[i]] = outputs[i] ?? 0.0;\n`;
-            footerJs += `}\n`;
+            for (let i = 0; i < output_names.length; i++) {
+                footerJs += `  run_outputs[output_names[i]] = outputs[i] ?? 0.0;\n`;
+            }
             
-            footerJs += `const last_vars = { time };\n`;
+            footerJs += `const last_vars = { time, dt };\n`;
             for (const k of Object.keys(this.params)) {
                 footerJs += `last_vars["params_${k}"] = params["${k}"] ?? 0.0;\n`;
             }
@@ -922,7 +922,7 @@ export class CustomScriptBlock {
             
             const fullCode = headerJs + bodyJs + footerJs;
             this.compiled_step_code = fullCode;
-            this.compiled_step_fn = new Function("time", "inputs_dict", "state", "params", "input_names", "output_names", "block", fullCode);
+            this.compiled_step_fn = new Function("time", "inputs_dict", "state", "params", "input_names", "output_names", "block", "dt_val", fullCode);
         } catch (err) {
             console.error("Failed to precompile CustomScriptBlock step function:", err);
             this.compiled_step_fn = null;
@@ -1014,10 +1014,10 @@ export class CustomScriptBlock {
             }
         }
     }
-    step(time: number, inputs_dict: Record<string, number>): Record<string, number> {
+    step(time: number, inputs_dict: Record<string, number>, dt: number = 0.0): Record<string, number> {
         if (this.compiled_step_fn) {
             try {
-                return this.compiled_step_fn(time, inputs_dict, this.state, this.params, this.inputs, this.outputs, this);
+                return this.compiled_step_fn(time, inputs_dict, this.state, this.params, this.inputs, this.outputs, this, dt);
             } catch (err) {
                 console.error("Compiled step execution failed, falling back to interpreter:", err);
                 if (this.compiled_step_code) {
@@ -1029,7 +1029,7 @@ export class CustomScriptBlock {
         const run_outputs: Record<string, number> = {};
         for (const out of this.outputs) run_outputs[out] = 0.0;
         
-        const vars: Record<string, number> = { time };
+        const vars: Record<string, number> = { time, dt };
         for (const [k, v] of Object.entries(this.params)) vars["params_" + k] = v;
         for (const [k, v] of Object.entries(this.state)) vars["state_" + k] = v;
         for (const inp of this.inputs) vars["inputs_" + inp] = inputs_dict[inp] ?? 0.0;
