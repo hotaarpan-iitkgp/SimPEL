@@ -381,6 +381,7 @@ class JsExpressionCompiler {
             if (name in this.block.state) return `state["${name}"]`;
             if (name in this.block.params) return `params["${name}"]`;
             if (name === "time") return `time`;
+            if (name === "dt" || name === "dt_val") return `dt`;
             if (name === "pi" || name === "PI" || name === "M_PI") return `Math.PI`;
             if (name in this.block.state_arrays) {
                 return `state_arrays["${name}"]`;
@@ -571,7 +572,7 @@ export class CustomScriptBlock {
 
     constructor(code: string, inputParams: Record<string, number>) {
         this.code_str = code; this.params = inputParams;
-        this.discover_ports(); this.compile_code(); this.reset();
+        this.discover_ports(); this.compile_code(); this.reset(); this.build_compiled_step();
     }
     discover_ports() {
         const ports = discoverPortsJS(this.code_str);
@@ -740,6 +741,18 @@ export class CustomScriptBlock {
                 }
             }
             
+            const stateMatch = lhs.match(/^state\s*\[\s*['"]?([^'"\]]+)['"]?\s*\]/);
+            if (stateMatch) {
+                statements.push({
+                    type: "assign",
+                    lhs_type: "state",
+                    lhs_key: stateMatch[1].trim(),
+                    op,
+                    rhs_expr: this.normalize_expression(rhs)
+                });
+                continue;
+            }
+
             const outMatch = lhs.match(/^outputs\s*\[\s*([^\]]+)\s*\]/);
             if (outMatch) {
                 statements.push({
@@ -865,8 +878,9 @@ export class CustomScriptBlock {
             }
             
             let headerJs = "";
-            if (localVars.size > 0) {
-                headerJs += `let ${Array.from(localVars).join(', ')};\n`;
+            const validLocals = Array.from(localVars).filter(v => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(v) && !["state", "inputs", "outputs", "params", "time", "dt", "dt_val", "input_names", "output_names", "block"].includes(v) && !v.includes('[') && !v.includes(']'));
+            if (validLocals.length > 0) {
+                headerJs += `let ${validLocals.join(', ')};\n`;
             }
             headerJs += `let dt = dt_val;\n`;
             headerJs += `const inputs = [];\n`;
@@ -2086,8 +2100,15 @@ export class CircuitSimulator {
                 const inst = new CustomScriptBlock(b.parameters.code ?? "", bp);
                 this.custom_blocks[b.id] = inst;
                 
-                const dt_block_str = b.parameters.timestep ?? "0";
-                const dt_block = parseScientific(dt_block_str);
+                const dt_block_str = b.parameters.timestep ?? b.parameters.ts ?? b.parameters.Ts ?? b.parameters.sampling_time ?? b.parameters.dt ?? "0";
+                let dt_block = parseScientific(dt_block_str);
+                if (dt_block <= 0.0 && b.parameters.frequency) {
+                    const f = parseScientific(b.parameters.frequency);
+                    if (f > 0) dt_block = 1.0 / f;
+                }
+                if (dt_block <= 0.0 && this.sim_params.step_type === "variable") {
+                    dt_block = this.sim_params.h;
+                }
                 
                 this.control_states[b.id] = {
                     ...inst.state,
@@ -2111,8 +2132,15 @@ export class CircuitSimulator {
                 const inst = new CustomEBlock(c.parameters.code ?? "", bp, termCount);
                 this.custom_eblocks[c.id] = inst;
 
-                const dt_block_str = c.parameters.timestep ?? "0";
-                const dt_block = parseScientific(dt_block_str);
+                const dt_block_str = c.parameters.timestep ?? c.parameters.ts ?? c.parameters.Ts ?? c.parameters.sampling_time ?? c.parameters.dt ?? "0";
+                let dt_block = parseScientific(dt_block_str);
+                if (dt_block <= 0.0 && c.parameters.frequency) {
+                    const f = parseScientific(c.parameters.frequency);
+                    if (f > 0) dt_block = 1.0 / f;
+                }
+                if (dt_block <= 0.0 && this.sim_params.step_type === "variable") {
+                    dt_block = this.sim_params.h;
+                }
 
                 this.control_states[c.id] = {
                     ...inst.state,
@@ -4796,6 +4824,28 @@ export class CircuitSimulator {
                 break;
             }
             if (t + h > t_end) h = t_end - t;
+            if (this.sim_params.step_type === "variable") {
+                let next_discrete_tick = t_end;
+                for (const b_id in this.custom_blocks) {
+                    const cs_state = this.control_states[b_id];
+                    if (cs_state && cs_state.dt_block > 0.0 && cs_state.next_trigger_time > t + 1e-12) {
+                        if (cs_state.next_trigger_time < next_discrete_tick) {
+                            next_discrete_tick = cs_state.next_trigger_time;
+                        }
+                    }
+                }
+                for (const b_id in this.custom_eblocks) {
+                    const cs_state = this.control_states[b_id];
+                    if (cs_state && cs_state.dt_block > 0.0 && cs_state.next_trigger_time > t + 1e-12) {
+                        if (cs_state.next_trigger_time < next_discrete_tick) {
+                            next_discrete_tick = cs_state.next_trigger_time;
+                        }
+                    }
+                }
+                if (t + h > next_discrete_tick) {
+                    h = next_discrete_tick - t;
+                }
+            }
             if (h < 1e-12) break;
             try {
                 const step = this.takeStep(t, this.w, h, this.sim_params.solver, this.control_states, this.sw_states);
@@ -4903,6 +4953,28 @@ export class CircuitSimulator {
             }
 
             if (t + h > t_end) h = t_end - t;
+            if (this.sim_params.step_type === "variable") {
+                let next_discrete_tick = t_end;
+                for (const b_id in this.custom_blocks) {
+                    const cs_state = this.control_states[b_id];
+                    if (cs_state && cs_state.dt_block > 0.0 && cs_state.next_trigger_time > t + 1e-12) {
+                        if (cs_state.next_trigger_time < next_discrete_tick) {
+                            next_discrete_tick = cs_state.next_trigger_time;
+                        }
+                    }
+                }
+                for (const b_id in this.custom_eblocks) {
+                    const cs_state = this.control_states[b_id];
+                    if (cs_state && cs_state.dt_block > 0.0 && cs_state.next_trigger_time > t + 1e-12) {
+                        if (cs_state.next_trigger_time < next_discrete_tick) {
+                            next_discrete_tick = cs_state.next_trigger_time;
+                        }
+                    }
+                }
+                if (t + h > next_discrete_tick) {
+                    h = next_discrete_tick - t;
+                }
+            }
             if (h < 1e-12) break;
             try {
                 const step = this.takeStep(t, this.w, h, this.sim_params.solver, this.control_states, this.sw_states);
