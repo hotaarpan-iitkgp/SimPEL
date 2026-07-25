@@ -4751,7 +4751,7 @@ export class CircuitSimulator {
         const init_sigs = this.evaluateControls(0.0, this.w, this.control_states, h, this.sw_states, true, false);
         this.logAcceptedState(0.0, this.w, init_sigs, this.sw_states, h);
         const atol = 1e-4, rtol = 1e-3;
-        const h_min = Math.max(this.sim_params.h * 1e-4, 1e-12), h_max = this.sim_params.h * 10.0;
+        const h_min = Math.max(this.sim_params.h * 1e-4, 1e-12), h_max = this.sim_params.h * 50.0;
         let rejects = 0;
         let iterations = 0;
         const max_iterations = 200000;
@@ -4769,33 +4769,39 @@ export class CircuitSimulator {
                     const h_half = h / 2.0;
                     const half1 = this.takeStep(t, this.w, h_half, this.sim_params.solver, this.control_states, this.sw_states);
                     const half2 = this.takeStep(t + h_half, half1.w_new, h_half, this.sim_params.solver, half1.ctrl_new, half1.sw_new);
+                    
                     let err = 0.0;
-                    if (this.diff_idx.length > 0) {
-                        let me = 0.0;
-                        for (const idx of this.diff_idx) {
-                            const scale = atol + rtol * Math.max(Math.abs(step.w_new[idx]), Math.abs(half2.w_new[idx]));
-                            const e = Math.abs(step.w_new[idx] - half2.w_new[idx]) / scale;
-                            if (e > me) me = e;
-                        }
-                        err = me;
+                    const indicesToCheck = this.diff_idx.length > 0 ? this.diff_idx : Array.from({ length: this.dim }, (_, i) => i);
+                    let me = 0.0;
+                    for (const idx of indicesToCheck) {
+                        const scale = atol + rtol * Math.max(Math.abs(step.w_new[idx]), Math.abs(half2.w_new[idx]));
+                        const e = Math.abs(step.w_new[idx] - half2.w_new[idx]) / scale;
+                        if (e > me) me = e;
                     }
-                    if (err <= 1.0 || h < h_min) {
-                        this.w = half2.w_new; const t_new = t + h;
-                        for (const ev of half1.out_trans) this.logAcceptedState(ev.time, ev.w, ev.signals, ev.sw_states, ev.dt);
-                        const sig_half1 = this.evaluateControls(t + h_half, half1.w_new, this.control_states, h_half, half1.sw_new, false, false, true);
-                        this.logAcceptedState(t + h_half, half1.w_new, sig_half1, half1.sw_new, h_half);
-                        for (const ev of half2.out_trans) this.logAcceptedState(ev.time, ev.w, ev.signals, ev.sw_states, ev.dt);
+                    err = me;
 
-                        this.control_states = half2.ctrl_new; this.sw_states = half2.sw_new;
+                    if (err <= 1.0 || h < h_min) {
+                        this.w = half2.w_new;
+                        const t_new = t + h;
+                        this.control_states = half2.ctrl_new;
+                        this.sw_states = half2.sw_new;
                         for (const k of Object.keys(this.custom_blocks)) { if (half2.ctrl_new[k]) this.custom_blocks[k].state = half2.ctrl_new[k]; }
-                        const final_sigs = this.evaluateControls(t_new, this.w, this.control_states, h_half, this.sw_states, false, false, true);
-                        this.logAcceptedState(t_new, this.w, final_sigs, this.sw_states, h_half);
+                        
+                        const final_sigs = this.evaluateControls(t_new, this.w, this.control_states, h, this.sw_states, false, false, true);
+                        this.logAcceptedState(t_new, this.w, final_sigs, this.sw_states, h);
+                        
                         t = t_new; rejects = 0;
                         const p = (this.sim_params.solver === "euler" ? 1.0 : (this.sim_params.solver === "rk45" ? 4.0 : 5.0));
                         let hn = err > 0 ? 0.9 * h * Math.pow(err, -1.0 / (p + 1.0)) : 5.0 * h;
-                        h = Math.max(0.1 * h, Math.min(5.0 * h, hn)); h = Math.min(h_max, Math.max(h_min, h));
+                        h = Math.max(0.2 * h, Math.min(5.0 * h, hn));
+                        h = Math.min(h_max, Math.max(h_min, h));
                     } else {
-                        rejects++; if (rejects >= 50) { this.w = half2.w_new; t += h; rejects = 0; h = h_min; } else h = Math.max(h_min, h * 0.5);
+                        rejects++;
+                        if (rejects >= 50) {
+                            this.w = half2.w_new; t += h; rejects = 0; h = h_min;
+                        } else {
+                            h = Math.max(h_min, h * 0.5);
+                        }
                     }
                 } else {
                     this.w = step.w_new; const t_new = t + h;
@@ -4822,7 +4828,7 @@ export class CircuitSimulator {
         const init_sigs = this.evaluateControls(0.0, this.w, this.control_states, h, this.sw_states, true, false);
         this.logAcceptedState(0.0, this.w, init_sigs, this.sw_states, h);
         const atol = 1e-4, rtol = 1e-3;
-        const h_min = Math.max(this.sim_params.h * 1e-4, 1e-12), h_max = this.sim_params.h * 10.0;
+        const h_min = Math.max(this.sim_params.h * 1e-4, 1e-12), h_max = this.sim_params.h * 50.0;
         let rejects = 0;
         let iterations = 0;
         const max_iterations = 200000;
@@ -4856,33 +4862,39 @@ export class CircuitSimulator {
                     const h_half = h / 2.0;
                     const half1 = this.takeStep(t, this.w, h_half, this.sim_params.solver, this.control_states, this.sw_states);
                     const half2 = this.takeStep(t + h_half, half1.w_new, h_half, this.sim_params.solver, half1.ctrl_new, half1.sw_new);
+                    
                     let err = 0.0;
-                    if (this.diff_idx.length > 0) {
-                        let me = 0.0;
-                        for (const idx of this.diff_idx) {
-                            const scale = atol + rtol * Math.max(Math.abs(step.w_new[idx]), Math.abs(half2.w_new[idx]));
-                            const e = Math.abs(step.w_new[idx] - half2.w_new[idx]) / scale;
-                            if (e > me) me = e;
-                        }
-                        err = me;
+                    const indicesToCheck = this.diff_idx.length > 0 ? this.diff_idx : Array.from({ length: this.dim }, (_, i) => i);
+                    let me = 0.0;
+                    for (const idx of indicesToCheck) {
+                        const scale = atol + rtol * Math.max(Math.abs(step.w_new[idx]), Math.abs(half2.w_new[idx]));
+                        const e = Math.abs(step.w_new[idx] - half2.w_new[idx]) / scale;
+                        if (e > me) me = e;
                     }
-                    if (err <= 1.0 || h < h_min) {
-                        this.w = half2.w_new; const t_new = t + h;
-                        for (const ev of half1.out_trans) this.logAcceptedState(ev.time, ev.w, ev.signals, ev.sw_states, ev.dt);
-                        const sig_half1 = this.evaluateControls(t + h_half, half1.w_new, this.control_states, h_half, half1.sw_new, false, false, true);
-                        this.logAcceptedState(t + h_half, half1.w_new, sig_half1, half1.sw_new, h_half);
-                        for (const ev of half2.out_trans) this.logAcceptedState(ev.time, ev.w, ev.signals, ev.sw_states, ev.dt);
+                    err = me;
 
-                        this.control_states = half2.ctrl_new; this.sw_states = half2.sw_new;
+                    if (err <= 1.0 || h < h_min) {
+                        this.w = half2.w_new;
+                        const t_new = t + h;
+                        this.control_states = half2.ctrl_new;
+                        this.sw_states = half2.sw_new;
                         for (const k of Object.keys(this.custom_blocks)) { if (half2.ctrl_new[k]) this.custom_blocks[k].state = half2.ctrl_new[k]; }
-                        const final_sigs = this.evaluateControls(t_new, this.w, this.control_states, h_half, this.sw_states, false, false, true);
-                        this.logAcceptedState(t_new, this.w, final_sigs, this.sw_states, h_half);
+                        
+                        const final_sigs = this.evaluateControls(t_new, this.w, this.control_states, h, this.sw_states, false, false, true);
+                        this.logAcceptedState(t_new, this.w, final_sigs, this.sw_states, h);
+                        
                         t = t_new; rejects = 0;
                         const p = (this.sim_params.solver === "euler" ? 1.0 : (this.sim_params.solver === "rk45" ? 4.0 : 5.0));
                         let hn = err > 0 ? 0.9 * h * Math.pow(err, -1.0 / (p + 1.0)) : 5.0 * h;
-                        h = Math.max(0.1 * h, Math.min(5.0 * h, hn)); h = Math.min(h_max, Math.max(h_min, h));
+                        h = Math.max(0.2 * h, Math.min(5.0 * h, hn));
+                        h = Math.min(h_max, Math.max(h_min, h));
                     } else {
-                        rejects++; if (rejects >= 50) { this.w = half2.w_new; t += h; rejects = 0; h = h_min; } else h = Math.max(h_min, h * 0.5);
+                        rejects++;
+                        if (rejects >= 50) {
+                            this.w = half2.w_new; t += h; rejects = 0; h = h_min;
+                        } else {
+                            h = Math.max(h_min, h * 0.5);
+                        }
                     }
                 } else {
                     this.w = step.w_new; const t_new = t + h;

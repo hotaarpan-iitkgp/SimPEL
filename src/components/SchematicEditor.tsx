@@ -1757,7 +1757,7 @@ export default function SchematicEditor({
                 <label className="text-xs text-slate-400">Interval sizing type</label>
                 <select id="sim-step-type" className="px-3 py-2 bg-slate-950 border border-slate-800 rounded outline-none focus:border-emerald-500 text-xs">
                   <option value="fixed">Fixed timestep size</option>
-                  <option value="variable">Variable timestep size</option>
+                  <option value="variable">Adaptive (LTE Error Control - High Speed)</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1">
