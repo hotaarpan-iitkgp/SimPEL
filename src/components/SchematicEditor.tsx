@@ -1781,6 +1781,7 @@ export default function SchematicEditor({
               <select id="sim-solver-method" className="px-3 py-2 bg-slate-950 border border-slate-800 rounded outline-none focus:border-emerald-500 text-xs">
                 <option value="non-ideal">Non-Ideal (DAE solver with ESR/parasitics)</option>
                 <option value="ideal-pwl">Ideal PWL (High-speed node-collapsing solver)</option>
+              </select>
             </div>
           </div>
           <div className="p-4 border-t border-slate-800 flex justify-end gap-2 bg-slate-900/10">
