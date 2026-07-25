@@ -1049,7 +1049,7 @@ export class CustomEBlock {
     init_statements: Statement[] = []; step_statements: Statement[] = [];
     last_vars: Record<string, number> = {};
     terminalsCount: number;
-    compiled_step_fn: ((time: number, inputs_dict: Record<string, number>, state: Record<string, number>, params: Record<string, number>) => Record<string, number>) | null = null;
+    compiled_step_fn: ((time: number, inputs_dict: Record<string, number>, state: Record<string, number>, params: Record<string, number>, dt_val: number) => Record<string, number>) | null = null;
 
     constructor(code: string, inputParams: Record<string, number>, terminalsCount: number) {
         let processedCode = code || "";
@@ -1171,6 +1171,7 @@ export class CustomEBlock {
         try {
             let jsLines: string[] = [];
             jsLines.push('const outputs = {};');
+            jsLines.push('let dt = dt_val;');
             for (const out of this.outputs) {
                 jsLines.push(`outputs["${out}"] = 0.0;`);
                 jsLines.push(`let outputs_${out} = 0.0;`);
@@ -1214,7 +1215,7 @@ export class CustomEBlock {
 
             jsLines.push('return outputs;');
             const body = jsLines.join('\n');
-            this.compiled_step_fn = new Function('time', 'inputs_dict', 'state', 'params', body) as any;
+            this.compiled_step_fn = new Function('time', 'inputs_dict', 'state', 'params', 'dt_val', body) as any;
         } catch (e) {
             this.compiled_step_fn = null;
         }
@@ -1233,17 +1234,17 @@ export class CustomEBlock {
         this.last_vars = { ...vars };
         this.build_compiled_step();
     }
-    step(time: number, inputs_dict: Record<string, number>): Record<string, number> {
+    step(time: number, inputs_dict: Record<string, number>, dt: number = 0.0): Record<string, number> {
         if (this.compiled_step_fn) {
             try {
-                return this.compiled_step_fn(time, inputs_dict, this.state, this.params);
+                return this.compiled_step_fn(time, inputs_dict, this.state, this.params, dt);
             } catch (_) {
                 this.compiled_step_fn = null;
             }
         }
         const run_outputs: Record<string, number> = {};
         for (const out of this.outputs) run_outputs[out] = 0.0;
-        const vars: Record<string, number> = { time };
+        const vars: Record<string, number> = { time, dt };
         for (const [k, v] of Object.entries(this.params)) vars["params_" + k] = v;
         for (const [k, v] of Object.entries(this.state)) vars["state_" + k] = v;
         for (const inp of this.inputs) vars["inputs_" + inp] = inputs_dict[inp] ?? 0.0;
@@ -3828,7 +3829,8 @@ export class CircuitSimulator {
                             delete inst.state.dt_block;
                             delete inst.state.last_outputs;
 
-                            const od = inst.step(time, ind);
+                            const dt_for_script = dt_block > 0.0 ? dt_block : dt;
+                            const od = inst.step(time, ind, dt_for_script);
                             
                             // Save outputs for sample-and-hold
                             stateObj.last_outputs = { ...od };
@@ -4010,7 +4012,8 @@ export class CircuitSimulator {
                 delete inst.state.dt_block;
                 delete inst.state.last_outputs;
 
-                const od = inst.step(time, ind);
+                const dt_for_script = dt_block > 0.0 ? dt_block : dt;
+                const od = inst.step(time, ind, dt_for_script);
 
                 if (integrate || first) {
                     stateObj.last_outputs = { ...od };
