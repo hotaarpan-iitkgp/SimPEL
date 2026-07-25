@@ -47,7 +47,7 @@ export function saveSimSettings(): void {
   if (solverSelect) state.simulationSettings.solver = solverSelect.value;
   if (simModeSelect) state.simulationSettings.simulationMode = simModeSelect.value;
   if (solverMethodSelect) state.simulationSettings.solverMethod = solverMethodSelect.value;
-  if (luCacheCheckbox) state.simulationSettings.enableLuCache = luCacheCheckbox.checked;
+  state.simulationSettings.enableLuCache = true;
   
   saveState();
   closeSimSettings();

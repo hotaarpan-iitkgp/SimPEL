@@ -53,7 +53,7 @@ export const state: any = {
     solver: "euler",    // "euler" | "rk45" | "radau"
     simulationMode: "regular", // "regular" | "current_flow"
     solverMethod: "non-ideal", // "non-ideal" | "ideal-pwl"
-    enableLuCache: false
+    enableLuCache: true
   }
 };
 

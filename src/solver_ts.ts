@@ -1482,7 +1482,7 @@ export const ANALOG_SWITCH_TYPES = ["MOSFET", "vg-FET", "IGBT", "IGBT_DIODE", "I
 
 export class CircuitSimulator {
     physical_stage: ComponentTS[] = []; control_loops: ComponentTS[] = [];
-    sim_params = { t_end: 0.05, h: 1e-5, solver: "euler", step_type: "fixed", enable_lu_cache: false };
+    sim_params = { t_end: 0.05, h: 1e-5, solver: "euler", step_type: "fixed", enable_lu_cache: true };
     node_to_idx: Record<string, number> = {}; L_to_idx: Record<string, number> = {}; V_to_idx: Record<string, number> = {};
     active_nodes: string[] = []; num_nodes = 0; num_L = 0; num_V = 0; dim = 0;
     M = new Matrix(0, 0); K_static = new Matrix(0, 0); w: number[] = [];
@@ -1827,7 +1827,7 @@ export class CircuitSimulator {
             this.sim_params.h = parseScientific(params.step_size ?? "1e-5");
             this.sim_params.solver = params.solver ?? "euler";
             this.sim_params.step_type = params.step_type ?? "fixed";
-            (this.sim_params as any).enable_lu_cache = !!(params.enable_lu_cache || params.enableLuCache);
+            (this.sim_params as any).enable_lu_cache = params.enable_lu_cache !== undefined ? !!params.enable_lu_cache : true;
             (this.sim_params as any).simulationMode = params.simulationMode ?? "regular";
             if (Array.isArray(params.wanted_variables)) {
                 this.wanted_variables = new Set(params.wanted_variables);

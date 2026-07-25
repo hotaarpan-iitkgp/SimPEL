@@ -2277,7 +2277,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
     solver: state.simulationSettings.solver || "euler",
     step_type: state.simulationSettings.stepType || "fixed",
     solverMethod: state.simulationSettings.solverMethod || "non-ideal",
-    enable_lu_cache: !!state.simulationSettings.enableLuCache,
+    enable_lu_cache: true,
     wanted_variables: Array.from(new Set(resolvedWanted))
   };
   

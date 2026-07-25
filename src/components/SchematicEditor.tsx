@@ -1781,13 +1781,6 @@ export default function SchematicEditor({
               <select id="sim-solver-method" className="px-3 py-2 bg-slate-950 border border-slate-800 rounded outline-none focus:border-emerald-500 text-xs">
                 <option value="non-ideal">Non-Ideal (DAE solver with ESR/parasitics)</option>
                 <option value="ideal-pwl">Ideal PWL (High-speed node-collapsing solver)</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <input id="sim-lu-cache" type="checkbox" className="rounded bg-slate-950 border-slate-800 text-emerald-500 focus:ring-emerald-500 h-4 w-4 cursor-pointer" />
-              <label className="text-xs text-slate-350 cursor-pointer select-none" htmlFor="sim-lu-cache">
-                Enable LU Decomposition Caching (Significant Speedup)
-              </label>
             </div>
           </div>
           <div className="p-4 border-t border-slate-800 flex justify-end gap-2 bg-slate-900/10">
