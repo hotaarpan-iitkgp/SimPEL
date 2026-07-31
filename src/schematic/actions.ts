@@ -1491,8 +1491,9 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'JFET':
       case 'BJT': {
         const isBJT = comp.type === 'BJT';
-        const termD = isBJT ? 'C' : 'D';
-        const termS = isBJT ? 'E' : 'S';
+        const isThyristorFamily = comp.type === 'THYRISTOR' || comp.type === 'SCR' || comp.type === 'GTO' || comp.type === 'IGCT';
+        const termD = isThyristorFamily ? 'A' : (isBJT ? 'C' : 'D');
+        const termS = isThyristorFamily ? 'K' : (isBJT ? 'E' : 'S');
         const termG = isBJT ? 'B' : 'G';
         const exportedType = comp.type === 'vg-FET' ? 'MOSFET' : comp.type;
         physical_stage.analog_switches.push({
