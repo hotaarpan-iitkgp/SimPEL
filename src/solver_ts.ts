@@ -2602,13 +2602,16 @@ export class CircuitSimulator {
                         const op = (b.parameters.operator ?? b.parameters.op ?? b.parameters.relational_operator ?? b.parameters.condition ?? "==").trim();
                         const cVal = parseScientific(b.parameters.constant ?? b.parameters.const ?? b.parameters.value ?? b.parameters.threshold ?? b.parameters.c ?? "0.0");
                         const valIn = signals[b.channels.In] ?? signals[b.channels.In1] ?? val;
-                        if (op === "==" || op === "=") signals[out] = (Math.abs(valIn - cVal) < 1e-12) ? 1.0 : 0.0;
-                        else if (op === "~=" || op === "!=") signals[out] = (Math.abs(valIn - cVal) >= 1e-12) ? 1.0 : 0.0;
-                        else if (op === "<") signals[out] = (valIn < cVal) ? 1.0 : 0.0;
-                        else if (op === "<=") signals[out] = (valIn <= cVal) ? 1.0 : 0.0;
-                        else if (op === ">") signals[out] = (valIn > cVal) ? 1.0 : 0.0;
-                        else if (op === ">=") signals[out] = (valIn >= cVal) ? 1.0 : 0.0;
-                        else signals[out] = 0.0;
+                        const evalOp = (v: number) => {
+                            if (op === "==" || op === "=") return (Math.abs(v - cVal) < 1e-12) ? 1.0 : 0.0;
+                            if (op === "~=" || op === "!=") return (Math.abs(v - cVal) >= 1e-12) ? 1.0 : 0.0;
+                            if (op === "<") return (v < cVal) ? 1.0 : 0.0;
+                            if (op === "<=") return (v <= cVal) ? 1.0 : 0.0;
+                            if (op === ">") return (v > cVal) ? 1.0 : 0.0;
+                            if (op === ">=") return (v >= cVal) ? 1.0 : 0.0;
+                            return 0.0;
+                        };
+                        this.setControlSignal(signals, out, this.evalVector1(valIn, evalOp));
                     } else if (orig === "MONOFLOP" || orig === "MONOSTABLE") {
                         const duration = parseScientific(b.parameters.duration ?? "0.1");
                         const edge = b.parameters.trigger_edge ?? "rising";
