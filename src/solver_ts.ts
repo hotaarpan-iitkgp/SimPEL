@@ -2500,8 +2500,11 @@ export class CircuitSimulator {
                     }
                     if (orig === "OFFSET") {
                         signals[out] = val + parseScientific(b.parameters.offset ?? "0.0");
-                    } else if (orig === "SIGNUM") {
-                        signals[out] = val > 0.0 ? 1.0 : (val < 0.0 ? -1.0 : 0.0);
+                    } else if (orig === "SIGNUM" || orig === "SIGN" || orig === "Signum" || orig === "Sign" || orig === "SGN") {
+                        const valIn = signals[b.channels.In] ?? signals[b.channels.In1] ?? val;
+                        const eps = parseScientific(b.parameters.threshold ?? b.parameters.zero_threshold ?? b.parameters.eps ?? "1e-9");
+                        if (Math.abs(valIn) <= eps) signals[out] = 0.0;
+                        else signals[out] = valIn > 0.0 ? 1.0 : -1.0;
                     } else if (orig === "DATATYPE_CONV") {
                         const dt_type = b.parameters.datatype ?? "boolean";
                         if (dt_type === "boolean") {
@@ -3695,6 +3698,11 @@ export class CircuitSimulator {
                     else if (op === ">") signals[out] = (valIn > cVal) ? 1.0 : 0.0;
                     else if (op === ">=") signals[out] = (valIn >= cVal) ? 1.0 : 0.0;
                     else signals[out] = 0.0;
+                } else if ((b.type === "SIGNUM" || b.type === "Signum" || b.type === "SIGN" || b.type === "Sign" || b.type === "SGN") && out) {
+                    const valIn = signals[b.channels.In] ?? signals[b.channels.In1] ?? 0.0;
+                    const eps = parseScientific(b.parameters.threshold ?? b.parameters.zero_threshold ?? b.parameters.eps ?? "1e-9");
+                    if (Math.abs(valIn) <= eps) signals[out] = 0.0;
+                    else signals[out] = valIn > 0.0 ? 1.0 : -1.0;
                 } else if (b.type === "AND_Gate" && out) {
                     signals[out] = ((signals[b.channels.A] ?? 0) > 0.5 && (signals[b.channels.B] ?? 0) > 0.5) ? 1 : 0;
                 } else if (b.type === "OR_Gate" && out) {
