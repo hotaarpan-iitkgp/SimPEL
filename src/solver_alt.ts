@@ -892,38 +892,7 @@ export class AlternativeCircuitSimulator extends CircuitSimulator {
                 const n2 = sw.nodes[1] ?? "node_0";
                 const vd = (nodeVoltages[n1] ?? 0.0) - (nodeVoltages[n2] ?? 0.0);
                 const old_state = s_stage[sw.id] ?? "OFF";
-                let swn = "OFF";
-
-                if (["MOSFET", "vg-FET", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"].includes(sw.type)) {
-                    const gate_on = (sigs[sw.channels.G] ?? 0.0) > 0.5;
-                    if (old_state === "ON") {
-                        if (gate_on) {
-                            swn = "ON";
-                        } else {
-                            const i_body = -swCurrents[sw.id];
-                            swn = i_body > 1e-6 ? "ON" : "OFF";
-                        }
-                    } else {
-                        const v_body = -vd;
-                        swn = (gate_on || v_body > 1e-6) ? "ON" : "OFF";
-                    }
-                }
-                else if (sw.type === "Diode") {
-                    if (old_state === "ON") {
-                        const i_diode = swCurrents[sw.id];
-                        swn = i_diode > 1e-6 ? "ON" : "OFF";
-                    } else {
-                        swn = vd > 1e-6 ? "ON" : "OFF";
-                    }
-                }
-                else if (sw.type === "Switch") {
-                    const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
-                    if (swCtrl && sigs[swCtrl] !== undefined) {
-                        swn = sigs[swCtrl] > 0.5 ? "ON" : "OFF";
-                    } else {
-                        swn = parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
-                    }
-                }
+                const swn = this.determineSwitchState(sw, vd, old_state, sigs);
 
                 next_sw[sw.id] = swn;
                 if (swn !== old_state) {

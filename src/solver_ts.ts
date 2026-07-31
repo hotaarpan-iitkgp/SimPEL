@@ -1565,7 +1565,7 @@ export class SparseLU {
 
 
 export interface ComponentTS {
-    id: string; type: string; nodes: string[]; parameters: Record<string, any>; channels: Record<string, any>;
+    id: string; type: string; nodes: string[]; parameters: Record<string, any>; channels: Record<string, any>; signal?: string;
 }
 
 export const ANALOG_SWITCH_TYPES = ["MOSFET", "vg-FET", "IGBT", "IGBT_DIODE", "IGCT", "GTO", "THYRISTOR", "JFET", "BJT"];
@@ -1669,9 +1669,9 @@ export class CircuitSimulator {
                         }
                         
                         if (compType === "Voltmeter" && item.signal) {
-                            comp.channels = { OutV: item.signal };
+                            comp.channels = { OutV: item.signal, Out: item.signal };
                         } else if (compType === "Ammeter" && item.signal) {
-                            comp.channels = { OutI: item.signal };
+                            comp.channels = { OutI: item.signal, Out: item.signal };
                         }
 
                         physicalArray.push(comp);
@@ -2434,14 +2434,21 @@ export class CircuitSimulator {
         }
         const iter = 2;
         for (const c of this.physical_stage) {
-                const outVM = c.channels.OutV || c.channels.Out;
-                const outAM = c.channels.OutI || c.channels.Out;
-                if (c.type === "Voltmeter" && outVM) {
+                const outVM = c.channels?.OutV || c.channels?.Out || c.signal || (c.id ? `${c.id}.Out` : undefined);
+                const outAM = c.channels?.OutI || c.channels?.Out || c.signal || (c.id ? `${c.id}.Out` : undefined);
+                if ((c.type === "Voltmeter" || c.type === "VM") && outVM) {
                     const n1 = c.nodes[0] ?? "node_0", n2 = c.nodes[1] ?? "node_0";
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
-                    signals[outVM] = ((i1 >= 0) ? w_curr[i1] : 0.0) - ((i2 >= 0) ? w_curr[i2] : 0.0);
-                } else if (c.type === "Ammeter" && outAM) {
-                    const idx = this.V_to_idx[c.id]; signals[outAM] = (idx !== undefined) ? w_curr[idx] : 0.0;
+                    const vval = ((i1 >= 0) ? w_curr[i1] : 0.0) - ((i2 >= 0) ? w_curr[i2] : 0.0);
+                    signals[outVM] = vval;
+                    if (c.signal) signals[c.signal] = vval;
+                    if (c.id) signals[`${c.id}.Out`] = vval;
+                } else if ((c.type === "Ammeter" || c.type === "AM") && outAM) {
+                    const idx = this.V_to_idx[c.id];
+                    const ival = (idx !== undefined) ? w_curr[idx] : 0.0;
+                    signals[outAM] = ival;
+                    if (c.signal) signals[c.signal] = ival;
+                    if (c.id) signals[`${c.id}.Out`] = ival;
                 } else if (c.type === "UnifiedProbe") {
                     const tid = c.parameters.target; let v = 0.0, i = 0.0;
                     if (tid) {
@@ -3653,7 +3660,20 @@ export class CircuitSimulator {
                         if (outComplChan) signals[outComplChan] = stateObj.compl_out[idx];
                     }
                 } else if (b.type === "Comparator" && out) {
-                    signals[out] = ((signals[b.channels.Plus] ?? 0) >= (signals[b.channels.Minus] ?? 0)) ? 1 : 0;
+                    const inPlus = signals[b.channels.Plus] ?? signals[b.channels.In1] ?? signals[b.channels.In] ?? 0.0;
+                    const inMinus = signals[b.channels.Minus] ?? signals[b.channels.In2] ?? signals[b.channels.Ref] ?? 0.0;
+                    const hyst = parseScientific(b.parameters.hysteresis ?? "0");
+                    if (hyst > 0) {
+                        if (!cs[b.id]) cs[b.id] = { state: 0 };
+                        const diff = inPlus - inMinus;
+                        let st = cs[b.id].state;
+                        if (diff > hyst / 2.0) st = 1.0;
+                        else if (diff < -hyst / 2.0) st = 0.0;
+                        if (integrate && iter === 2) cs[b.id].state = st;
+                        signals[out] = st;
+                    } else {
+                        signals[out] = (inPlus >= inMinus) ? 1.0 : 0.0;
+                    }
                 } else if (b.type === "AND_Gate" && out) {
                     signals[out] = ((signals[b.channels.A] ?? 0) > 0.5 && (signals[b.channels.B] ?? 0) > 0.5) ? 1 : 0;
                 } else if (b.type === "OR_Gate" && out) {
