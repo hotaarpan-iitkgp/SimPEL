@@ -1707,7 +1707,10 @@ export class CircuitSimulator {
                 { key: "signals_routing", type: "routing" },
                 { key: "plls", type: "PLL" },
                 { key: "probes", type: "PROBE" },
-                { key: "pwm_masters", type: "PWM_MASTER" }
+                { key: "pwm_masters", type: "PWM_MASTER" },
+                { key: "compare_to_constant", type: "COMPARE_TO_CONSTANT" },
+                { key: "comparators_to_constant", type: "COMPARE_TO_CONSTANT" },
+                { key: "relational_operators", type: "COMPARE_TO_CONSTANT" }
             ];
 
             for (const cat of categories) {
@@ -1769,6 +1772,12 @@ export class CircuitSimulator {
                             if (item.output_freq) chs.Freq = item.output_freq;
                             if (item.output_cos) chs.Cos = item.output_cos;
                             if (item.output_sin) chs.Sin = item.output_sin;
+                            comp.channels = chs;
+                        } else if (cat.type === "COMPARE_TO_CONSTANT") {
+                            const chs: Record<string, string> = {};
+                            if (item.output) chs.Out = item.output;
+                            if (item.input) chs.In = item.input;
+                            if (item.input1) chs.In = item.input1;
                             comp.channels = chs;
                         } else if (cat.type === "SummingJunction" && Array.isArray(item.inputs) && item.output) {
                             const chs: Record<string, string> = { Out: item.output };
@@ -2545,15 +2554,16 @@ export class CircuitSimulator {
                         if (integrate && iter === 2) {
                             cs[b.id].state = st;
                         }
-                    } else if (orig === "COMPARE_TO_CONSTANT") {
-                        const op = b.parameters.operator ?? "==";
-                        const cVal = parseScientific(b.parameters.constant ?? "0.0");
-                        if (op === "==" || op === "=") signals[out] = (val === cVal) ? 1.0 : 0.0;
-                        else if (op === "~=" || op === "!=") signals[out] = (val !== cVal) ? 1.0 : 0.0;
-                        else if (op === "<") signals[out] = (val < cVal) ? 1.0 : 0.0;
-                        else if (op === "<=") signals[out] = (val <= cVal) ? 1.0 : 0.0;
-                        else if (op === ">") signals[out] = (val > cVal) ? 1.0 : 0.0;
-                        else if (op === ">=") signals[out] = (val >= cVal) ? 1.0 : 0.0;
+                    } else if (orig === "COMPARE_TO_CONSTANT" || orig === "CompareToConstant") {
+                        const op = (b.parameters.operator ?? b.parameters.op ?? b.parameters.relational_operator ?? b.parameters.condition ?? "==").trim();
+                        const cVal = parseScientific(b.parameters.constant ?? b.parameters.const ?? b.parameters.value ?? b.parameters.threshold ?? b.parameters.c ?? "0.0");
+                        const valIn = signals[b.channels.In] ?? signals[b.channels.In1] ?? val;
+                        if (op === "==" || op === "=") signals[out] = (Math.abs(valIn - cVal) < 1e-12) ? 1.0 : 0.0;
+                        else if (op === "~=" || op === "!=") signals[out] = (Math.abs(valIn - cVal) >= 1e-12) ? 1.0 : 0.0;
+                        else if (op === "<") signals[out] = (valIn < cVal) ? 1.0 : 0.0;
+                        else if (op === "<=") signals[out] = (valIn <= cVal) ? 1.0 : 0.0;
+                        else if (op === ">") signals[out] = (valIn > cVal) ? 1.0 : 0.0;
+                        else if (op === ">=") signals[out] = (valIn >= cVal) ? 1.0 : 0.0;
                         else signals[out] = 0.0;
                     } else if (orig === "MONOFLOP" || orig === "MONOSTABLE") {
                         const duration = parseScientific(b.parameters.duration ?? "0.1");
@@ -3674,6 +3684,17 @@ export class CircuitSimulator {
                     } else {
                         signals[out] = (inPlus >= inMinus) ? 1.0 : 0.0;
                     }
+                } else if ((b.type === "COMPARE_TO_CONSTANT" || b.type === "CompareToConstant" || b.type === "COMP_CONST") && out) {
+                    const op = (b.parameters.operator ?? b.parameters.op ?? b.parameters.relational_operator ?? b.parameters.condition ?? "==").trim();
+                    const cVal = parseScientific(b.parameters.constant ?? b.parameters.const ?? b.parameters.value ?? b.parameters.threshold ?? b.parameters.c ?? "0.0");
+                    const valIn = signals[b.channels.In] ?? signals[b.channels.In1] ?? 0.0;
+                    if (op === "==" || op === "=") signals[out] = (Math.abs(valIn - cVal) < 1e-12) ? 1.0 : 0.0;
+                    else if (op === "~=" || op === "!=") signals[out] = (Math.abs(valIn - cVal) >= 1e-12) ? 1.0 : 0.0;
+                    else if (op === "<") signals[out] = (valIn < cVal) ? 1.0 : 0.0;
+                    else if (op === "<=") signals[out] = (valIn <= cVal) ? 1.0 : 0.0;
+                    else if (op === ">") signals[out] = (valIn > cVal) ? 1.0 : 0.0;
+                    else if (op === ">=") signals[out] = (valIn >= cVal) ? 1.0 : 0.0;
+                    else signals[out] = 0.0;
                 } else if (b.type === "AND_Gate" && out) {
                     signals[out] = ((signals[b.channels.A] ?? 0) > 0.5 && (signals[b.channels.B] ?? 0) > 0.5) ? 1 : 0;
                 } else if (b.type === "OR_Gate" && out) {
