@@ -456,7 +456,20 @@ export default function App() {
     parseAndSyncNetlist(exportedNetlist);
 
     try {
-      const parsed = JSON.parse(exportedNetlist);
+      let parsed = JSON.parse(exportedNetlist);
+
+      // If physical_stage or control_loops are missing or empty in raw JSON, extract via exportDualGraphJSON
+      if (!parsed.physical_stage || !Array.isArray(parsed.physical_stage) || parsed.physical_stage.length === 0) {
+        const dualGraph = exportDualGraphJSON(true);
+        parsed = {
+          ...parsed,
+          physical_stage: dualGraph.physical_stage || [],
+          control_loops: dualGraph.control_loops || [],
+          components: parsed.components || dualGraph.components || state.components || [],
+          wires: parsed.wires || dualGraph.wires || state.wires || [],
+          simulation_parameters: parsed.simulationSettings || parsed.simulation_parameters || dualGraph.simulation_parameters || {}
+        };
+      }
 
       // Validate GOTO and FROM blocks matching tag labels
       const physicalComps = Array.isArray(parsed.physical_stage) ? parsed.physical_stage : [];
@@ -476,24 +489,11 @@ export default function App() {
       parsed.sessionId = sessionId;
 
       let results: SimulationResults;
-      try {
-        const response = await fetch('/api/simulate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(parsed)
-        });
+      const targetEngine = parsed.simulation_parameters?.engine || state.simulationSettings?.engine || solverConfig.engine || 'auto';
 
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-
-        results = await response.json();
-      } catch (err: any) {
-        console.warn("Express server simulation failed or unreachable. Running locally in browser...", err);
-        
+      if (targetEngine === 'ts') {
         localSimState.cancelled = false;
         localSimState.paused = false;
-        
         const useIdealPwl = parsed.simulation_parameters?.solverMethod === 'ideal-pwl';
         const sim = useIdealPwl
           ? new AlternativeCircuitSimulator(
@@ -506,11 +506,47 @@ export default function App() {
               parsed.control_loops || [],
               parsed.simulation_parameters || {}
             );
-        
         results = await sim.runAsync(
           () => localSimState.cancelled,
           () => localSimState.paused
         );
+      } else {
+        try {
+          const response = await fetch('/api/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(parsed)
+          });
+
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+
+          results = await response.json();
+        } catch (err: any) {
+          if (targetEngine === 'cpp') {
+            throw new Error(`C++ Native Solver endpoint unreachable. Please verify circuitsim_solver.exe is running on port 3001. Details: ${err.message || err}`);
+          }
+          console.warn("Express/C++ server simulation unreachable. Falling back to local browser TypeScript solver...", err);
+          localSimState.cancelled = false;
+          localSimState.paused = false;
+          const useIdealPwl = parsed.simulation_parameters?.solverMethod === 'ideal-pwl';
+          const sim = useIdealPwl
+            ? new AlternativeCircuitSimulator(
+                parsed.physical_stage || [],
+                parsed.control_loops || [],
+                parsed.simulation_parameters || {}
+              )
+            : new CircuitSimulator(
+                parsed.physical_stage || [],
+                parsed.control_loops || [],
+                parsed.simulation_parameters || {}
+              );
+          results = await sim.runAsync(
+            () => localSimState.cancelled,
+            () => localSimState.paused
+          );
+        }
       }
 
       setSimResults(results);
@@ -847,32 +883,26 @@ export default function App() {
         solver: currentParsedNetlist.simulation_parameters?.solver || solverConfig.solver,
         step_type: currentParsedNetlist.simulation_parameters?.step_type || solverConfig.step_type,
         solverMethod: currentParsedNetlist.simulation_parameters?.solverMethod || solverConfig.solverMethod || 'non-ideal',
+        engine: currentParsedNetlist.simulation_parameters?.engine || solverConfig.engine || 'auto',
         wanted_variables: currentParsedNetlist.simulation_parameters?.wanted_variables || Array.from(new Set(resolvedWanted))
       },
-      physical_stage: components.filter(c => c.nodes && c.nodes.length > 0),
-      control_loops: components.filter(c => !c.nodes || c.nodes.length === 0)
+      physical_stage: (currentParsedNetlist.physical_stage && currentParsedNetlist.physical_stage.length > 0)
+        ? currentParsedNetlist.physical_stage
+        : (exportDualGraphJSON(true).physical_stage || []),
+      control_loops: (currentParsedNetlist.control_loops && currentParsedNetlist.control_loops.length > 0)
+        ? currentParsedNetlist.control_loops
+        : (exportDualGraphJSON(true).control_loops || []),
+      components: state.components,
+      wires: state.wires
     };
 
     try {
       let results: SimulationResults;
-      try {
-        const response = await fetch('/api/simulate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(netlistPayload)
-        });
+      const targetEngine = currentParsedNetlist.simulation_parameters?.engine || state.simulationSettings?.engine || solverConfig.engine || 'auto';
 
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-
-        results = await response.json();
-      } catch (err: any) {
-        console.warn("Express server simulation failed or unreachable. Running locally in browser...", err);
-        
+      if (targetEngine === 'ts') {
         localSimState.cancelled = false;
         localSimState.paused = false;
-        
         const useIdealPwl = netlistPayload.simulation_parameters?.solverMethod === 'ideal-pwl';
         const sim = useIdealPwl
           ? new AlternativeCircuitSimulator(
@@ -885,11 +915,47 @@ export default function App() {
               netlistPayload.control_loops || [],
               netlistPayload.simulation_parameters || {}
             );
-        
         results = await sim.runAsync(
           () => localSimState.cancelled,
           () => localSimState.paused
         );
+      } else {
+        try {
+          const response = await fetch('/api/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(netlistPayload)
+          });
+
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+
+          results = await response.json();
+        } catch (err: any) {
+          if (targetEngine === 'cpp') {
+            throw new Error(`C++ Native Solver endpoint unreachable. Please verify circuitsim_solver.exe is running on port 3001. Details: ${err.message || err}`);
+          }
+          console.warn("Express/C++ server simulation unreachable. Falling back to local browser TypeScript solver...", err);
+          localSimState.cancelled = false;
+          localSimState.paused = false;
+          const useIdealPwl = netlistPayload.simulation_parameters?.solverMethod === 'ideal-pwl';
+          const sim = useIdealPwl
+            ? new AlternativeCircuitSimulator(
+                netlistPayload.physical_stage || [],
+                netlistPayload.control_loops || [],
+                netlistPayload.simulation_parameters || {}
+              )
+            : new CircuitSimulator(
+                netlistPayload.physical_stage || [],
+                netlistPayload.control_loops || [],
+                netlistPayload.simulation_parameters || {}
+              );
+          results = await sim.runAsync(
+            () => localSimState.cancelled,
+            () => localSimState.paused
+          );
+        }
       }
 
       setSimResults(results);
@@ -972,6 +1038,8 @@ export default function App() {
     // Control Signals (like GAIN1.Out)
     Object.keys(results.signals).forEach(sig => {
       if (!isWireOrSegment(sig)) {
+        // If sig is a base vector signal (e.g. MUX1.Out) and sub-lanes MUX1.Out.0 exist, hide base vector key
+        if (results.signals[`${sig}.0`] !== undefined) return;
         traces.push(sig);
       }
     });
@@ -998,12 +1066,37 @@ export default function App() {
   const getTraceData = (trace: string): number[] => {
     if (!simResults) return [];
     
-    const resolvedTrace = resolveInputPinToSource(trace);
+    // Check if trace has sub-lane index e.g. "COMPARE_TO_CONSTANT2.Out.0" or "SCOPE1.In2.1"
+    let subLaneIndex: number | null = null;
+    let cleanTrace = trace;
+    const match = trace.match(/^(.*)\.(\d+)$/);
+    if (match) {
+      cleanTrace = match[1];
+      subLaneIndex = parseInt(match[2], 10);
+    }
+
+    const resolvedTrace = resolveInputPinToSource(cleanTrace);
     const prefixedTrace = prefixTraceWithSubsystem(resolvedTrace);
 
-    if (simResults.custom_plots[prefixedTrace]) return simResults.custom_plots[prefixedTrace];
-    if (simResults.signals[prefixedTrace]) return simResults.signals[prefixedTrace];
-    
+    const lookupKey = (key: string): number[] | null => {
+      if (subLaneIndex !== null && simResults.signals[`${key}.${subLaneIndex}`]) {
+        return simResults.signals[`${key}.${subLaneIndex}`];
+      }
+      if (simResults.custom_plots[key]) return simResults.custom_plots[key];
+      if (simResults.signals[key]) {
+        const rawData = simResults.signals[key];
+        if (Array.isArray(rawData) && Array.isArray(rawData[0])) {
+          const idx = subLaneIndex ?? 0;
+          return rawData.map((arr: any) => (Array.isArray(arr) ? (arr[idx] ?? 0) : (typeof arr === 'number' ? arr : 0)));
+        }
+        return rawData;
+      }
+      return null;
+    };
+
+    let res = lookupKey(prefixedTrace);
+    if (res) return res;
+
     if (prefixedTrace.endsWith('_V')) {
       const base = prefixedTrace.substring(0, prefixedTrace.length - 2);
       if (simResults.voltages[base]) return simResults.voltages[base];
@@ -1015,9 +1108,9 @@ export default function App() {
       if (simResults.ammeters[base]) return simResults.ammeters[base];
     }
 
-    if (simResults.custom_plots[resolvedTrace]) return simResults.custom_plots[resolvedTrace];
-    if (simResults.signals[resolvedTrace]) return simResults.signals[resolvedTrace];
-    
+    res = lookupKey(resolvedTrace);
+    if (res) return res;
+
     if (resolvedTrace.endsWith('_V')) {
       const base = resolvedTrace.substring(0, resolvedTrace.length - 2);
       if (simResults.voltages[base]) return simResults.voltages[base];
@@ -1029,8 +1122,8 @@ export default function App() {
       if (simResults.ammeters[base]) return simResults.ammeters[base];
     }
 
-    if (simResults.custom_plots[trace]) return simResults.custom_plots[trace];
-    if (simResults.signals[trace]) return simResults.signals[trace];
+    res = lookupKey(trace);
+    if (res) return res;
 
     return [];
   };
@@ -1097,22 +1190,40 @@ export default function App() {
       const scopeComp = state.components.find(c => c.id === activeTab);
       if (!scopeComp) return [];
       const numChannels = parseInt(scopeComp.parameters?.channels) || 2;
-      const channels: string[] = [];
+      const channelItems: { rawTrace: string; subLane?: number }[] = [];
       for (let i = 1; i <= numChannels; i++) {
-        channels.push(`${activeTab}.In${i}`);
+        const rawTrace = `${activeTab}.In${i}`;
+        const resolved = resolveInputPinToSource(rawTrace);
+        let vecLen = 1;
+        if (simResults) {
+          if (simResults.signals[`${resolved}.0`] !== undefined) {
+            let k = 0;
+            while (simResults.signals[`${resolved}.${k}`] !== undefined) k++;
+            vecLen = k;
+          } else if (Array.isArray(simResults.signals[resolved]?.[0])) {
+            vecLen = simResults.signals[resolved][0].length;
+          }
+        }
+        if (vecLen > 1) {
+          for (let k = 0; k < vecLen; k++) {
+            channelItems.push({ rawTrace: `${rawTrace}.${k}`, subLane: k });
+          }
+        } else {
+          channelItems.push({ rawTrace });
+        }
       }
       const isOverlay = scopeOverlayModes[activeTab] || false;
       if (isOverlay) {
         return [{
           id: `${activeTab}_overlay`,
-          title: `Overlay View [CH 1 - CH ${numChannels}]`,
-          traces: channels
+          title: `Overlay View [Channels & Vectors]`,
+          traces: channelItems.map(c => c.rawTrace)
         }];
       } else {
-        return channels.map((chan, idx) => ({
+        return channelItems.map((item, idx) => ({
           id: `${activeTab}_channel_${idx + 1}`,
-          title: `${activeTab} Channel ${idx + 1} Input Signal`,
-          traces: [chan]
+          title: item.subLane !== undefined ? `${activeTab} Channel Input Vector (Lane ${item.subLane + 1})` : `${activeTab} Channel ${idx + 1} Input Signal`,
+          traces: [item.rawTrace]
         }));
       }
     } else {
@@ -2891,7 +3002,25 @@ export default function App() {
     const numChannels = parseInt(scopeComp.parameters?.channels) || 2;
     const channels: string[] = [];
     for (let i = 1; i <= numChannels; i++) {
-      channels.push(`${scopeId}.In${i}`);
+      const rawTrace = `${scopeId}.In${i}`;
+      const resolved = resolveInputPinToSource(rawTrace);
+      let vecLen = 1;
+      if (simResults) {
+        if (simResults.signals[`${resolved}.0`] !== undefined) {
+          let k = 0;
+          while (simResults.signals[`${resolved}.${k}`] !== undefined) k++;
+          vecLen = k;
+        } else if (Array.isArray(simResults.signals[resolved]?.[0])) {
+          vecLen = simResults.signals[resolved][0].length;
+        }
+      }
+      if (vecLen > 1) {
+        for (let k = 0; k < vecLen; k++) {
+          channels.push(`${rawTrace}.${k}`);
+        }
+      } else {
+        channels.push(rawTrace);
+      }
     }
 
     const isOverlay = scopeOverlayModes[scopeId] || false;

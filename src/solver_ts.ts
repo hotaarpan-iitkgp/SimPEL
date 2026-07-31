@@ -2388,10 +2388,7 @@ export class CircuitSimulator {
         if (Array.isArray(val)) {
             for (let k = 0; k < val.length; k++) {
                 signals[`${outKey}.${k}`] = val[k];
-                signals[`${outKey}[${k}]`] = val[k];
-                signals[`${outKey}_${k}`] = val[k];
             }
-            signals[`${outKey}.length`] = val.length;
         }
     }
 
