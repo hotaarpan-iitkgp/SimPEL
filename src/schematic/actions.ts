@@ -233,6 +233,16 @@ export function normalizeControlWires(): void {
   });
 }
 
+// Cancel current active wire drawing mode
+export function cancelWire(): boolean {
+  if (state.activeWire) {
+    state.activeWire = null;
+    draw();
+    return true;
+  }
+  return false;
+}
+
 // Complete drawing of current active wire onto target endpoint
 export function completeWire(targetEndpoint: any): void {
   if (!state.activeWire) return;

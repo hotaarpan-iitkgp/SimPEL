@@ -2,7 +2,7 @@ import { getDetailedComponentSVG } from './detailedLibrary';
 import { state } from './state';
 import { draw } from './renderer';
 import { getTerminalCoords } from './routing';
-import { completeWire } from './actions';
+import { completeWire, cancelWire } from './actions';
 import { getComponentPins, parseTurnsList, discoverPortsJS, getTerminalNameFromCode } from './config';
 
 // Return custom component SVG structures centered at (0, 0)
@@ -588,6 +588,14 @@ export function createTerminalOverlay(compId: string, terminalName: string, cx: 
   // Wire drawing start logic
   g.addEventListener('pointerdown', (e: any) => {
     if (state.appletMode === 'student') return;
+    if (e.button === 2) {
+      if (state.activeWire) {
+        e.stopPropagation();
+        e.preventDefault();
+        cancelWire();
+      }
+      return;
+    }
     e.stopPropagation();
     const comp = state.components.find((c: any) => c.id === compId);
     if (!comp) return;

@@ -13,6 +13,7 @@ import {
 } from './routing';
 import { 
   completeWire, 
+  cancelWire,
   copySelected, 
   pasteSelected, 
   rotateSelected, 
@@ -38,6 +39,9 @@ export function initInteractions(svg: SVGSVGElement): () => void {
   
   const handleContextMenu = (e: MouseEvent) => {
     e.preventDefault();
+    if (state.activeWire) {
+      cancelWire();
+    }
   };
 
   // Clean up any stale listeners first to avoid double-binding on tab switches
@@ -53,6 +57,13 @@ export function initInteractions(svg: SVGSVGElement): () => void {
   
   // 1. Pointer Down event
   const handlePointerDown = (e: PointerEvent) => {
+    // If drawing wire, right-click immediately cancels wire drawing (just like Escape key)
+    if (e.button === 2 && state.activeWire) {
+      e.preventDefault();
+      cancelWire();
+      return;
+    }
+
     // Only skip canvas logic for left clicks on handles; right/middle clicks should trigger panning
     if (e.button === 0 && ((e.target as HTMLElement).closest('.terminal-handle') || (e.target as HTMLElement).closest('.wire-segment-drag-handle') || (e.target as HTMLElement).closest('.wire-midpoint-handle'))) {
       return; // Handled by terminal overlay and handle listeners directly for left-click
