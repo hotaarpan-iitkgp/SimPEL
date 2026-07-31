@@ -3353,11 +3353,7 @@ export class CircuitSimulator {
                         const K = parseScientific(b.parameters.K ?? b.parameters.gain ?? "1");
                         if (Array.isArray(valIn)) {
                             const resVec = valIn.map((v: number) => v * K);
-                            signals[out] = resVec as any;
-                            resVec.forEach((v: number, idx: number) => {
-                                signals[`${out}.${idx}`] = v;
-                                signals[`${out}[${idx}]`] = v;
-                            });
+                            this.setControlSignal(signals, out, resVec);
                         } else {
                             signals[out] = K * (typeof valIn === 'number' ? valIn : 0.0);
                         }
@@ -3865,17 +3861,16 @@ export class CircuitSimulator {
                 } else if ((b.type === "Mux" || b.type === "MUX") && out) {
                     const numInputs = parseInt(b.parameters.inputs || b.parameters.num_inputs) || 0;
                     const vectorResult: number[] = [];
-                    let idx = 1;
-                    while (true) {
-                        const inKey = b.channels[`In${idx}`] ?? b.channels[`In${idx - 1}`] ?? b.channels[`in${idx}`];
+                    const maxInputs = numInputs > 0 ? numInputs : 100;
+                    for (let idx = 1; idx <= maxInputs; idx++) {
+                        const inKey = b.channels[`In${idx}`] ?? b.channels[`in${idx}`] ?? (idx === 1 ? b.channels.In0 : undefined);
                         if (!inKey) {
-                            if (numInputs > 0 && idx <= numInputs) {
+                            if (numInputs > 0) {
                                 vectorResult.push(0.0);
-                                idx++;
-                                continue;
                             } else {
                                 break;
                             }
+                            continue;
                         }
                         const sigVal = signals[inKey];
                         if (Array.isArray(sigVal)) {
@@ -3887,13 +3882,8 @@ export class CircuitSimulator {
                             let foundIndexed = false;
                             while (true) {
                                 const subKey = `${inKey}.${k}`;
-                                const altSubKey = `${inKey}[${k}]`;
                                 if (signals[subKey] !== undefined) {
                                     vectorResult.push(signals[subKey]);
-                                    foundIndexed = true;
-                                    k++;
-                                } else if (signals[altSubKey] !== undefined) {
-                                    vectorResult.push(signals[altSubKey]);
                                     foundIndexed = true;
                                     k++;
                                 } else {
@@ -3904,15 +3894,8 @@ export class CircuitSimulator {
                                 vectorResult.push(0.0);
                             }
                         }
-                        idx++;
-                        if (numInputs > 0 && idx > numInputs && !b.channels[`In${idx}`]) break;
                     }
-                    signals[out] = vectorResult as any;
-                    for (let k = 0; k < vectorResult.length; k++) {
-                        signals[`${out}.${k}`] = vectorResult[k];
-                        signals[`${out}[${k}]`] = vectorResult[k];
-                        signals[`${out}_${k}`] = vectorResult[k];
-                    }
+                    this.setControlSignal(signals, out, vectorResult);
                 } else if (b.type === "Demux" || b.type === "DEMUX") {
                     const inKey = b.channels.In ?? b.channels.In1 ?? b.channels.in;
                     const numOutputs = parseInt(b.parameters.outputs || b.parameters.num_outputs) || 0;
