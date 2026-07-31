@@ -2354,8 +2354,49 @@ export class CircuitSimulator {
         if (i1 >= 0 && i2 >= 0) { K.add(i1, i2, -g); K.add(i2, i1, -g); }
     }
 
-    evaluateControls(time: number, w_curr: number[], cs: Record<string, any>, dt: number, ss: Record<string, string>, first = false, integrate = false, is_logging = false): Record<string, number> {
-        const signals: Record<string, number> = {};
+    evalVector1(val: any, fn: (x: number) => number): any {
+        if (Array.isArray(val)) {
+            return val.map((v: any) => fn(typeof v === 'number' ? v : 0.0));
+        }
+        return fn(typeof val === 'number' ? val : 0.0);
+    }
+
+    evalVector2(valA: any, valB: any, fn: (a: number, b: number) => number): any {
+        const isArrayA = Array.isArray(valA);
+        const isArrayB = Array.isArray(valB);
+        if (isArrayA || isArrayB) {
+            const arrA = isArrayA ? (valA as any[]) : [valA];
+            const arrB = isArrayB ? (valB as any[]) : [valB];
+            const len = Math.max(arrA.length, arrB.length);
+            const res: number[] = new Array(len);
+            for (let i = 0; i < len; i++) {
+                const a = isArrayA ? (arrA[i % arrA.length] ?? 0.0) : valA;
+                const b = isArrayB ? (arrB[i % arrB.length] ?? 0.0) : valB;
+                const numA = typeof a === 'number' ? a : 0.0;
+                const numB = typeof b === 'number' ? b : 0.0;
+                res[i] = fn(numA, numB);
+            }
+            return res;
+        }
+        const numA = typeof valA === 'number' ? valA : 0.0;
+        const numB = typeof valB === 'number' ? valB : 0.0;
+        return fn(numA, numB);
+    }
+
+    setControlSignal(signals: Record<string, any>, outKey: string, val: any) {
+        signals[outKey] = val;
+        if (Array.isArray(val)) {
+            for (let k = 0; k < val.length; k++) {
+                signals[`${outKey}.${k}`] = val[k];
+                signals[`${outKey}[${k}]`] = val[k];
+                signals[`${outKey}_${k}`] = val[k];
+            }
+            signals[`${outKey}.length`] = val.length;
+        }
+    }
+
+    evaluateControls(time: number, w_curr: number[], cs: Record<string, any>, dt: number, ss: Record<string, string>, first = false, integrate = false, is_logging = false): Record<string, any> {
+        const signals: Record<string, any> = {};
         // Inject key trigger states
         if (this.key_trigger_states) {
             Object.entries(this.key_trigger_states).forEach(([k, v]) => {
@@ -3703,18 +3744,24 @@ export class CircuitSimulator {
                     const op = (b.parameters.operator ?? b.parameters.op ?? b.parameters.relational_operator ?? b.parameters.condition ?? "==").trim();
                     const cVal = parseScientific(b.parameters.constant ?? b.parameters.const ?? b.parameters.value ?? b.parameters.threshold ?? b.parameters.c ?? "0.0");
                     const valIn = signals[b.channels.In] ?? signals[b.channels.In1] ?? 0.0;
-                    if (op === "==" || op === "=") signals[out] = (Math.abs(valIn - cVal) < 1e-12) ? 1.0 : 0.0;
-                    else if (op === "~=" || op === "!=") signals[out] = (Math.abs(valIn - cVal) >= 1e-12) ? 1.0 : 0.0;
-                    else if (op === "<") signals[out] = (valIn < cVal) ? 1.0 : 0.0;
-                    else if (op === "<=") signals[out] = (valIn <= cVal) ? 1.0 : 0.0;
-                    else if (op === ">") signals[out] = (valIn > cVal) ? 1.0 : 0.0;
-                    else if (op === ">=") signals[out] = (valIn >= cVal) ? 1.0 : 0.0;
-                    else signals[out] = 0.0;
+                    const evalOp = (v: number) => {
+                        if (op === "==" || op === "=") return (Math.abs(v - cVal) < 1e-12) ? 1.0 : 0.0;
+                        if (op === "~=" || op === "!=") return (Math.abs(v - cVal) >= 1e-12) ? 1.0 : 0.0;
+                        if (op === "<") return (v < cVal) ? 1.0 : 0.0;
+                        if (op === "<=") return (v <= cVal) ? 1.0 : 0.0;
+                        if (op === ">") return (v > cVal) ? 1.0 : 0.0;
+                        if (op === ">=") return (v >= cVal) ? 1.0 : 0.0;
+                        return 0.0;
+                    };
+                    this.setControlSignal(signals, out, this.evalVector1(valIn, evalOp));
                 } else if ((b.type === "SIGNUM" || b.type === "Signum" || b.type === "SIGN" || b.type === "Sign" || b.type === "SGN") && out) {
                     const valIn = signals[b.channels.In] ?? signals[b.channels.In1] ?? 0.0;
                     const eps = parseScientific(b.parameters.threshold ?? b.parameters.zero_threshold ?? b.parameters.eps ?? "1e-9");
-                    if (Math.abs(valIn) <= eps) signals[out] = 0.0;
-                    else signals[out] = valIn > 0.0 ? 1.0 : -1.0;
+                    const evalSgn = (v: number) => {
+                        if (Math.abs(v) <= eps) return 0.0;
+                        return v > 0.0 ? 1.0 : -1.0;
+                    };
+                    this.setControlSignal(signals, out, this.evalVector1(valIn, evalSgn));
                 } else if (b.type === "AND_Gate" && out) {
                     signals[out] = ((signals[b.channels.A] ?? 0) > 0.5 && (signals[b.channels.B] ?? 0) > 0.5) ? 1 : 0;
                 } else if (b.type === "OR_Gate" && out) {
@@ -4350,11 +4397,23 @@ export class CircuitSimulator {
         return b;
     }
 
-    determineSwitchState(sw: ComponentTS, vd: number, oldState: string, sigs: Record<string, number>): string {
+    determineSwitchState(sw: ComponentTS, vd: number, oldState: string, sigs: Record<string, any>): string {
         const type = sw.type;
-        const gateVal = sigs[sw.channels.G] ?? 0.0;
+
+        // Electrical component gate signals MUST be scalar
+        const rawGate = sw.channels.G ? sigs[sw.channels.G] : undefined;
+        if (Array.isArray(rawGate) && rawGate.length > 1) {
+            throw new Error(`Electrical component '${sw.id}' (${type}) gate signal on channel '${sw.channels.G}' is a vector of length ${rawGate.length}. Switch gate signals must be scalar. Use a Demux block to extract a scalar signal.`);
+        }
+
         const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
-        const ctrlVal = (swCtrl && sigs[swCtrl] !== undefined) ? sigs[swCtrl] : undefined;
+        const rawCtrl = swCtrl ? sigs[swCtrl] : undefined;
+        if (Array.isArray(rawCtrl) && rawCtrl.length > 1) {
+            throw new Error(`Electrical component '${sw.id}' (${type}) control signal on channel '${swCtrl}' is a vector of length ${rawCtrl.length}. Switch control signals must be scalar. Use a Demux block to extract a scalar signal.`);
+        }
+
+        const gateVal = Array.isArray(rawGate) ? (rawGate[0] ?? 0.0) : (rawGate ?? 0.0);
+        const ctrlVal = Array.isArray(rawCtrl) ? (rawCtrl[0] ?? undefined) : rawCtrl;
 
         if (type === "THYRISTOR" || type === "SCR") {
             const vd_drop = (sw as any).vd_numeric ?? parseScientific(sw.parameters.Vd ?? sw.parameters.Vf ?? "0.8");
@@ -5030,7 +5089,7 @@ export class CircuitSimulator {
                 console.error("SIM ERROR STACK:", simErr);
                 if (this.sim_params.step_type === "variable") {
                     h *= 0.5; if (h < 1e-15) { console.error("Step size reduced below minimum:", simErr); break; }
-                } else { console.error("Step execution failed:", simErr); break; }
+                } else { console.error("Step execution failed:", simErr); throw simErr; }
             }
         }
         return {
