@@ -391,7 +391,7 @@ export function updatePropertiesPanel(): void {
         } else if (comp.type === 'EDGE_DETECT' && key === 'edge') {
           inputField = document.createElement('select');
           inputField.className = 'prop-input';
-          const edgeOptions = ['rising', 'falling', 'both'];
+          const edgeOptions = ['rising', 'falling', 'either'];
           const currEdge = String(comp.parameters[key] || 'rising').toLowerCase();
           edgeOptions.forEach(optVal => {
             const optionEl = document.createElement('option');

@@ -2611,23 +2611,34 @@ export class CircuitSimulator {
                         this.setControlSignal(signals, out, this.evalVector1(valIn, evalOp));
                     } else if (orig === "EDGE_DETECT") {
                         const edgeMode = b.parameters.edge ?? "rising";
-                        if (!cs[b.id]) cs[b.id] = { prev_input: val, pulse: false };
+                        const pulseWidth = parseScientific(b.parameters.pulse_width ?? "1e-3");
+                        if (!cs[b.id]) cs[b.id] = { prev_input: val, active: false, trigger_time: -1.0 };
                         const st = cs[b.id];
-                        let detected = false;
                         const prevV = st.prev_input;
+                        let detected = false;
                         if (edgeMode === "rising") {
                             if (prevV <= 0.5 && val > 0.5) detected = true;
                         } else if (edgeMode === "falling") {
                             if (prevV > 0.5 && val <= 0.5) detected = true;
-                        } else { // both
+                        } else { // either
                             if ((prevV <= 0.5 && val > 0.5) || (prevV > 0.5 && val <= 0.5)) detected = true;
                         }
-                        const pulse = st.pulse;
+                        let active = st.active;
+                        let trigTime = st.trigger_time;
+                        if (detected && !active) {
+                            active = true;
+                            trigTime = time;
+                        }
+                        if (active && trigTime >= 0.0 && (time - trigTime) >= pulseWidth - 1e-12) {
+                            active = false;
+                        }
                         if (integrate && iter === 2) {
-                            st.pulse = detected;
+                            st.active = active;
+                            st.trigger_time = trigTime;
                             st.prev_input = val;
                         }
-                        signals[out] = pulse ? 1.0 : 0.0;
+                        signals[out] = active ? 1.0 : 0.0;
+
                     } else if (orig === "MONOFLOP" || orig === "MONOSTABLE") {
                         const duration = parseScientific(b.parameters.duration ?? "0.1");
                         const edge = b.parameters.trigger_edge ?? "rising";

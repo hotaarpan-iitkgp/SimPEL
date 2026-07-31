@@ -726,11 +726,11 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
   {
     type: 'EDGE_DETECT',
     label: 'Edge Detector',
-    desc: 'Detect rising, falling, or both edges of a digital signal.',
+    desc: 'Detect rising, falling, or either edges of a digital signal and generate a pulse of configurable width.',
     category: 'control',
     subcategory: 'Logical & Bitwise',
     symbol: 'Edge',
-    defaultParameters: { edge: 'rising' }
+    defaultParameters: { edge: 'rising', pulse_width: '1e-3' }
   },
   {
     type: 'MONOSTABLE',
@@ -3002,22 +3002,24 @@ export function getDetailedComponentSVG(comp: any): string | null {
     `;
   } else if (type === 'EDGE_DETECT') {
     const edgeParam = (comp.parameters && comp.parameters.edge) ? comp.parameters.edge : 'rising';
-    // Draw the edge symbol: rising=upward step, falling=downward step, both=both
+    const pw = (comp.parameters && comp.parameters.pulse_width) ? comp.parameters.pulse_width : '1e-3';
+    // Draw the edge + pulse symbol
     let edgeSvg = '';
     if (edgeParam === 'rising') {
-      edgeSvg = `<path d="M -10,6 L -10,-6 L 4,-6" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-      <polygon points="4,-6 0,-3 0,-9" fill="${symbolColor}" />`;
+      // Rising step on left, narrow pulse on right
+      edgeSvg = `<path d="M -14,5 L -14,-5 L -6,-5" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M -6,-5 L -6,5 L 6,5 L 6,-5 L 12,-5" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />`;
     } else if (edgeParam === 'falling') {
-      edgeSvg = `<path d="M -10,-6 L -10,6 L 4,6" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-      <polygon points="4,6 0,3 0,9" fill="${symbolColor}" />`;
-    } else {
-      edgeSvg = `<path d="M -12,5 L -12,-5 L -4,-5 M -4,-5 L -4,5 L 4,5" fill="none" stroke="${symbolColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-      <polygon points="0,-5 -3,-2 3,-2" fill="${symbolColor}" />
-      <polygon points="0,5 -3,2 3,2" fill="${symbolColor}" />`;
+      // Falling step on left, narrow pulse on right
+      edgeSvg = `<path d="M -14,-5 L -14,5 L -6,5" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M -6,5 L -6,-5 L 6,-5 L 6,5 L 12,5" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />`;
+    } else { // either
+      // Both edges shown with two pulses
+      edgeSvg = `<path d="M -14,5 L -14,-5 L -8,-5 L -8,5 L -2,5 L -2,-5 L 4,-5 L 4,5 L 10,5" fill="none" stroke="${symbolColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" />`;
     }
     innerGraphic = `
       ${edgeSvg}
-      <text x="0" y="13" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" text-anchor="middle" opacity="0.8">${edgeParam}</text>
+      <text x="0" y="14" font-family="Inter, sans-serif" font-size="5" font-weight="700" fill="${symbolColor}" text-anchor="middle" opacity="0.75">T=${pw}s | ${edgeParam}</text>
     `;
   } else if (type === 'MONOFLOP' || type === 'MONOSTABLE') {
     const dur = comp.parameters?.duration ?? '0.1';
