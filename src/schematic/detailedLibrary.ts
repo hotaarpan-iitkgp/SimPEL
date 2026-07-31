@@ -1954,10 +1954,11 @@ export function getDetailedComponentPins(type: string): Record<string, any> | nu
     if (type.includes('MOSFET') || type.includes('IGBT') || type === 'GTO' || type === 'THYRISTOR' || type === 'BJT' || type === 'JFET' || type === 'IGCT') {
       const isBJT = type === 'BJT';
       const isJFET = type === 'JFET';
+      const isThyristorFamily = type === 'THYRISTOR' || type === 'GTO' || type === 'IGCT';
       return {
-        [isBJT ? 'C' : (isJFET ? 'D' : 'D')]: { x: 0, y: -30, dx: 0, dy: -1 },
-        [isBJT ? 'E' : (isJFET ? 'S' : 'S')]: { x: 0, y: 30, dx: 0, dy: 1 },
-        [isBJT ? 'B' : 'G']: { x: -20, y: 0, dx: -1, dy: 0 }
+        [isBJT ? 'C' : (isJFET ? 'D' : (isThyristorFamily ? 'A' : 'D'))]: { x: 0, y: -30, dx: 0, dy: -1 },
+        [isBJT ? 'E' : (isJFET ? 'S' : (isThyristorFamily ? 'K' : 'S'))]: { x: 0, y: 30, dx: 0, dy: 1 },
+        [isBJT ? 'B' : 'G']: { x: -20, y: isThyristorFamily ? 15 : 0, dx: -1, dy: 0 }
       };
     }
     if (type === 'S' || type.includes('VAR_') || type.includes('SAT_') || type.includes('CTRL_') || type.includes('BREAKER') || type.includes('SR_')) {
@@ -2419,7 +2420,7 @@ export function getDetailedComponentSVG(comp: any): string | null {
           <polygon points="-12,-10 12,-10 0,10" class="comp-path" />
           <polygon points="-12,-10 12,-10 0,10" class="comp-fill" />
           <path class="comp-path" d="M -12,10 L 12,10 M 0,10 L 0,30" />
-          <path class="comp-path" d="M -20,0 L -8,0 L -4,8" />
+          <path class="comp-path" d="M -20,15 L -10,15 L -4,10" />
         `;
         break;
       case 'GTO':
@@ -2428,7 +2429,7 @@ export function getDetailedComponentSVG(comp: any): string | null {
           <polygon points="-12,-10 12,-10 0,10" class="comp-path" />
           <polygon points="-12,-10 12,-10 0,10" class="comp-fill" />
           <path class="comp-path" d="M -12,10 L 12,10 M 0,10 L 0,30" />
-          <path class="comp-path" d="M -20,0 L -8,0 L -4,8 M -14,-4 L -10,4" />
+          <path class="comp-path" d="M -20,15 L -10,15 L -4,10 M -14,11 L -10,19" />
         `;
         break;
       case 'IGBT':
@@ -2453,8 +2454,8 @@ export function getDetailedComponentSVG(comp: any): string | null {
           <polygon points="-12,-10 12,-10 0,10" class="comp-path" />
           <polygon points="-12,-10 12,-10 0,10" class="comp-fill" />
           <path class="comp-path" d="M -12,10 L 12,10 M 0,10 L 0,30" />
-          <path class="comp-path" d="M -20,0 L -8,0 L -4,8" />
-          <rect x="-17" y="-4" width="6" height="8" rx="1" fill="currentColor" />
+          <path class="comp-path" d="M -20,15 L -10,15 L -4,10" />
+          <rect x="-17" y="11" width="6" height="8" rx="1" fill="currentColor" />
         `;
         break;
       case 'MOSFET_DIODE':

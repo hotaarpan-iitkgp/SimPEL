@@ -4184,9 +4184,9 @@ export class CircuitSimulator {
         }
         const current_sw_states = ss || this.sw_states || {};
         for (const sw of this.switches) {
-            if (sw.type === "Diode" && current_sw_states[sw.id] === "ON") {
-                const ron = parseScientific(sw.parameters.Ron ?? "1e-3");
-                const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
+            if (["Diode", "D", "THYRISTOR", "SCR", "GTO", "IGCT"].includes(sw.type) && current_sw_states[sw.id] === "ON") {
+                const ron = (sw as any).ron_numeric ?? parseScientific(sw.parameters.Ron ?? "1e-3");
+                const vd_drop = (sw as any).vd_numeric ?? parseScientific(sw.parameters.Vd ?? sw.parameters.Vf ?? "0.8");
                 const Ieq = vd_drop / ron;
                 const n1 = sw.nodes[0] ?? "node_0", n2 = sw.nodes[1] ?? "node_0";
                 const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1;
@@ -4196,6 +4196,56 @@ export class CircuitSimulator {
             }
         }
         return b;
+    }
+
+    determineSwitchState(sw: ComponentTS, vd: number, oldState: string, sigs: Record<string, number>): string {
+        const type = sw.type;
+        const gateVal = sigs[sw.channels.G] ?? 0.0;
+        const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
+        const ctrlVal = (swCtrl && sigs[swCtrl] !== undefined) ? sigs[swCtrl] : undefined;
+
+        if (type === "THYRISTOR" || type === "SCR") {
+            const vd_drop = (sw as any).vd_numeric ?? parseScientific(sw.parameters.Vd ?? sw.parameters.Vf ?? "0.8");
+            const ron = (sw as any).ron_numeric ?? parseScientific(sw.parameters.Ron ?? "0.001");
+            const ih = (sw as any).ih_numeric ?? parseScientific(sw.parameters.Iholding ?? sw.parameters.Ih ?? "0.01");
+            const vgt = (sw as any).vgt_numeric ?? parseScientific(sw.parameters.Vgt ?? sw.parameters.Vgate ?? "0.5");
+            const gate_triggered = gateVal > vgt;
+            if (oldState === "ON") {
+                const i_ak = (vd - vd_drop) / ron;
+                return (vd > 0.0 && i_ak >= ih) ? "ON" : "OFF";
+            } else {
+                return (vd > vd_drop && gate_triggered) ? "ON" : "OFF";
+            }
+        }
+        if (type === "GTO") {
+            const vd_drop = (sw as any).vd_numeric ?? parseScientific(sw.parameters.Vd ?? sw.parameters.Vf ?? "0.8");
+            const ron = (sw as any).ron_numeric ?? parseScientific(sw.parameters.Ron ?? "0.001");
+            const ih = (sw as any).ih_numeric ?? parseScientific(sw.parameters.Iholding ?? sw.parameters.Ih ?? "0.01");
+            if (oldState === "ON") {
+                const i_ak = (vd - vd_drop) / ron;
+                return (gateVal > 0.0 && vd > 0.0 && i_ak >= ih) ? "ON" : "OFF";
+            } else {
+                return (vd > vd_drop && gateVal > 0.5) ? "ON" : "OFF";
+            }
+        }
+        if (["MOSFET", "vg-FET", "IGBT", "IGBT_DIODE", "IGCT", "JFET", "BJT"].includes(type)) {
+            const gate_on = gateVal > 0.5;
+            const vd_drop = (sw as any).vd_numeric ?? parseScientific(sw.parameters.Vd ?? "0.7");
+            const diode_on = -vd > vd_drop;
+            return (gate_on || diode_on) ? "ON" : "OFF";
+        }
+        if (type === "Diode" || type === "D") {
+            const vd_drop = (sw as any).vd_numeric ?? parseScientific(sw.parameters.Vd ?? "0.7");
+            return vd > vd_drop ? "ON" : "OFF";
+        }
+        if (type === "Switch" || type === "S") {
+            if (ctrlVal !== undefined) {
+                return ctrlVal > 0.5 ? "ON" : "OFF";
+            } else {
+                return ((sw as any).value_numeric ?? parseScientific(sw.parameters.state ?? "0")) > 0.5 ? "ON" : "OFF";
+            }
+        }
+        return "OFF";
     }
 
     stampVariableResistors(K: Matrix, sigs: Record<string, number>) {
@@ -4245,25 +4295,7 @@ export class CircuitSimulator {
                 const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                 const vd = ((i1 >= 0) ? wl[i1] : 0.0) - ((i2 >= 0) ? wl[i2] : 0.0);
                 const old = ss[sw.id] ?? "OFF"; 
-                let swn = "OFF";
-                if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
-                    const gate_on = (sigs_start[sw.channels.G] ?? 0) > 0.5;
-                    const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                    const diode_on = -vd > vd_drop;
-                    swn = (gate_on || diode_on) ? "ON" : "OFF";
-                }
-                else if (sw.type === "Diode") {
-                    const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                    swn = vd > vd_drop ? "ON" : "OFF";
-                }
-                else if (sw.type === "Switch") {
-                    const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
-                    if (swCtrl && sigs_start[swCtrl] !== undefined) {
-                        swn = sigs_start[swCtrl] > 0.5 ? "ON" : "OFF";
-                    } else {
-                        swn = parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
-                    }
-                }
+                const swn = this.determineSwitchState(sw, vd, old, sigs);
                 if (swn !== old) { ss[sw.id] = swn; any_ch = true; }
             }
             
@@ -4467,25 +4499,7 @@ export class CircuitSimulator {
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                     const vd = ((i1 >= 0) ? wn[i1] : 0.0) - ((i2 >= 0) ? wn[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; 
-                    let swn = "OFF";
-                    if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
-                        const gate_on = (sigs_start[sw.channels.G] ?? 0) > 0.5;
-                        const vd_drop = (sw as any).vd_numeric ?? parseScientific(sw.parameters.Vd ?? "0.7");
-                        const diode_on = -vd > vd_drop;
-                        swn = (gate_on || diode_on) ? "ON" : "OFF";
-                    }
-                    else if (sw.type === "Diode") {
-                        const vd_drop = (sw as any).vd_numeric ?? parseScientific(sw.parameters.Vd ?? "0.7");
-                        swn = vd > vd_drop ? "ON" : "OFF";
-                    }
-                    else if (sw.type === "Switch") {
-                        const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
-                        if (swCtrl && sigs_start[swCtrl] !== undefined) {
-                            swn = sigs_start[swCtrl] > 0.5 ? "ON" : "OFF";
-                        } else {
-                            swn = (sw as any).value_numeric ?? parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
-                        }
-                    }
+                    const swn = this.determineSwitchState(sw, vd, old, sigs_start);
                     next_sw[sw.id] = swn; if (swn !== old) any_ch = true;
                 }
                 let max_diff = 0.0;
@@ -4515,25 +4529,7 @@ export class CircuitSimulator {
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                     const vd = ((i1 >= 0) ? w_con[i1] : 0.0) - ((i2 >= 0) ? w_con[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; 
-                    let swn = "OFF";
-                    if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
-                        const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
-                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                        const diode_on = -vd > vd_drop;
-                        swn = (gate_on || diode_on) ? "ON" : "OFF";
-                    }
-                    else if (sw.type === "Diode") {
-                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                        swn = vd > vd_drop ? "ON" : "OFF";
-                    }
-                    else if (sw.type === "Switch") {
-                        const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
-                        if (swCtrl && sigs[swCtrl] !== undefined) {
-                            swn = sigs[swCtrl] > 0.5 ? "ON" : "OFF";
-                        } else {
-                            swn = parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
-                        }
-                    }
+                    const swn = this.determineSwitchState(sw, vd, old, sigs);
                     next_sw[sw.id] = swn; if (swn !== old) any_ch = true;
                 }
                 if (any_ch) {
@@ -4600,25 +4596,7 @@ export class CircuitSimulator {
                     const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
                     const vd = ((i1 >= 0) ? wn[i1] : 0.0) - ((i2 >= 0) ? wn[i2] : 0.0);
                     const old = s_stage[sw.id] ?? "OFF"; 
-                    let swn = "OFF";
-                    if (ANALOG_SWITCH_TYPES.includes(sw.type)) {
-                        const gate_on = (sigs[sw.channels.G] ?? 0) > 0.5;
-                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                        const diode_on = -vd > vd_drop;
-                        swn = (gate_on || diode_on) ? "ON" : "OFF";
-                    }
-                    else if (sw.type === "Diode") {
-                        const vd_drop = parseScientific(sw.parameters.Vd ?? "0.7");
-                        swn = vd > vd_drop ? "ON" : "OFF";
-                    }
-                    else if (sw.type === "Switch") {
-                        const swCtrl = sw.channels.Switch || sw.channels.Ctrl;
-                        if (swCtrl && sigs[swCtrl] !== undefined) {
-                            swn = sigs[swCtrl] > 0.5 ? "ON" : "OFF";
-                        } else {
-                            swn = parseScientific(sw.parameters.state ?? "0") > 0.5 ? "ON" : "OFF";
-                        }
-                    }
+                    const swn = this.determineSwitchState(sw, vd, old, sigs);
                     next_sw[sw.id] = swn; if (swn !== old) any_ch = true;
                 }
                 let max_diff = 0.0;

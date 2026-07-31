@@ -1501,8 +1501,11 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           nodes: resolveNodes(comp.id, 2, [termD, termS]),
           control_node: `${comp.id}.${termG}`,
           control_signal: getIncomingControlTerminal(comp.id, termG),
-          Ron: p.Ron || 0.01,
-          Roff: p.Roff || 1e6
+          Ron: p.Ron || 0.001,
+          Roff: p.Roff || 1e6,
+          Vd: p.Vd || p.Vf || 0.8,
+          Iholding: p.Iholding || p.Ih || 0.01,
+          Vgt: p.Vgt || p.Vgate || 0.5
         });
         break;
       }
@@ -2277,6 +2280,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
     solver: state.simulationSettings.solver || "euler",
     step_type: state.simulationSettings.stepType || "fixed",
     solverMethod: state.simulationSettings.solverMethod || "non-ideal",
+    engine: state.simulationSettings.engine || "auto",
     enable_lu_cache: true,
     wanted_variables: Array.from(new Set(resolvedWanted))
   };
