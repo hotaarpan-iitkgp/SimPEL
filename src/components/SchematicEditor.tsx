@@ -821,6 +821,8 @@ export default function SchematicEditor({
     { type: 'PWM', label: 'PWM Gen', desc: 'Pulse width generator carrier compare' },
     { type: 'PWM_MASTER', label: 'Master PWM', desc: 'Configurable Master PWM with dead-time and dynamic phase shifts' },
     { type: 'TRI', label: 'Triangle wave', desc: 'High frequency triangle modulation' },
+    { type: 'PULSE_GEN', label: 'Pulse Generator', desc: 'Periodic pulse train with configurable period, width and delay' },
+    { type: 'EDGE_DETECT', label: 'Edge Detector', desc: 'Detect rising, falling, or both edges of a digital signal' },
     { type: 'COMP', label: 'Comparator', desc: 'Differential margin switch' },
     { type: 'AND', label: 'AND Logic', desc: 'Boolean AND gate output' },
     { type: 'OR', label: 'OR Logic', desc: 'Boolean OR gate output' },

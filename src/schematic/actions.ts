@@ -1841,6 +1841,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'COMPARE_TO_CONSTANT':
       case 'MONOFLOP':
       case 'MONOSTABLE':
+      case 'EDGE_DETECT':
         control_loops.gains.push({
           ...p,
           id: comp.id,

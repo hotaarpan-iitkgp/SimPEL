@@ -3000,6 +3000,25 @@ export function getDetailedComponentSVG(comp: any): string | null {
       <text x="21" y="-8" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="end">Q</text>
       <text x="21" y="12" font-family="Inter, sans-serif" font-size="6" font-weight="700" fill="${symbolColor}" text-anchor="end">Q̅</text>
     `;
+  } else if (type === 'EDGE_DETECT') {
+    const edgeParam = (comp.parameters && comp.parameters.edge) ? comp.parameters.edge : 'rising';
+    // Draw the edge symbol: rising=upward step, falling=downward step, both=both
+    let edgeSvg = '';
+    if (edgeParam === 'rising') {
+      edgeSvg = `<path d="M -10,6 L -10,-6 L 4,-6" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+      <polygon points="4,-6 0,-3 0,-9" fill="${symbolColor}" />`;
+    } else if (edgeParam === 'falling') {
+      edgeSvg = `<path d="M -10,-6 L -10,6 L 4,6" fill="none" stroke="${symbolColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+      <polygon points="4,6 0,3 0,9" fill="${symbolColor}" />`;
+    } else {
+      edgeSvg = `<path d="M -12,5 L -12,-5 L -4,-5 M -4,-5 L -4,5 L 4,5" fill="none" stroke="${symbolColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      <polygon points="0,-5 -3,-2 3,-2" fill="${symbolColor}" />
+      <polygon points="0,5 -3,2 3,2" fill="${symbolColor}" />`;
+    }
+    innerGraphic = `
+      ${edgeSvg}
+      <text x="0" y="13" font-family="Inter, sans-serif" font-size="5.5" font-weight="700" fill="${symbolColor}" text-anchor="middle" opacity="0.8">${edgeParam}</text>
+    `;
   } else if (type === 'MONOFLOP' || type === 'MONOSTABLE') {
     const dur = comp.parameters?.duration ?? '0.1';
     innerGraphic = `

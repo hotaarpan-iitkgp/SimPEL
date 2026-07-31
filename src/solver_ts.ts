@@ -2609,6 +2609,25 @@ export class CircuitSimulator {
                             return 0.0;
                         };
                         this.setControlSignal(signals, out, this.evalVector1(valIn, evalOp));
+                    } else if (orig === "EDGE_DETECT") {
+                        const edgeMode = b.parameters.edge ?? "rising";
+                        if (!cs[b.id]) cs[b.id] = { prev_input: val, pulse: false };
+                        const st = cs[b.id];
+                        let detected = false;
+                        const prevV = st.prev_input;
+                        if (edgeMode === "rising") {
+                            if (prevV <= 0.5 && val > 0.5) detected = true;
+                        } else if (edgeMode === "falling") {
+                            if (prevV > 0.5 && val <= 0.5) detected = true;
+                        } else { // both
+                            if ((prevV <= 0.5 && val > 0.5) || (prevV > 0.5 && val <= 0.5)) detected = true;
+                        }
+                        const pulse = st.pulse;
+                        if (integrate && iter === 2) {
+                            st.pulse = detected;
+                            st.prev_input = val;
+                        }
+                        signals[out] = pulse ? 1.0 : 0.0;
                     } else if (orig === "MONOFLOP" || orig === "MONOSTABLE") {
                         const duration = parseScientific(b.parameters.duration ?? "0.1");
                         const edge = b.parameters.trigger_edge ?? "rising";

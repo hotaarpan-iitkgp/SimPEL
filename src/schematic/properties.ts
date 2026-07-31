@@ -388,6 +388,18 @@ export function updatePropertiesPanel(): void {
             if (currVal === optVal) optionEl.selected = true;
             inputField.appendChild(optionEl);
           });
+        } else if (comp.type === 'EDGE_DETECT' && key === 'edge') {
+          inputField = document.createElement('select');
+          inputField.className = 'prop-input';
+          const edgeOptions = ['rising', 'falling', 'both'];
+          const currEdge = String(comp.parameters[key] || 'rising').toLowerCase();
+          edgeOptions.forEach(optVal => {
+            const optionEl = document.createElement('option');
+            optionEl.value = optVal;
+            optionEl.textContent = optVal.charAt(0).toUpperCase() + optVal.slice(1);
+            if (currEdge === optVal) optionEl.selected = true;
+            inputField.appendChild(optionEl);
+          });
         } else if (comp.type === 'TRI' && (key === 'phase_source' || key === 'freq_source')) {
           inputField = document.createElement('select');
           inputField.className = 'prop-input';
