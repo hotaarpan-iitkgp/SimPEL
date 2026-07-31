@@ -3307,7 +3307,19 @@ export class CircuitSimulator {
                         }
                         signals[out] = y_temp;
                     } else {
-                        signals[out] = parseScientific(b.parameters.K ?? "1") * val;
+                        const inKey = b.channels.In ?? b.channels.In1;
+                        const valIn = (inKey && signals[inKey] !== undefined) ? signals[inKey] : val;
+                        const K = parseScientific(b.parameters.K ?? b.parameters.gain ?? "1");
+                        if (Array.isArray(valIn)) {
+                            const resVec = valIn.map((v: number) => v * K);
+                            signals[out] = resVec as any;
+                            resVec.forEach((v: number, idx: number) => {
+                                signals[`${out}.${idx}`] = v;
+                                signals[`${out}[${idx}]`] = v;
+                            });
+                        } else {
+                            signals[out] = K * (typeof valIn === 'number' ? valIn : 0.0);
+                        }
                     }
                 } else if (b.type === "Gain" && !out && b.parameters.original_type === "FOURIER_TRANS") {
                     // FOURIER_TRANS: multi-output Gain with Mag and Phase channels
@@ -3803,12 +3815,103 @@ export class CircuitSimulator {
                     }
                 } else if (b.type === "CustomFunction" && out) {
                     signals[out] = new ExpressionEvaluator().evaluate(b.parameters.expr ?? "u * 2", { u: signals[b.channels.In] ?? 0 });
-                } else if (b.type === "Mux" && out) {
-                    signals[out] = signals[b.channels.In1] ?? 0;
-                } else if (b.type === "Demux") {
-                    const iv = signals[b.channels.In] ?? 0;
-                    if (b.channels.Out1) signals[b.channels.Out1] = iv;
-                    if (b.channels.Out2) signals[b.channels.Out2] = 0.0;
+                } else if ((b.type === "Mux" || b.type === "MUX") && out) {
+                    const numInputs = parseInt(b.parameters.inputs || b.parameters.num_inputs) || 0;
+                    const vectorResult: number[] = [];
+                    let idx = 1;
+                    while (true) {
+                        const inKey = b.channels[`In${idx}`] ?? b.channels[`In${idx - 1}`] ?? b.channels[`in${idx}`];
+                        if (!inKey) {
+                            if (numInputs > 0 && idx <= numInputs) {
+                                vectorResult.push(0.0);
+                                idx++;
+                                continue;
+                            } else {
+                                break;
+                            }
+                        }
+                        const sigVal = signals[inKey];
+                        if (Array.isArray(sigVal)) {
+                            vectorResult.push(...sigVal);
+                        } else if (typeof sigVal === "number" && !isNaN(sigVal)) {
+                            vectorResult.push(sigVal);
+                        } else {
+                            let k = 0;
+                            let foundIndexed = false;
+                            while (true) {
+                                const subKey = `${inKey}.${k}`;
+                                const altSubKey = `${inKey}[${k}]`;
+                                if (signals[subKey] !== undefined) {
+                                    vectorResult.push(signals[subKey]);
+                                    foundIndexed = true;
+                                    k++;
+                                } else if (signals[altSubKey] !== undefined) {
+                                    vectorResult.push(signals[altSubKey]);
+                                    foundIndexed = true;
+                                    k++;
+                                } else {
+                                    break;
+                                }
+                            }
+                            if (!foundIndexed) {
+                                vectorResult.push(0.0);
+                            }
+                        }
+                        idx++;
+                        if (numInputs > 0 && idx > numInputs && !b.channels[`In${idx}`]) break;
+                    }
+                    signals[out] = vectorResult as any;
+                    for (let k = 0; k < vectorResult.length; k++) {
+                        signals[`${out}.${k}`] = vectorResult[k];
+                        signals[`${out}[${k}]`] = vectorResult[k];
+                        signals[`${out}_${k}`] = vectorResult[k];
+                    }
+                } else if (b.type === "Demux" || b.type === "DEMUX") {
+                    const inKey = b.channels.In ?? b.channels.In1 ?? b.channels.in;
+                    const numOutputs = parseInt(b.parameters.outputs || b.parameters.num_outputs) || 0;
+                    let inVec: number[] = [];
+                    if (inKey) {
+                        const inVal = signals[inKey];
+                        if (Array.isArray(inVal)) {
+                            inVec = [...inVal];
+                        } else if (typeof inVal === "number" && !isNaN(inVal)) {
+                            let k = 0;
+                            while (true) {
+                                const subKey = `${inKey}.${k}`;
+                                const altSubKey = `${inKey}[${k}]`;
+                                if (signals[subKey] !== undefined) {
+                                    inVec.push(signals[subKey]);
+                                    k++;
+                                } else if (signals[altSubKey] !== undefined) {
+                                    inVec.push(signals[altSubKey]);
+                                    k++;
+                                } else {
+                                    break;
+                                }
+                            }
+                            if (inVec.length === 0) {
+                                inVec = [inVal];
+                            }
+                        }
+                    }
+                    let outIdx = 1;
+                    while (true) {
+                        const outKey = b.channels[`Out${outIdx}`] ?? b.channels[`Out${outIdx - 1}`] ?? b.channels[`out${outIdx}`];
+                        if (!outKey) {
+                            if (numOutputs > 0 && outIdx <= numOutputs) {
+                                outIdx++;
+                                continue;
+                            } else {
+                                break;
+                            }
+                        }
+                        const val = inVec[outIdx - 1] ?? 0.0;
+                        signals[outKey] = val;
+                        signals[`${outKey}.0`] = val;
+                        signals[`${outKey}[0]`] = val;
+                        outIdx++;
+                        if (numOutputs > 0 && outIdx > numOutputs && !b.channels[`Out${outIdx}`]) break;
+                    }
                 } else if (b.type === "INTERNAL_VAR" && out) {
                     const target = b.parameters.probe_target;
                     let val = 0.0;
