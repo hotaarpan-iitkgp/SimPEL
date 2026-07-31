@@ -2612,16 +2612,19 @@ export class CircuitSimulator {
                     } else if (orig === "EDGE_DETECT") {
                         const edgeMode = b.parameters.edge ?? "rising";
                         const pulseWidth = parseScientific(b.parameters.pulse_width ?? "1e-3");
-                        if (!cs[b.id]) cs[b.id] = { prev_input: val, active: false, trigger_time: -1.0 };
+                        // Read input from any available channel name
+                        const inKey = b.channels.In || b.channels.In1 || b.channels.input;
+                        const valEdge = (inKey ? (signals[inKey] ?? 0) : val);
+                        if (!cs[b.id]) cs[b.id] = { prev_input: valEdge, active: false, trigger_time: -1.0 };
                         const st = cs[b.id];
                         const prevV = st.prev_input;
                         let detected = false;
                         if (edgeMode === "rising") {
-                            if (prevV <= 0.5 && val > 0.5) detected = true;
+                            if (prevV <= 0.5 && valEdge > 0.5) detected = true;
                         } else if (edgeMode === "falling") {
-                            if (prevV > 0.5 && val <= 0.5) detected = true;
+                            if (prevV > 0.5 && valEdge <= 0.5) detected = true;
                         } else { // either
-                            if ((prevV <= 0.5 && val > 0.5) || (prevV > 0.5 && val <= 0.5)) detected = true;
+                            if ((prevV <= 0.5 && valEdge > 0.5) || (prevV > 0.5 && valEdge <= 0.5)) detected = true;
                         }
                         let active = st.active;
                         let trigTime = st.trigger_time;
@@ -2635,9 +2638,12 @@ export class CircuitSimulator {
                         if (integrate && iter === 2) {
                             st.active = active;
                             st.trigger_time = trigTime;
-                            st.prev_input = val;
+                            st.prev_input = valEdge;
                         }
-                        signals[out] = active ? 1.0 : 0.0;
+                        const edgeOut = active ? 1.0 : 0.0;
+                        if (out) signals[out] = edgeOut;
+                        // Also publish via standard id-based keys so downstream blocks can find it
+                        signals[`${b.id}.Out`] = edgeOut;
 
                     } else if (orig === "MONOFLOP" || orig === "MONOSTABLE") {
                         const duration = parseScientific(b.parameters.duration ?? "0.1");

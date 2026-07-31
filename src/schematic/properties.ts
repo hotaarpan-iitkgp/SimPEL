@@ -262,6 +262,11 @@ export function updatePropertiesPanel(): void {
         propGroup.appendChild(emptyMsg);
       }
     } else if (comp.parameters) {
+      // Inject missing default parameters for EDGE_DETECT (handles old components placed before pulse_width was added)
+      if (comp.type === 'EDGE_DETECT') {
+        if (!comp.parameters.edge) comp.parameters.edge = 'rising';
+        if (!comp.parameters.pulse_width) comp.parameters.pulse_width = '1e-3';
+      }
       Object.keys(comp.parameters).forEach(key => {
         if (key === 'code') return; // Handled by Python Modal editor
         if (comp.type === 'CSCRIPT') return;
