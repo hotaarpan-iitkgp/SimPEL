@@ -151,7 +151,7 @@ export function getComponentPins(comp: any): Record<string, any> {
     pins['Ctrl'] = { x: -halfW, y: -height / 2, dx: -1, dy: 0 };
     return pins;
   }
-  const detailedPins = getDetailedComponentPins(comp.type);
+  const detailedPins = getDetailedComponentPins(comp.type, comp);
   if (detailedPins) return detailedPins;
   if (comp.type === 'XFMR') {
     const pTurns = parseTurnsList(comp.parameters && comp.parameters.primary_turns);

@@ -1818,6 +1818,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'SIGN':
       case 'TRIG_FCN':
       case 'MATH_FCN':
+      case 'FCN':
       case 'INTEGRATOR':
       case 'DERIVATIVE':
       case 'ROUND':

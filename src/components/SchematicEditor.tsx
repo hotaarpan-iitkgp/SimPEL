@@ -825,7 +825,7 @@ export default function SchematicEditor({
     { type: 'AND', label: 'AND Logic', desc: 'Boolean AND gate output' },
     { type: 'OR', label: 'OR Logic', desc: 'Boolean OR gate output' },
     { type: 'NOT', label: 'NOT Logic', desc: 'Logic state inverter' },
-    { type: 'FCN', label: 'Function F(u)', desc: 'Custom math expression block' },
+    { type: 'MATH_FCN', label: 'Math Function', desc: 'Mathematical function block (square, sqrt, exp, log, power, mod, rem, abs)' },
     { type: 'PROD', label: 'Product Block', desc: 'Multiplier division math operator' },
     { type: 'MUX', label: 'Signal Mux', desc: 'Dynamic vector channels bundling' },
     { type: 'DEMUX', label: 'Signal Demux', desc: 'Unpack channel wires to lanes' },
@@ -1774,6 +1774,14 @@ export default function SchematicEditor({
               <select id="sim-mode" className="px-3 py-2 bg-slate-950 border border-slate-800 rounded outline-none focus:border-emerald-500 text-xs">
                 <option value="regular">Regular Simulation (Treat wires as short circuits, faster)</option>
                 <option value="current_flow">Current Flow Animation (Treat wires as small resistors)</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-400 font-bold text-sky-400">Solver Engine Execution Environment</label>
+              <select id="sim-engine" className="px-3 py-2 bg-slate-950 border border-slate-800 rounded outline-none focus:border-sky-500 text-xs font-bold text-sky-300">
+                <option value="auto">Auto (Native C++ Server with TS Local JS Fallback)</option>
+                <option value="ts">TypeScript Local JS Engine (solver_ts.ts in Browser)</option>
+                <option value="cpp">Native C++ High-Performance Engine (circuitsim_solver.exe)</option>
               </select>
             </div>
             <div className="flex flex-col gap-1">

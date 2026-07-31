@@ -2652,26 +2652,61 @@ export class CircuitSimulator {
                     } else if (orig === "SIGN") {
                         signals[out] = val > 0 ? 1.0 : (val < 0 ? -1.0 : 0.0);
                     } else if (orig === "TRIG_FCN") {
-                        const f = b.parameters.function ?? "sin";
-                        if (f === "sin") signals[out] = Math.sin(val);
-                        else if (f === "cos") signals[out] = Math.cos(val);
-                        else if (f === "tan") signals[out] = Math.tan(val);
-                        else if (f === "asin") signals[out] = Math.asin(Math.max(-1.0, Math.min(1.0, val)));
-                        else if (f === "acos") signals[out] = Math.acos(Math.max(-1.0, Math.min(1.0, val)));
-                        else if (f === "atan") signals[out] = Math.atan(val);
-                        else if (f === "sinh") signals[out] = Math.sinh(val);
-                        else if (f === "cosh") signals[out] = Math.cosh(val);
-                        else if (f === "tanh") signals[out] = Math.tanh(val);
-                        else signals[out] = 0.0;
-                    } else if (orig === "MATH_FCN") {
-                        const f = b.parameters.function ?? "exp";
-                        if (f === "exp") signals[out] = Math.exp(val);
-                        else if (f === "log" || f === "ln") signals[out] = Math.log(Math.abs(val) + 1e-15);
-                        else if (f === "log10") signals[out] = Math.log10(Math.abs(val) + 1e-15);
-                        else if (f === "square") signals[out] = val * val;
-                        else if (f === "sqrt") signals[out] = Math.sqrt(Math.abs(val));
-                        else if (f === "10^u") signals[out] = Math.pow(10.0, val);
-                        else signals[out] = 0.0;
+                        const f = String(b.parameters.function ?? b.parameters.fcn ?? "sin").trim().toLowerCase();
+                        const valIn = (b.channels.In || b.channels.In1) ? (signals[b.channels.In] ?? signals[b.channels.In1] ?? val) : val;
+                        const valIn2 = signals[b.channels.In2] ?? 0.0;
+                        if (f === "atan2") {
+                            const evalFn = (v1: number, v2: number) => Math.atan2(v1, v2);
+                            this.setControlSignal(signals, out, this.evalVector2(valIn, valIn2, evalFn));
+                        } else {
+                            const evalFn = (v: number) => {
+                                if (f === "sin") return Math.sin(v);
+                                if (f === "cos") return Math.cos(v);
+                                if (f === "tan") return Math.tan(v);
+                                if (f === "asin") return Math.asin(Math.max(-1.0, Math.min(1.0, v)));
+                                if (f === "acos") return Math.acos(Math.max(-1.0, Math.min(1.0, v)));
+                                if (f === "atan") return Math.atan(v);
+                                if (f === "sinh") return Math.sinh(v);
+                                if (f === "cosh") return Math.cosh(v);
+                                if (f === "tanh") return Math.tanh(v);
+                                return 0.0;
+                            };
+                            this.setControlSignal(signals, out, this.evalVector1(valIn, evalFn));
+                        }
+                    } else if (orig === "MATH_FCN" || orig === "FCN" || orig === "CustomFunction") {
+                        const f = String(b.parameters.function ?? b.parameters.fcn ?? b.parameters.fn ?? "square").trim().toLowerCase();
+                        const valIn = (b.channels.In || b.channels.In1) ? (signals[b.channels.In] ?? signals[b.channels.In1] ?? val) : val;
+                        const valIn2 = signals[b.channels.In2] ?? parseScientific(b.parameters.exponent ?? b.parameters.K ?? b.parameters.const ?? "2.0");
+                        
+                        if (f === "power" || f === "pow") {
+                            const evalFn = (v1: number, v2: number) => Math.pow(v1, v2);
+                            this.setControlSignal(signals, out, this.evalVector2(valIn, valIn2, evalFn));
+                        } else if (f === "mod") {
+                            const evalFn = (v1: number, v2: number) => {
+                                const m = v2 === 0 ? 1 : v2;
+                                return ((v1 % m) + m) % m;
+                            };
+                            this.setControlSignal(signals, out, this.evalVector2(valIn, valIn2, evalFn));
+                        } else if (f === "rem") {
+                            const evalFn = (v1: number, v2: number) => {
+                                const m = v2 === 0 ? 1 : v2;
+                                return v1 % m;
+                            };
+                            this.setControlSignal(signals, out, this.evalVector2(valIn, valIn2, evalFn));
+                        } else {
+                            const evalFn = (v: number) => {
+                                if (f === "square") return v * v;
+                                if (f === "square root" || f === "sqrt") return Math.sqrt(Math.abs(v));
+                                if (f === "exponential" || f === "exp") return Math.exp(v);
+                                if (f === "logarithm" || f === "log" || f === "ln") return Math.log(Math.abs(v) + 1e-15);
+                                if (f === "log10") return Math.log10(Math.abs(v) + 1e-15);
+                                if (f === "10^u") return Math.pow(10.0, v);
+                                if (f === "reciprocal") return 1.0 / (v === 0 ? 1e-15 : v);
+                                if (f === "abs") return Math.abs(v);
+                                return v * v;
+                            };
+                            this.setControlSignal(signals, out, this.evalVector1(valIn, evalFn));
+                        }
                     } else if (orig === "ROUND") {
                         const mode = b.parameters.mode ?? "nearest";
                         if (mode === "floor") signals[out] = Math.floor(val);

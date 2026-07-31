@@ -350,6 +350,44 @@ export function updatePropertiesPanel(): void {
             }
             inputField.appendChild(opt);
           });
+        } else if ((comp.type === 'MATH_FCN' || comp.type === 'FCN') && (key === 'function' || key === 'fcn')) {
+          inputField = document.createElement('select');
+          inputField.className = 'prop-input';
+          
+          const options = [
+            { value: 'square', label: 'square' },
+            { value: 'square root', label: 'square root' },
+            { value: 'exponential', label: 'exponential' },
+            { value: 'logarithm', label: 'logarithm' },
+            { value: 'power', label: 'power' },
+            { value: 'mod', label: 'mod' },
+            { value: 'rem', label: 'rem' },
+            { value: 'reciprocal', label: 'reciprocal' },
+            { value: 'abs', label: 'abs' }
+          ];
+          const currVal = String(comp.parameters[key] || 'square').toLowerCase();
+          options.forEach(opt => {
+            const optionEl = document.createElement('option');
+            optionEl.value = opt.value;
+            optionEl.textContent = opt.label;
+            if (currVal === opt.value.toLowerCase() || (currVal === 'sqrt' && opt.value === 'square root') || (currVal === 'exp' && opt.value === 'exponential') || (currVal === 'log' && opt.value === 'logarithm')) {
+              optionEl.selected = true;
+            }
+            inputField.appendChild(optionEl);
+          });
+        } else if (comp.type === 'TRIG_FCN' && (key === 'function' || key === 'fcn')) {
+          inputField = document.createElement('select');
+          inputField.className = 'prop-input';
+          
+          const options = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh', 'cosh', 'tanh'];
+          const currVal = String(comp.parameters[key] || 'sin').toLowerCase();
+          options.forEach(optVal => {
+            const optionEl = document.createElement('option');
+            optionEl.value = optVal;
+            optionEl.textContent = optVal;
+            if (currVal === optVal) optionEl.selected = true;
+            inputField.appendChild(optionEl);
+          });
         } else if (comp.type === 'TRI' && (key === 'phase_source' || key === 'freq_source')) {
           inputField = document.createElement('select');
           inputField.className = 'prop-input';

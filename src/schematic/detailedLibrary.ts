@@ -410,15 +410,6 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     symbol: 'LUT 3D'
   },
   {
-    type: 'FCN',
-    label: 'Function (f(u))',
-    desc: 'Evaluate a custom mathematical expression.',
-    category: 'control',
-    subcategory: 'Functions & Tables',
-    symbol: 'f(u)',
-    defaultParameters: { expr: 'u[0] * 2' }
-  },
-  {
     type: 'CSCRIPT',
     label: 'C-Script',
     desc: 'Implement custom continuous/discrete dynamic behavior in ANSI-C code.',
@@ -1562,7 +1553,7 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
   }
 ];
 
-export function getDetailedComponentPins(type: string): Record<string, any> | null {
+export function getDetailedComponentPins(type: string, comp?: any): Record<string, any> | null {
   const libComp = DETAILED_COMPONENTS.find(c => c.type === type);
   if (!libComp) return null;
 
@@ -1982,9 +1973,38 @@ export function getDetailedComponentPins(type: string): Record<string, any> | nu
     };
   }
 
-  const twoInputSubcategories = ['Logical & Bitwise', 'Discontinuous', 'Functions & Tables'];
-  const twoInputTypes = ['SUM', 'PROD', 'COMP', 'MIN_MAX', 'TRIG_FCN', 'MATH_FCN', 'LOGIC_OP', 'BITWISE_OP'];
-  if (twoInputSubcategories.includes(libComp.subcategory) || twoInputTypes.includes(type)) {
+  if (type === 'MATH_FCN' || type === 'FCN') {
+    const fcn = String((comp && comp.parameters && (comp.parameters.function || comp.parameters.fcn)) || 'square').toLowerCase();
+    if (['power', 'pow', 'mod', 'rem'].includes(fcn)) {
+      return {
+        In1: { x: -25, y: -10, dx: -1, dy: 0 },
+        In2: { x: -25, y: 10, dx: -1, dy: 0 },
+        Out: { x: 25, y: 0, dx: 1, dy: 0 }
+      };
+    }
+    return {
+      In: { x: -25, y: 0, dx: -1, dy: 0 },
+      Out: { x: 25, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'TRIG_FCN') {
+    const fcn = String((comp && comp.parameters && (comp.parameters.function || comp.parameters.fcn)) || 'sin').toLowerCase();
+    if (['atan2', 'hypot'].includes(fcn)) {
+      return {
+        In1: { x: -25, y: -10, dx: -1, dy: 0 },
+        In2: { x: -25, y: 10, dx: -1, dy: 0 },
+        Out: { x: 25, y: 0, dx: 1, dy: 0 }
+      };
+    }
+    return {
+      In: { x: -25, y: 0, dx: -1, dy: 0 },
+      Out: { x: 25, y: 0, dx: 1, dy: 0 }
+    };
+  }
+
+  const twoInputTypes = ['SUM', 'PROD', 'COMP', 'MIN_MAX', 'LOGIC_OP', 'BITWISE_OP'];
+  if (twoInputTypes.includes(type)) {
     // Check for single input exceptions
     if (['ABS', 'SIGN', 'ROUND', 'NOT', 'QUANTIZER', 'HIT_CROSSING'].includes(type)) {
       return {
