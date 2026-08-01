@@ -1362,7 +1362,7 @@ export default function SchematicEditor({
               id="canvas-svg"
               ref={svgRef}
               className="w-full h-full select-none outline-none"
-              style={{ minHeight: "640px", cursor: 'default' }}
+              style={{ minHeight: "640px", cursor: 'default', touchAction: 'none' }}
             >
               {/* Backgrid patterns */}
               <defs>
