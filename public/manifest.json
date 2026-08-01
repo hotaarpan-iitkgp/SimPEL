@@ -1,12 +1,15 @@
 {
-  "name": "SimPEL Circuit Simulator Pro",
+  "name": "SimPEL — Circuit Simulator Pro",
   "short_name": "SimPEL",
-  "description": "Progressive Web App for high-performance offline schematic editor and circuit simulation.",
+  "description": "High-performance offline schematic editor and circuit simulation suite. Runs fully offline after installation.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#020617",
   "theme_color": "#10b981",
   "orientation": "any",
+  "categories": ["productivity", "education", "utilities"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.png",
@@ -19,6 +22,15 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "SimPEL Circuit Simulator Pro"
     }
   ]
 }

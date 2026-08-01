@@ -519,7 +519,15 @@ export default function App() {
           });
 
           if (!response.ok) {
-            throw new Error(await response.text());
+            // Check if this is the PWA service worker's offline sentinel (503 + {error:'offline'})
+            let bodyJson: any = null;
+            try { bodyJson = await response.clone().json(); } catch { /* not JSON */ }
+            const isOfflineSentinel = response.status === 503 && bodyJson?.error === 'offline';
+            if (!isOfflineSentinel) {
+              throw new Error(await response.text());
+            }
+            // Fall through to local TS solver below
+            throw Object.assign(new Error('offline'), { isOffline: true });
           }
 
           results = await response.json();
@@ -527,7 +535,11 @@ export default function App() {
           if (targetEngine === 'cpp') {
             throw new Error(`C++ Native Solver endpoint unreachable. Please verify circuitsim_solver.exe is running on port 3001. Details: ${err.message || err}`);
           }
-          console.warn("Express/C++ server simulation unreachable. Falling back to local browser TypeScript solver...", err);
+          if (!err.isOffline) {
+            console.warn('[SimPEL] Server unreachable — running simulation locally in browser...', err);
+          } else {
+            console.info('[SimPEL PWA] Running simulation offline in browser (Service Worker mode).');
+          }
           localSimState.cancelled = false;
           localSimState.paused = false;
           const useIdealPwl = parsed.simulation_parameters?.solverMethod === 'ideal-pwl';

@@ -640,23 +640,11 @@ export default function StudentApp() {
       parsed.sessionId = sessionId;
 
       let results: SimulationResults;
-      try {
-        const response = await fetch('/api/simulate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(parsed)
-        });
+      const targetEngine = parsed.simulation_parameters?.engine || 'auto';
 
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-
-        results = await response.json();
-      } catch (err: any) {
-        console.warn("Express server simulation failed, compiling in browser...", err);
+      if (targetEngine === 'ts') {
         localSimState.cancelled = false;
         localSimState.paused = false;
-        
         const useIdealPwl = parsed.simulation_parameters?.solverMethod === 'ideal-pwl';
         const sim = useIdealPwl
           ? new AlternativeCircuitSimulator(
@@ -669,11 +657,57 @@ export default function StudentApp() {
               parsed.control_loops || [],
               parsed.simulation_parameters || {}
             );
-        
         results = await sim.runAsync(
           () => localSimState.cancelled,
           () => localSimState.paused
         );
+      } else {
+        try {
+          const response = await fetch('/api/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(parsed)
+          });
+
+          if (!response.ok) {
+            let bodyJson: any = null;
+            try { bodyJson = await response.clone().json(); } catch { /* not JSON */ }
+            const isOfflineSentinel = response.status === 503 && bodyJson?.error === 'offline';
+            if (!isOfflineSentinel) {
+              throw new Error(await response.text());
+            }
+            throw Object.assign(new Error('offline'), { isOffline: true });
+          }
+
+          results = await response.json();
+        } catch (err: any) {
+          if (targetEngine === 'cpp') {
+            throw new Error(`C++ Native Solver endpoint unreachable. Please verify circuitsim_solver.exe is running on port 3001. Details: ${err.message || err}`);
+          }
+          if (!err.isOffline) {
+            console.warn('[SimPEL] Server unreachable — running simulation locally in browser...', err);
+          } else {
+            console.info('[SimPEL PWA] Running simulation offline in browser (Service Worker mode).');
+          }
+          localSimState.cancelled = false;
+          localSimState.paused = false;
+          const useIdealPwl = parsed.simulation_parameters?.solverMethod === 'ideal-pwl';
+          const sim = useIdealPwl
+            ? new AlternativeCircuitSimulator(
+                parsed.physical_stage || [],
+                parsed.control_loops || [],
+                parsed.simulation_parameters || {}
+              )
+            : new CircuitSimulator(
+                parsed.physical_stage || [],
+                parsed.control_loops || [],
+                parsed.simulation_parameters || {}
+              );
+          results = await sim.runAsync(
+            () => localSimState.cancelled,
+            () => localSimState.paused
+          );
+        }
       }
 
       setSimResults(results);
@@ -1676,6 +1710,28 @@ export default function StudentApp() {
                   >
                     <option value="non-ideal">Non-Ideal Transient</option>
                     <option value="ideal-pwl">Ideal PWL Solver</option>
+                  </select>
+                </div>
+
+                {/* Execution Engine */}
+                <div className="flex flex-col gap-1">
+                  <span className={`text-[9.5px] font-mono font-bold select-none text-sky-400`}>Solver Engine</span>
+                  <select
+                    value={state.simulationSettings.engine || "auto"}
+                    onChange={(e) => {
+                      state.simulationSettings.engine = e.target.value as any;
+                      saveState();
+                      setAppletUpdateCount(prev => prev + 1);
+                    }}
+                    className={`text-[10px] font-mono font-bold rounded px-2 py-1.5 border w-full cursor-pointer outline-none text-sky-300 ${
+                      theme === 'light'
+                        ? 'bg-sky-50 border-sky-300 focus:border-sky-500'
+                        : 'bg-slate-950/90 border-sky-900/60 focus:border-sky-500'
+                    }`}
+                  >
+                    <option value="auto">Auto (Native C++ / TS Fallback)</option>
+                    <option value="ts">TypeScript Local JS Engine</option>
+                    <option value="cpp">Native C++ Engine</option>
                   </select>
                 </div>
 

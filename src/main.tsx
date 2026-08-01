@@ -1,8 +1,9 @@
-import {StrictMode, useState, useEffect} from 'react';
-import {createRoot} from 'react-dom/client';
+import { StrictMode, useState, useEffect, lazy, Suspense } from 'react';
+import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import StudentApp from './StudentApp.tsx';
 import GamePlayer from './components/GamePlayer.tsx';
+import PWAInstallBanner from './components/PWAInstallBanner.tsx';
 import './index.css';
 
 function MainRouter() {
@@ -39,17 +40,28 @@ function MainRouter() {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <MainRouter />
+    <PWAInstallBanner />
   </StrictMode>,
 );
 
+// ─── Service Worker Registration ───────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((reg) => {
-        console.log('ServiceWorker registration successful with scope: ', reg.scope);
-      })
-      .catch((err) => {
-        console.error('ServiceWorker registration failed: ', err);
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      console.log('[SimPEL PWA] Service Worker registered:', reg.scope);
+
+      // Listen for controller change (after skipWaiting from update banner)
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
       });
+
+    } catch (err) {
+      console.error('[SimPEL PWA] Service Worker registration failed:', err);
+    }
   });
 }
