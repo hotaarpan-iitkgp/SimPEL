@@ -642,7 +642,7 @@ export default function StudentApp() {
       let results: SimulationResults;
       const targetEngine = parsed.simulation_parameters?.engine || 'auto';
 
-      if (targetEngine === 'ts') {
+      if (targetEngine !== 'cpp') {
         localSimState.cancelled = false;
         localSimState.paused = false;
         const useIdealPwl = parsed.simulation_parameters?.solverMethod === 'ideal-pwl';
@@ -663,50 +663,19 @@ export default function StudentApp() {
         );
       } else {
         try {
-          const response = await fetch('/api/simulate', {
+          const response = await fetch('http://127.0.0.1:3001/api/simulate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(parsed)
           });
 
           if (!response.ok) {
-            let bodyJson: any = null;
-            try { bodyJson = await response.clone().json(); } catch { /* not JSON */ }
-            const isOfflineSentinel = response.status === 503 && bodyJson?.error === 'offline';
-            if (!isOfflineSentinel) {
-              throw new Error(await response.text());
-            }
-            throw Object.assign(new Error('offline'), { isOffline: true });
+            throw new Error(await response.text());
           }
 
           results = await response.json();
         } catch (err: any) {
-          if (targetEngine === 'cpp') {
-            throw new Error(`C++ Native Solver endpoint unreachable. Please verify circuitsim_solver.exe is running on port 3001. Details: ${err.message || err}`);
-          }
-          if (!err.isOffline) {
-            console.warn('[SimPEL] Server unreachable — running simulation locally in browser...', err);
-          } else {
-            console.info('[SimPEL PWA] Running simulation offline in browser (Service Worker mode).');
-          }
-          localSimState.cancelled = false;
-          localSimState.paused = false;
-          const useIdealPwl = parsed.simulation_parameters?.solverMethod === 'ideal-pwl';
-          const sim = useIdealPwl
-            ? new AlternativeCircuitSimulator(
-                parsed.physical_stage || [],
-                parsed.control_loops || [],
-                parsed.simulation_parameters || {}
-              )
-            : new CircuitSimulator(
-                parsed.physical_stage || [],
-                parsed.control_loops || [],
-                parsed.simulation_parameters || {}
-              );
-          results = await sim.runAsync(
-            () => localSimState.cancelled,
-            () => localSimState.paused
-          );
+          throw new Error(`C++ Native Solver endpoint unreachable. Please verify circuitsim_solver.exe is running on port 3001. Details: ${err.message || err}`);
         }
       }
 
