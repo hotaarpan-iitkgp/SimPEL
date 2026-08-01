@@ -20,13 +20,11 @@ export default defineConfig(() => {
 
         // Workbox injectManifest config
         injectManifest: {
-          // Include all JS, CSS, HTML, images, and the large static libs
           globPatterns: [
             '**/*.{js,css,html,ico,png,svg,woff,woff2,ttf}',
           ],
           globIgnores: ['**/node_modules/**'],
-          // Large files — plotly is 3.5MB, include it explicitly
-          maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB limit
+          maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15 MB limit
         },
 
         // Web App Manifest (merged with public/manifest.json)
@@ -59,10 +57,22 @@ export default defineConfig(() => {
         },
 
         devOptions: {
-          enabled: false, // Disable SW in dev (avoids stale cache during development)
+          enabled: false,
         },
       }),
     ],
+    build: {
+      chunkSizeWarningLimit: 5000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom'],
+            'vendor-charts': ['recharts'],
+            'vendor-ui': ['lucide-react', 'motion'],
+          },
+        },
+      },
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
