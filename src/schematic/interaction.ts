@@ -20,6 +20,7 @@ import {
   rotateSelected, 
   flipSelectedHorizontal,
   flipSelectedVertical,
+  toggleCommentSelected,
   deleteSelected, 
   clearWorkspace, 
   undo 
@@ -534,6 +535,12 @@ export function initInteractions(svg: SVGSVGElement): () => void {
       deleteSelected();
     }
     
+    // Shift + X: Toggle Comment Out / Uncomment selection
+    if (e.shiftKey && key === 'x') {
+      e.preventDefault();
+      toggleCommentSelected();
+    }
+
     // Ctrl + X: Cut
     if (e.ctrlKey && key === 'x') {
       e.preventDefault();

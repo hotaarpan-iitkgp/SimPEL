@@ -5,6 +5,7 @@ import {
   cutSelected, 
   copySelected, 
   deleteSelected, 
+  toggleCommentSelected,
   rotateSelected, 
   flipSelectedHorizontal, 
   flipSelectedVertical 
@@ -118,6 +119,10 @@ function ensureContextMenuDOM(): HTMLElement {
       <span class="ctx-label">Delete</span>
       <span class="ctx-shortcut">Del</span>
     </div>
+    <div class="ctx-item" id="ctx-comment">
+      <span class="ctx-label" id="ctx-comment-label">Comment Out</span>
+      <span class="ctx-shortcut">Shift+X</span>
+    </div>
     <div class="ctx-divider"></div>
     <div class="ctx-item has-submenu" id="ctx-format">
       <span class="ctx-label">Format</span>
@@ -158,6 +163,12 @@ function ensureContextMenuDOM(): HTMLElement {
     e.stopPropagation();
     hideContextMenu();
     deleteSelected();
+  });
+
+  menuEl.querySelector('#ctx-comment')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideContextMenu();
+    toggleCommentSelected();
   });
 
   menuEl.querySelector('#ctx-flip-h')?.addEventListener('click', (e) => {
@@ -236,20 +247,33 @@ export function showContextMenu(e: MouseEvent, svg: SVGSVGElement): void {
   const hasSelection = state.selectedComponentIds.length > 0 || state.selectedWireIds.length > 0;
   const hasCompSelection = state.selectedComponentIds.length > 0;
 
+  // Check if all selected items are currently commented out
+  const selComps = state.selectedComponentIds.map((id: string) => state.components.find((c: any) => c.id === id)).filter(Boolean);
+  const selWires = state.selectedWireIds.map((id: string) => state.wires.find((w: any) => w.id === id)).filter(Boolean);
+  const allCommented = hasSelection && selComps.every((c: any) => c.commented) && selWires.every((w: any) => w.commented);
+
+  const commentLabelEl = menu.querySelector('#ctx-comment-label');
+  if (commentLabelEl) {
+    commentLabelEl.textContent = allCommented ? 'Uncomment' : 'Comment Out';
+  }
+
   // Update item enabled/disabled state based on active selection
   const cutItem = menu.querySelector('#ctx-cut');
   const copyItem = menu.querySelector('#ctx-copy');
   const deleteItem = menu.querySelector('#ctx-delete');
+  const commentItem = menu.querySelector('#ctx-comment');
   const formatItem = menu.querySelector('#ctx-format');
 
   if (hasSelection) {
     cutItem?.classList.remove('disabled');
     copyItem?.classList.remove('disabled');
     deleteItem?.classList.remove('disabled');
+    commentItem?.classList.remove('disabled');
   } else {
     cutItem?.classList.add('disabled');
     copyItem?.classList.add('disabled');
     deleteItem?.classList.add('disabled');
+    commentItem?.classList.add('disabled');
   }
 
   if (hasCompSelection) {
@@ -262,7 +286,7 @@ export function showContextMenu(e: MouseEvent, svg: SVGSVGElement): void {
   menu.style.display = 'block';
 
   const menuWidth = menu.offsetWidth || 190;
-  const menuHeight = menu.offsetHeight || 160;
+  const menuHeight = menu.offsetHeight || 190;
 
   let x = e.clientX;
   let y = e.clientY;

@@ -672,6 +672,33 @@ export function flipSelectedVertical(): void {
   showToast('Flipped selection Up/Down.');
 }
 
+// Toggle Comment Out status for selected components and wires
+export function toggleCommentSelected(): void {
+  if (state.selectedComponentIds.length === 0 && state.selectedWireIds.length === 0) {
+    showToast('Nothing selected to comment out.');
+    return;
+  }
+  saveState();
+
+  const comps = state.selectedComponentIds.map((id: string) => state.components.find((c: any) => c.id === id)).filter(Boolean);
+  const wires = state.selectedWireIds.map((id: string) => state.wires.find((w: any) => w.id === id)).filter(Boolean);
+
+  // Check if all selected items are already commented out
+  const allCommented = comps.every((c: any) => c.commented) && wires.every((w: any) => w.commented);
+  const newStatus = !allCommented;
+
+  comps.forEach((c: any) => {
+    c.commented = newStatus;
+  });
+  wires.forEach((w: any) => {
+    w.commented = newStatus;
+  });
+
+  draw();
+  updatePropertiesPanel();
+  showToast(newStatus ? 'Commented out selection.' : 'Uncommented selection.');
+}
+
 
 // Delete Selected components and connected wires
 export function deleteSelected(): void {
@@ -957,6 +984,12 @@ const insertTapPointsAndSplit = (path: { x: number; y: number }[], taps: { x: nu
   return subPaths;
 };
 
+function isCompCommented(compId?: string): boolean {
+  if (!compId) return false;
+  const comp = state.components.find((c: any) => c.id === compId);
+  return !!(comp && comp.commented);
+}
+
 // CRITICAL EXPORTER: Converts the schematic spatial representation into structured Dual-Graph simulation Netlist
 export function exportDualGraphJSON(fastMode: boolean = false): any {
   // Commit current sub-schematic edits to parent/root
@@ -1018,7 +1051,8 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
   
   // 1. Map all physical power-stage component pins to unique strings
   const physicalComponents = state.components.filter((c: any) => {
-     const isBasicPhys = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'vg-FET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM'].includes(c.type);
+    if (c.commented) return false;
+    const isBasicPhys = ['R', 'L', 'C', 'S', 'D', 'MOSFET', 'vg-FET', 'V', 'I', 'AC_V', 'XFMR', 'VM', 'AM'].includes(c.type);
     const isDetailedPhys = DETAILED_COMPONENTS.some(dc => dc.type === c.type && dc.category === 'electrical');
     return isBasicPhys || isDetailedPhys;
   });
@@ -1035,7 +1069,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
   });
 
   // 1.5. Map all GND component pins to unique strings in Union-Find
-  state.components.filter((c: any) => c.type === 'GND').forEach((comp: any) => {
+  state.components.filter((c: any) => c.type === 'GND' && !c.commented).forEach((comp: any) => {
     uf.find(`${comp.id}.Gnd`);
   });
   
@@ -1081,7 +1115,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
   });
   
   // 2. Disjoint Union-Find wire paths routing to connect endpoints
-  const electricalWires = state.wires.filter((w: any) => getWireDomain(w) === 'electrical');
+  const electricalWires = state.wires.filter((w: any) => getWireDomain(w) === 'electrical' && !w.commented && !isCompCommented(w.from?.compId) && (!w.to || !isCompCommented(w.to.compId)));
   
   const wireSegments: Record<string, {
     segmentId: string;
@@ -1318,6 +1352,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
   
   // 5. Populate Physical Components Stage
   state.components.forEach((comp: any) => {
+    if (comp.commented) return;
     const p = paramsVals(comp);
     
     switch (comp.type) {
@@ -1869,6 +1904,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
   
   // 6. Populate Control Loops Stage
   state.components.forEach((comp: any) => {
+    if (comp.commented) return;
     const p = paramsVals(comp);
     
     switch (comp.type) {
@@ -1929,7 +1965,9 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
         control_loops.gains.push({
           ...p,
           id: comp.id,
-          input: getIncomingControlTerminal(comp.id, 'In'),
+          input: getIncomingControlTerminal(comp.id, 'In') || getIncomingControlTerminal(comp.id, 'In1'),
+          input1: getIncomingControlTerminal(comp.id, 'In1'),
+          input2: getIncomingControlTerminal(comp.id, 'In2'),
           output: `${comp.id}.Out`,
           K: p.gain || p.K || 1.0,
           original_type: comp.type
@@ -2196,14 +2234,6 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           inputs: comp.type === 'NOT' ? [getIncomingControlTerminal(comp.id, 'In')] : [getIncomingControlTerminal(comp.id, 'A'), getIncomingControlTerminal(comp.id, 'B')],
           type: comp.type.toLowerCase(),
           output: `${comp.id}.Out`
-        });
-        break;
-      case 'FCN':
-        control_loops.custom_functions.push({
-          id: comp.id,
-          input: getIncomingControlTerminal(comp.id, 'In'),
-          output: `${comp.id}.Out`,
-          expr: comp.parameters && comp.parameters.expr ? comp.parameters.expr : "u[0] * 2"
         });
         break;
       case 'PROD':

@@ -2716,6 +2716,9 @@ export class CircuitSimulator {
                         if (f === "atan2") {
                             const evalFn = (v1: number, v2: number) => Math.atan2(v1, v2);
                             this.setControlSignal(signals, out, this.evalVector2(valIn, valIn2, evalFn));
+                        } else if (f === "hypot") {
+                            const evalFn = (v1: number, v2: number) => Math.hypot(v1, v2);
+                            this.setControlSignal(signals, out, this.evalVector2(valIn, valIn2, evalFn));
                         } else {
                             const evalFn = (v: number) => {
                                 if (f === "sin") return Math.sin(v);
@@ -2727,6 +2730,9 @@ export class CircuitSimulator {
                                 if (f === "sinh") return Math.sinh(v);
                                 if (f === "cosh") return Math.cosh(v);
                                 if (f === "tanh") return Math.tanh(v);
+                                if (f === "asinh") return Math.asinh(v);
+                                if (f === "acosh") return Math.acosh(Math.max(1.0, v));
+                                if (f === "atanh") return Math.atanh(Math.max(-0.999999, Math.min(0.999999, v)));
                                 return 0.0;
                             };
                             this.setControlSignal(signals, out, this.evalVector1(valIn, evalFn));
@@ -2738,6 +2744,9 @@ export class CircuitSimulator {
                         
                         if (f === "power" || f === "pow") {
                             const evalFn = (v1: number, v2: number) => Math.pow(v1, v2);
+                            this.setControlSignal(signals, out, this.evalVector2(valIn, valIn2, evalFn));
+                        } else if (f === "hypot") {
+                            const evalFn = (v1: number, v2: number) => Math.hypot(v1, v2);
                             this.setControlSignal(signals, out, this.evalVector2(valIn, valIn2, evalFn));
                         } else if (f === "mod") {
                             const evalFn = (v1: number, v2: number) => {

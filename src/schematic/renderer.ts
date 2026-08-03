@@ -268,10 +268,14 @@ export function draw(): void {
     const domain = getWireDomain(wire);
     const isControl = (domain === 'control');
     
+    const isWireCommented = !!wire.commented || (wire.from?.compId && state.components.some((c: any) => c.id === wire.from.compId && c.commented)) || (wire.to?.compId && state.components.some((c: any) => c.id === wire.to.compId && c.commented));
     const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     pathEl.setAttribute('d', pathStr);
-    pathEl.setAttribute('class', `wire ${isControl ? 'control-net' : ''} ${state.selectedWireIds.includes(wire.id) ? 'selected' : ''}`);
+    pathEl.setAttribute('class', `wire ${isControl ? 'control-net' : ''} ${state.selectedWireIds.includes(wire.id) ? 'selected' : ''} ${isWireCommented ? 'commented' : ''}`);
     pathEl.setAttribute('data-id', wire.id);
+    if (isWireCommented) {
+      pathEl.style.opacity = '0.35';
+    }
     if (isControl) {
       const hasArrowAtStart = (wire.from.type === 'pin' && isControlInputPin(wire.from.compId, wire.from.terminal));
       const hasArrowAtEnd = (wire.to && (wire.to.type === 'wire' || (wire.to.type === 'pin' && isControlInputPin(wire.to.compId, wire.to.terminal))));
@@ -359,9 +363,13 @@ export function draw(): void {
   // Render Components
   state.components.forEach((comp: any) => {
     const isSelected = state.selectedComponentIds.includes(comp.id);
+    const isCommented = !!comp.commented;
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.setAttribute('class', `component ${isSelected ? 'selected' : ''}`);
+    g.setAttribute('class', `component ${isSelected ? 'selected' : ''} ${isCommented ? 'commented' : ''}`);
     g.setAttribute('data-id', comp.id);
+    if (isCommented) {
+      g.style.opacity = '0.35';
+    }
     const scaleX = comp.flipX ? -1 : 1;
     const scaleY = comp.flipY ? -1 : 1;
     g.setAttribute('transform', `translate(${comp.x}, ${comp.y}) rotate(${comp.rotation || 0}) scale(${scaleX}, ${scaleY})`);
