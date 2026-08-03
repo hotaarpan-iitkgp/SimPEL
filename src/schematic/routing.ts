@@ -6,11 +6,13 @@ import { DETAILED_COMPONENTS } from './detailedLibrary';
 export function getTerminalCoords(comp: any, terminalName: string) {
   const pinMap = getComponentPins(comp);
   const pin = pinMap && pinMap[terminalName] ? pinMap[terminalName] : { x: 0, y: 0 };
-  const localX = pin.x;
-  const localY = pin.y;
+  const scaleX = comp.flipX ? -1 : 1;
+  const scaleY = comp.flipY ? -1 : 1;
+  const localX = (pin.x || 0) * scaleX;
+  const localY = (pin.y || 0) * scaleY;
   
   // Calculate rotation in radians
-  const rad = (comp.rotation * Math.PI) / 180;
+  const rad = ((comp.rotation || 0) * Math.PI) / 180;
   const cos = Math.round(Math.cos(rad));
   const sin = Math.round(Math.sin(rad));
   
@@ -24,10 +26,12 @@ export function getTerminalCoords(comp: any, terminalName: string) {
 export function getTerminalDir(comp: any, terminalName: string) {
   const pinMap = getComponentPins(comp);
   const pin = pinMap && pinMap[terminalName] ? pinMap[terminalName] : { dx: 0, dy: 0 };
-  const dx = pin.dx;
-  const dy = pin.dy;
+  const scaleX = comp.flipX ? -1 : 1;
+  const scaleY = comp.flipY ? -1 : 1;
+  const dx = (pin.dx || 0) * scaleX;
+  const dy = (pin.dy || 0) * scaleY;
   
-  const rad = (comp.rotation * Math.PI) / 180;
+  const rad = ((comp.rotation || 0) * Math.PI) / 180;
   const cos = Math.round(Math.cos(rad));
   const sin = Math.round(Math.sin(rad));
   

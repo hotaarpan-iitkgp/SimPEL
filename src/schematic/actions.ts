@@ -403,6 +403,18 @@ export function copySelected(): void {
   showToast(`Copied ${copiedComps.length} components.`);
 }
 
+// Cut Selected elements to Clipboard
+export function cutSelected(): void {
+  if (state.selectedComponentIds.length === 0 && state.selectedWireIds.length === 0) {
+    showToast('Nothing selected to cut.');
+    return;
+  }
+  copySelected();
+  deleteSelected();
+  showToast('Cut selection to clipboard.');
+}
+
+
 // Paste Elements from Clipboard
 export async function pasteSelected(): Promise<void> {
   let clipboardData: any = null;
@@ -578,16 +590,88 @@ export function rotateSelected(): void {
   if (state.selectedComponentIds.length === 0) return;
   saveState();
   
-  state.selectedComponentIds.forEach((id: string) => {
-    const comp = state.components.find((c: any) => c.id === id);
+  if (state.selectedComponentIds.length === 1) {
+    const comp = state.components.find((c: any) => c.id === state.selectedComponentIds[0]);
     if (comp) {
-      comp.rotation = (comp.rotation + 90) % 360;
+      comp.rotation = ((comp.rotation || 0) + 90) % 360;
     }
-  });
+  } else {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const comps = state.selectedComponentIds.map((id: string) => state.components.find((c: any) => c.id === id)).filter(Boolean);
+    comps.forEach((c: any) => {
+      if (c.x < minX) minX = c.x;
+      if (c.x > maxX) maxX = c.x;
+      if (c.y < minY) minY = c.y;
+      if (c.y > maxY) maxY = c.y;
+    });
+    const cx = Math.round((minX + maxX) / 2 / 10) * 10;
+    const cy = Math.round((minY + maxY) / 2 / 10) * 10;
+    
+    comps.forEach((c: any) => {
+      const dx = c.x - cx;
+      const dy = c.y - cy;
+      c.x = cx - dy;
+      c.y = cy + dx;
+      c.rotation = ((c.rotation || 0) + 90) % 360;
+    });
+  }
   
   draw();
   showToast('Rotated selection 90°.');
 }
+
+// Flip Selected Components Left / Right (Horizontal)
+export function flipSelectedHorizontal(): void {
+  if (state.selectedComponentIds.length === 0) return;
+  saveState();
+
+  const comps = state.selectedComponentIds.map((id: string) => state.components.find((c: any) => c.id === id)).filter(Boolean);
+  if (comps.length > 1) {
+    let minX = Infinity, maxX = -Infinity;
+    comps.forEach((c: any) => {
+      if (c.x < minX) minX = c.x;
+      if (c.x > maxX) maxX = c.x;
+    });
+    const cx = Math.round((minX + maxX) / 2 / 10) * 10;
+    comps.forEach((c: any) => {
+      const dx = c.x - cx;
+      c.x = cx - dx;
+      c.flipX = !c.flipX;
+    });
+  } else if (comps.length === 1) {
+    comps[0].flipX = !comps[0].flipX;
+  }
+
+  draw();
+  showToast('Flipped selection Left/Right.');
+}
+
+// Flip Selected Components Up / Down (Vertical)
+export function flipSelectedVertical(): void {
+  if (state.selectedComponentIds.length === 0) return;
+  saveState();
+
+  const comps = state.selectedComponentIds.map((id: string) => state.components.find((c: any) => c.id === id)).filter(Boolean);
+  if (comps.length > 1) {
+    let minY = Infinity, maxY = -Infinity;
+    comps.forEach((c: any) => {
+      if (c.y < minY) minY = c.y;
+      if (c.y > maxY) maxY = c.y;
+    });
+    const cy = Math.round((minY + maxY) / 2 / 10) * 10;
+    comps.forEach((c: any) => {
+      const dy = c.y - cy;
+      c.y = cy - dy;
+      c.flipY = !c.flipY;
+    });
+  } else if (comps.length === 1) {
+    comps[0].flipY = !comps[0].flipY;
+  }
+
+  draw();
+  showToast('Flipped selection Up/Down.');
+}
+
 
 // Delete Selected components and connected wires
 export function deleteSelected(): void {

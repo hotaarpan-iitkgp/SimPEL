@@ -235,7 +235,7 @@ export function invalidateSVGCache(compId?: string): void {
 }
 
 function getComponentSVGCached(comp: any): string {
-  const key = `${comp.id}::${comp.type}::${comp.rotation}::${JSON.stringify(comp.parameters)}`;
+  const key = `${comp.id}::${comp.type}::${comp.rotation}::${comp.flipX}::${comp.flipY}::${JSON.stringify(comp.parameters)}`;
   if (!_svgCache.has(key)) {
     _svgCache.set(key, getComponentSVG(comp));
   }
@@ -362,7 +362,9 @@ export function draw(): void {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.setAttribute('class', `component ${isSelected ? 'selected' : ''}`);
     g.setAttribute('data-id', comp.id);
-    g.setAttribute('transform', `translate(${comp.x}, ${comp.y}) rotate(${comp.rotation})`);
+    const scaleX = comp.flipX ? -1 : 1;
+    const scaleY = comp.flipY ? -1 : 1;
+    g.setAttribute('transform', `translate(${comp.x}, ${comp.y}) rotate(${comp.rotation || 0}) scale(${scaleX}, ${scaleY})`);
     
     // Component Body SVG (cached — only recomputed when component params/rotation change)
     g.innerHTML = getComponentSVGCached(comp);

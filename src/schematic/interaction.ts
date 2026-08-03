@@ -14,15 +14,19 @@ import {
 import { 
   completeWire, 
   cancelWire,
+  cutSelected,
   copySelected, 
   pasteSelected, 
   rotateSelected, 
+  flipSelectedHorizontal,
+  flipSelectedVertical,
   deleteSelected, 
   clearWorkspace, 
   undo 
 } from './actions';
 import { updatePropertiesPanel, cleanDanglingWires } from './properties';
 import { openPlotConfig } from './plotConfig';
+import { showContextMenu, hideContextMenu } from './contextMenu';
 import { openSimSettings } from './simSettings';
 
 let isSpacePressed = false;
@@ -39,9 +43,7 @@ export function initInteractions(svg: SVGSVGElement): () => void {
   
   const handleContextMenu = (e: MouseEvent) => {
     e.preventDefault();
-    if (state.activeWire) {
-      cancelWire();
-    }
+    showContextMenu(e, svg);
   };
 
   // Clean up any stale listeners first to avoid double-binding on tab switches
@@ -518,10 +520,13 @@ export function initInteractions(svg: SVGSVGElement): () => void {
       return;
     }
     
-    // Escape: cancel active wire drawing loop
-    if (e.key === 'Escape' && state.activeWire) {
-      state.activeWire = null;
-      draw();
+    // Escape: cancel active wire drawing loop or hide context menu
+    if (e.key === 'Escape') {
+      hideContextMenu();
+      if (state.activeWire) {
+        state.activeWire = null;
+        draw();
+      }
     }
     
     // Delete: delete selections
@@ -529,15 +534,34 @@ export function initInteractions(svg: SVGSVGElement): () => void {
       deleteSelected();
     }
     
-    // 'r' or 'R': Rotate Selection
-    if (key === 'r') {
-      rotateSelected();
+    // Ctrl + X: Cut
+    if (e.ctrlKey && key === 'x') {
+      e.preventDefault();
+      cutSelected();
     }
     
     // Ctrl + C: Copy
     if (e.ctrlKey && key === 'c') {
       e.preventDefault();
       copySelected();
+    }
+
+    // Ctrl + F: Flip Left/Right
+    if (e.ctrlKey && key === 'f') {
+      e.preventDefault();
+      flipSelectedHorizontal();
+    }
+
+    // Ctrl + I: Flip Up/Down
+    if (e.ctrlKey && key === 'i') {
+      e.preventDefault();
+      flipSelectedVertical();
+    }
+
+    // Ctrl + R or 'r' / 'R': Rotate Selection
+    if (key === 'r') {
+      e.preventDefault();
+      rotateSelected();
     }
     
     // Ctrl + V: Paste
