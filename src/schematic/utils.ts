@@ -107,6 +107,27 @@ export function parseScientific(valStr: string | number): number {
   return isNaN(val) ? 0.0 : val;
 }
 
+export function parseVectorOrScalar(s: any): number | number[] {
+  if (typeof s === 'number') return s;
+  if (Array.isArray(s)) return s;
+  if (s === null || s === undefined || s === '') return 0.0;
+  const str = String(s).trim();
+  if (!str) return 0.0;
+  const hasBrackets = str.startsWith('[') && str.endsWith(']');
+  const clean = str.replace(/[\[\]]/g, '').trim();
+  if (!clean) return 0.0;
+  const parts = clean.split(/[\s,;]+/).filter(x => x.trim() !== '');
+  if (parts.length > 1) {
+    return parts.map(x => parseScientific(x));
+  }
+  if (parts.length === 1) {
+    const val = parseScientific(parts[0]);
+    return hasBrackets ? [val] : val;
+  }
+  return 0.0;
+}
+
+
 export function getNextGateSignalLabel(baseLabel: string, existingComps: any[]): string {
   const parseLabel = (label: string): { base: string; num: number | null } => {
     const match = label.match(/^(.*?)([0-9]+)$/);

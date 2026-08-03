@@ -47,6 +47,27 @@ export function parseScientific(str: any): number {
     return result;
 }
 
+export function parseVectorOrScalar(s: any): number | number[] {
+    if (typeof s === 'number') return s;
+    if (Array.isArray(s)) return s;
+    if (s === null || s === undefined || s === '') return 0.0;
+    const str = String(s).trim();
+    if (!str) return 0.0;
+    const hasBrackets = str.startsWith('[') && str.endsWith(']');
+    const clean = str.replace(/[\[\]]/g, '').trim();
+    if (!clean) return 0.0;
+    const parts = clean.split(/[\s,;]+/).filter(x => x.trim() !== '');
+    if (parts.length > 1) {
+        return parts.map(x => parseScientific(x));
+    }
+    if (parts.length === 1) {
+        const val = parseScientific(parts[0]);
+        return hasBrackets ? [val] : val;
+    }
+    return 0.0;
+}
+
+
 export class ExpressionEvaluator {
     evaluate(expression: string, variables: Record<string, number>, block?: CustomScriptBlock): number {
         const expr = expression.trim();
@@ -2461,7 +2482,8 @@ export class CircuitSimulator {
                     }
                     signals[out] = cs[b.id].val;
                 } else {
-                    signals[out] = parseScientific(b.parameters.value ?? "1");
+                    const cVal = parseVectorOrScalar(b.parameters.value ?? b.parameters.constant ?? b.parameters.const ?? "1");
+                    this.setControlSignal(signals, out, cVal);
                 }
             } else if (b.type === "Triangle_Carrier") {
                 const extPhase = b.parameters.phase_source === 'external';
@@ -3533,7 +3555,7 @@ export class CircuitSimulator {
                         signals[out] = 0.0;
                     } else {
                         const signs = b.parameters.signs || "++";
-                        let sum = 0.0;
+                        let sum: any = 0.0;
                         if (b.channels.In1 !== undefined) {
                             let i = 1;
                             while (true) {
@@ -3541,15 +3563,19 @@ export class CircuitSimulator {
                                 if (!ch) break;
                                 const signChar = signs[i - 1] ?? '+';
                                 const s = signChar === '-' ? -1.0 : 1.0;
-                                sum += s * (signals[ch] ?? 0.0);
+                                const valIn = signals[ch] ?? 0.0;
+                                sum = this.evalVector2(sum, valIn, (a, b) => a + s * b);
                                 i++;
                             }
                         } else if (b.channels.A || b.channels.B) {
                             const s1 = signs[0] === '-' ? -1 : 1;
                             const s2 = signs[1] === '-' ? -1 : 1;
-                            sum = s1 * (signals[b.channels.A] ?? 0) + s2 * (signals[b.channels.B] ?? 0);
+                            const valA = signals[b.channels.A] ?? 0.0;
+                            const valB = signals[b.channels.B] ?? 0.0;
+                            sum = this.evalVector2(0.0, valA, (a, b) => a + s1 * b);
+                            sum = this.evalVector2(sum, valB, (a, b) => a + s2 * b);
                         }
-                        signals[out] = sum;
+                        this.setControlSignal(signals, out, sum);
                     }
                 } else if (b.type === "PI_Controller" && out) {
                     const error = signals[b.channels.In] ?? 0.0;
@@ -3910,7 +3936,7 @@ export class CircuitSimulator {
                             }
                         } else {
                             const ops = b.parameters.operators ?? "**";
-                            let prod = 1.0;
+                            let prod: any = 1.0;
                             let i = 1;
                             while (true) {
                                 const ch = b.channels[`In${i}`];
@@ -3918,13 +3944,13 @@ export class CircuitSimulator {
                                 const val = signals[ch] ?? 0.0;
                                 const opChar = ops[i - 1] ?? '*';
                                 if (opChar === '/') {
-                                    prod /= (val || 1e-15);
+                                    prod = this.evalVector2(prod, val, (a, b) => a / (b || 1e-15));
                                 } else {
-                                    prod *= val;
+                                    prod = this.evalVector2(prod, val, (a, b) => a * b);
                                 }
                                 i++;
                             }
-                            signals[out] = prod;
+                            this.setControlSignal(signals, out, prod);
                         }
                     }
                 } else if (b.type === "CustomFunction" && out) {

@@ -162,13 +162,17 @@ export function getComponentSVG(comp: any): string {
         </g>
       `;
     }
-    case 'CONST': // Constant
+    case 'CONST': { // Constant
+      const rawVal = (comp.parameters && comp.parameters.value !== undefined) ? String(comp.parameters.value).trim() : '1.0';
+      const displayText = rawVal.length > 8 ? rawVal.substring(0, 7) + '…' : rawVal;
+      const fontSize = displayText.length > 5 ? 7 : (displayText.length > 3 ? 8 : 9);
       shape = `
         <rect class="comp-path" x="-16" y="-16" width="32" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="2" />
         <path class="comp-path" d="M 16,0 L 20,0 M 17,-3 L 20,0 L 17,3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-        <text x="0" y="4" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">CST</text>
+        <text x="0" y="3.5" font-family="JetBrains Mono, monospace" font-size="${fontSize}" font-weight="700" fill="currentColor" text-anchor="middle" stroke="none">${displayText}</text>
       `;
       break;
+    }
     case 'KEY_TRIGGER': // Keyboard Key Trigger Block
       shape = `
         <rect class="comp-path" x="-20" y="-16" width="40" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="2" />
