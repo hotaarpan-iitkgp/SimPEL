@@ -421,6 +421,7 @@ export const DEFAULT_PARAMETERS: Record<string, any> = {
   V:      { value: "24" },
   I:      { value: "1" },
   AC_V:   { amplitude: "12", frequency: "50", phase: "0" },
+  V_3PH:  { magnitude: "230", frequency: "50", phase: "0" },
   XFMR:   { primary_turns: "[100]", secondary_turns: "[100]" },
   CONST:  { value: "1.0" },
   GAIN:   { K: "2.5" },

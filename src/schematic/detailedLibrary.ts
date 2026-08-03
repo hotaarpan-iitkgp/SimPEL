@@ -1106,11 +1106,12 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
   },
   {
     type: 'V_3PH',
-    label: '3-Phase Voltage Source (Controlled)',
-    desc: '3-phase voltage output controlled by a 3-element signal.',
+    label: '3-Phase Voltage Source',
+    desc: '3-phase AC sinusoidal voltage source with configurable magnitude, frequency, and phase.',
     category: 'electrical',
     subcategory: 'Sources',
-    symbol: '3Ph V'
+    symbol: '3Ph V',
+    defaultParameters: { magnitude: '230', frequency: '50', phase: '0', connection: 'Y' }
   },
   {
     type: 'I_3PH',
@@ -1845,7 +1846,16 @@ export function getDetailedComponentPins(type: string, comp?: any): Record<strin
     };
   }
 
-  if (type === 'V_3PH' || type === 'I_3PH' || type === 'VM_3PH' || type === 'AM_3PH') {
+  if (type === 'V_3PH' || type === 'I_3PH') {
+    return {
+      A: { x: 25, y: -15, dx: 1, dy: 0 },
+      B: { x: 25, y: 0, dx: 1, dy: 0 },
+      C: { x: 25, y: 15, dx: 1, dy: 0 },
+      N: { x: -25, y: 0, dx: -1, dy: 0 }
+    };
+  }
+
+  if (type === 'VM_3PH' || type === 'AM_3PH') {
     return {
       A: { x: -25, y: -15, dx: -1, dy: 0 },
       B: { x: -25, y: 0, dx: -1, dy: 0 },
@@ -2331,8 +2341,12 @@ export function getDetailedComponentSVG(comp: any): string | null {
         boundsX = -27; boundsW = 54; boundsY = -22; boundsH = 44; labelY = 28;
         shape = `
           <rect x="-16" y="-20" width="32" height="40" rx="3" class="comp-path" />
-          <path class="comp-path" d="M -25,-15 L -16,-15 M -25,0 L -16,0 M -25,15 L -16,15" />
-          <text x="0" y="5" font-family="Inter, sans-serif" font-size="14" font-weight="700" fill="currentColor" text-anchor="middle">3~</text>
+          <path class="comp-path" d="M 16,-15 L 25,-15 M 16,0 L 25,0 M 16,15 L 25,15 M -25,0 L -16,0" />
+          <text x="10" y="-12" font-size="8" font-weight="600" fill="#94a3b8" text-anchor="end">A</text>
+          <text x="10" y="3" font-size="8" font-weight="600" fill="#94a3b8" text-anchor="end">B</text>
+          <text x="10" y="18" font-size="8" font-weight="600" fill="#94a3b8" text-anchor="end">C</text>
+          <text x="-10" y="3" font-size="8" font-weight="600" fill="#94a3b8" text-anchor="start">N</text>
+          <text x="0" y="4" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="currentColor" text-anchor="middle">3~</text>
         `;
         break;
       case 'I_3PH':

@@ -807,6 +807,7 @@ export default function SchematicEditor({
     { type: 'V', label: 'DC Voltage Source', desc: 'Constant DC battery input' },
     { type: 'I', label: 'DC Current Source', desc: 'Ideal constant current gen' },
     { type: 'AC_V', label: 'AC Voltage Source', desc: 'Sinusoidal grid voltage source' },
+    { type: 'V_3PH', label: '3-Phase AC Source', desc: '3-phase AC voltage source with magnitude, frequency, and phase' },
     { type: 'XFMR', label: 'Transformer', desc: 'Ideal multi-winding magnetics' },
     { type: 'VM', label: 'Voltmeter', desc: 'Potential probe sensor' },
     { type: 'AM', label: 'Ammeter', desc: 'Discrete current sensor' },

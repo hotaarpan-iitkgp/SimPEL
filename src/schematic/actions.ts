@@ -1393,13 +1393,14 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
         break;
       case 'V_3PH': {
         const connection = (comp.parameters?.connection || 'Y').trim();
-        const amp = p.amplitude || 24.0;
-        const freq = p.frequency || 50.0;
-        const phase = p.phase || 0.0;
+        const amp = parseScientific(p.magnitude ?? p.amplitude ?? p.value ?? 230.0);
+        const freq = parseScientific(p.frequency ?? 50.0);
+        const phase = parseScientific(p.phase ?? 0.0);
         
         const nodeA = pinToNodeMap[`${comp.id}.A`] || "node_0";
         const nodeB = pinToNodeMap[`${comp.id}.B`] || "node_0";
         const nodeC = pinToNodeMap[`${comp.id}.C`] || "node_0";
+        const nodeN = pinToNodeMap[`${comp.id}.N`] || `${comp.id}_N`;
         
         if (connection === 'Delta') {
           physical_stage.voltage_sources.push({
@@ -1427,10 +1428,9 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
             type: 'ac'
           });
         } else {
-          const neutralNode = `${comp.id}_N`;
           physical_stage.voltage_sources.push({
             id: `${comp.id}_A`,
-            nodes: [nodeA, neutralNode],
+            nodes: [nodeA, nodeN],
             amplitude: amp,
             frequency: freq,
             phase: phase,
@@ -1438,7 +1438,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           });
           physical_stage.voltage_sources.push({
             id: `${comp.id}_B`,
-            nodes: [nodeB, neutralNode],
+            nodes: [nodeB, nodeN],
             amplitude: amp,
             frequency: freq,
             phase: phase - 120.0,
@@ -1446,7 +1446,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           });
           physical_stage.voltage_sources.push({
             id: `${comp.id}_C`,
-            nodes: [nodeC, neutralNode],
+            nodes: [nodeC, nodeN],
             amplitude: amp,
             frequency: freq,
             phase: phase + 120.0,
