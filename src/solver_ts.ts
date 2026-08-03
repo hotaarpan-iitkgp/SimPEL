@@ -1768,6 +1768,21 @@ export class CircuitSimulator {
                             if (item.input_d) chs.D = item.input_d;
                             if (item.input_j) chs.J = item.input_j;
                             if (item.input_k) chs.K = item.input_k;
+                            if (item.input_a) chs.A = item.input_a;
+                            if (item.input_b) chs.B = item.input_b;
+                            if (item.input_c) chs.C = item.input_c;
+                            if (item.input_alpha) chs.Alpha = item.input_alpha;
+                            if (item.input_beta) chs.Beta = item.input_beta;
+                            if (item.input_theta) chs.Theta = item.input_theta;
+                            if (item.input_d) chs.d = item.input_d;
+                            if (item.input_q) chs.q = item.input_q;
+                            if (item.output_a) chs.OutA = item.output_a;
+                            if (item.output_b) chs.OutB = item.output_b;
+                            if (item.output_c) chs.OutC = item.output_c;
+                            if (item.output_alpha) chs.OutAlpha = item.output_alpha;
+                            if (item.output_beta) chs.OutBeta = item.output_beta;
+                            if (item.output_d) chs.OutD = item.output_d;
+                            if (item.output_q) chs.OutQ = item.output_q;
                             if (item.input1) chs.In1 = item.input1;
                             if (item.input2) chs.In2 = item.input2;
                             if (item.control_signal) chs.Ctrl = item.control_signal;
@@ -2774,6 +2789,43 @@ export class CircuitSimulator {
                             };
                             this.setControlSignal(signals, out, this.evalVector1(valIn, evalFn));
                         }
+                    } else if (orig === "CLARKE") {
+                        const va = signals[b.channels.A] ?? 0.0;
+                        const vb = signals[b.channels.B] ?? 0.0;
+                        const vc = signals[b.channels.C] ?? 0.0;
+                        const alpha = (2.0 * va - vb - vc) / 3.0;
+                        const beta = (vb - vc) / Math.sqrt(3.0);
+                        if (b.channels.OutAlpha) this.setControlSignal(signals, b.channels.OutAlpha, alpha);
+                        if (b.channels.OutBeta) this.setControlSignal(signals, b.channels.OutBeta, beta);
+                    } else if (orig === "INV_CLARKE") {
+                        const alpha = signals[b.channels.Alpha] ?? 0.0;
+                        const beta = signals[b.channels.Beta] ?? 0.0;
+                        const va = alpha;
+                        const vb = -0.5 * alpha + (Math.sqrt(3.0) / 2.0) * beta;
+                        const vc = -0.5 * alpha - (Math.sqrt(3.0) / 2.0) * beta;
+                        if (b.channels.OutA) this.setControlSignal(signals, b.channels.OutA, va);
+                        if (b.channels.OutB) this.setControlSignal(signals, b.channels.OutB, vb);
+                        if (b.channels.OutC) this.setControlSignal(signals, b.channels.OutC, vc);
+                    } else if (orig === "PARK") {
+                        const alpha = signals[b.channels.Alpha] ?? 0.0;
+                        const beta = signals[b.channels.Beta] ?? 0.0;
+                        const theta = signals[b.channels.Theta] ?? 0.0;
+                        const cosT = Math.cos(theta);
+                        const sinT = Math.sin(theta);
+                        const vd = alpha * cosT + beta * sinT;
+                        const vq = -alpha * sinT + beta * cosT;
+                        if (b.channels.OutD) this.setControlSignal(signals, b.channels.OutD, vd);
+                        if (b.channels.OutQ) this.setControlSignal(signals, b.channels.OutQ, vq);
+                    } else if (orig === "INV_PARK") {
+                        const vd = signals[b.channels.d] ?? 0.0;
+                        const vq = signals[b.channels.q] ?? 0.0;
+                        const theta = signals[b.channels.Theta] ?? 0.0;
+                        const cosT = Math.cos(theta);
+                        const sinT = Math.sin(theta);
+                        const alpha = vd * cosT - vq * sinT;
+                        const beta = vd * sinT + vq * cosT;
+                        if (b.channels.OutAlpha) this.setControlSignal(signals, b.channels.OutAlpha, alpha);
+                        if (b.channels.OutBeta) this.setControlSignal(signals, b.channels.OutBeta, beta);
                     } else if (orig === "ROUND") {
                         const mode = b.parameters.mode ?? "nearest";
                         if (mode === "floor") signals[out] = Math.floor(val);

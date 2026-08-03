@@ -1938,7 +1938,6 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'SIGN':
       case 'TRIG_FCN':
       case 'MATH_FCN':
-      case 'FCN':
       case 'INTEGRATOR':
       case 'DERIVATIVE':
       case 'ROUND':
@@ -1990,6 +1989,54 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           input: getIncomingControlTerminal(comp.id, 'In'),
           output_mag: `${comp.id}.Mag`,
           output_phase: `${comp.id}.Phase`,
+          original_type: comp.type
+        });
+        break;
+      case 'CLARKE':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input_a: getIncomingControlTerminal(comp.id, 'A'),
+          input_b: getIncomingControlTerminal(comp.id, 'B'),
+          input_c: getIncomingControlTerminal(comp.id, 'C'),
+          output_alpha: `${comp.id}.Alpha`,
+          output_beta: `${comp.id}.Beta`,
+          original_type: comp.type
+        });
+        break;
+      case 'INV_CLARKE':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input_alpha: getIncomingControlTerminal(comp.id, 'Alpha'),
+          input_beta: getIncomingControlTerminal(comp.id, 'Beta'),
+          output_a: `${comp.id}.A`,
+          output_b: `${comp.id}.B`,
+          output_c: `${comp.id}.C`,
+          original_type: comp.type
+        });
+        break;
+      case 'PARK':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input_alpha: getIncomingControlTerminal(comp.id, 'Alpha'),
+          input_beta: getIncomingControlTerminal(comp.id, 'Beta'),
+          input_theta: getIncomingControlTerminal(comp.id, 'Theta'),
+          output_d: `${comp.id}.d`,
+          output_q: `${comp.id}.q`,
+          original_type: comp.type
+        });
+        break;
+      case 'INV_PARK':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input_d: getIncomingControlTerminal(comp.id, 'd'),
+          input_q: getIncomingControlTerminal(comp.id, 'q'),
+          input_theta: getIncomingControlTerminal(comp.id, 'Theta'),
+          output_alpha: `${comp.id}.Alpha`,
+          output_beta: `${comp.id}.Beta`,
           original_type: comp.type
         });
         break;
