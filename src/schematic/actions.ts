@@ -2150,13 +2150,13 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           id: comp.id,
           input: getIncomingControlTerminal(comp.id, 'In'),
           output: `${comp.id}.Out`,
-          Kp: p.Kp || 1.0,
-          Ki: p.Ki || 0.0,
-          Kd: p.Kd || 0.0,
-          limit_output: p.limit_output || "false",
-          upper_limit: p.upper_limit || "1",
-          lower_limit: p.lower_limit || "-1",
-          anti_windup: p.anti_windup || "false"
+          Kp: p.Kp !== undefined ? p.Kp : "2.5",
+          Ki: p.Ki !== undefined ? p.Ki : "50.0",
+          Kd: p.Kd !== undefined ? p.Kd : "0",
+          limit_output: p.limit_output !== undefined ? String(p.limit_output) : "false",
+          upper_limit: p.upper_limit !== undefined ? String(p.upper_limit) : "1",
+          lower_limit: p.lower_limit !== undefined ? String(p.lower_limit) : "-1",
+          anti_windup: p.anti_windup !== undefined ? String(p.anti_windup) : "false"
         });
         break;
       case 'CONT_PID':

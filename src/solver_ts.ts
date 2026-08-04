@@ -1796,10 +1796,10 @@ export class CircuitSimulator {
                                 });
                             }
                             comp.channels = chs;
-                        } else if (cat.type === "PI_Controller" && item.input && item.output) {
-                            comp.channels = { In: item.input, Out: item.output };
-                        } else if (cat.type === "ContinuousPID" && item.input && item.output) {
-                            comp.channels = { In: item.input, Out: item.output };
+                        } else if ((cat.type === "PI_Controller" || cat.type === "ContinuousPID") && item.output) {
+                            const chs: Record<string, string> = { Out: item.output };
+                            if (item.input) chs.In = item.input;
+                            comp.channels = chs;
                         } else if (cat.type === "PLL") {
                             const chs: Record<string, string> = {};
                             if (item.input) chs.In = item.input;
@@ -1819,13 +1819,15 @@ export class CircuitSimulator {
                             if (item.input) chs.In = item.input;
                             if (item.input1) chs.In = item.input1;
                             comp.channels = chs;
-                        } else if (cat.type === "SummingJunction" && Array.isArray(item.inputs) && item.output) {
+                        } else if (cat.type === "SummingJunction" && item.output) {
                             const chs: Record<string, string> = { Out: item.output };
-                            item.inputs.forEach((inp: string, index: number) => {
-                                chs[`In${index + 1}`] = inp;
-                            });
-                            if (item.inputs[0]) chs.A = item.inputs[0];
-                            if (item.inputs[1]) chs.B = item.inputs[1];
+                            if (Array.isArray(item.inputs)) {
+                                item.inputs.forEach((inp: string, index: number) => {
+                                    if (inp) chs[`In${index + 1}`] = inp;
+                                });
+                                if (item.inputs[0]) chs.A = item.inputs[0];
+                                if (item.inputs[1]) chs.B = item.inputs[1];
+                            }
                             if (item.control_signal) chs.Ctrl = item.control_signal;
                             comp.channels = chs;
                             comp.parameters.signs = item.signs;
@@ -3727,22 +3729,26 @@ export class CircuitSimulator {
                     } else {
                         const signs = b.parameters.signs || "++";
                         let sum: any = 0.0;
-                        if (b.channels.In1 !== undefined) {
+                        const hasInChannels = Object.keys(b.channels).some(k => k.startsWith('In'));
+                        if (hasInChannels) {
                             let i = 1;
                             while (true) {
                                 const ch = b.channels[`In${i}`];
-                                if (!ch) break;
-                                const signChar = signs[i - 1] ?? '+';
-                                const s = signChar === '-' ? -1.0 : 1.0;
-                                const valIn = signals[ch] ?? 0.0;
-                                sum = this.evalVector2(sum, valIn, (a, b) => a + s * b);
+                                if (ch === undefined && i > 10) break;
+                                if (ch !== undefined) {
+                                    const signChar = signs[i - 1] ?? '+';
+                                    const s = signChar === '-' ? -1.0 : 1.0;
+                                    const valIn = signals[ch] ?? 0.0;
+                                    sum = this.evalVector2(sum, valIn, (a, b) => a + s * b);
+                                }
                                 i++;
+                                if (i > 100) break;
                             }
                         } else if (b.channels.A || b.channels.B) {
                             const s1 = signs[0] === '-' ? -1 : 1;
                             const s2 = signs[1] === '-' ? -1 : 1;
-                            const valA = signals[b.channels.A] ?? 0.0;
-                            const valB = signals[b.channels.B] ?? 0.0;
+                            const valA = b.channels.A ? (signals[b.channels.A] ?? 0.0) : 0.0;
+                            const valB = b.channels.B ? (signals[b.channels.B] ?? 0.0) : 0.0;
                             sum = this.evalVector2(0.0, valA, (a, b) => a + s1 * b);
                             sum = this.evalVector2(sum, valB, (a, b) => a + s2 * b);
                         }

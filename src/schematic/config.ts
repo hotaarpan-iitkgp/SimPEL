@@ -449,7 +449,7 @@ export const DEFAULT_PARAMETERS: Record<string, any> = {
   COMP:   { hysteresis: "0" },
   FCN:    { expr: "u[0] * 2" },
   PROD:   {},
-  SUM:    {},
+  SUM:    { signs: "++" },
   VM:     {},
   AM:     {},
   GND:    {},

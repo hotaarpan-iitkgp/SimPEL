@@ -318,7 +318,7 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
   // Functions & Tables
   {
     type: 'GAIN',
-    label: 'Gain',
+    label: 'Gain Scalar',
     desc: 'Multiply the input signal by a constant factor.',
     category: 'control',
     subcategory: 'Functions & Tables',
@@ -514,6 +514,15 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     subcategory: 'Delays',
     symbol: 'Mem',
     defaultParameters: { initial_value: '0.0' }
+  },
+  {
+    type: 'PID',
+    label: 'PI Controller',
+    desc: 'Proportional-Integral-Derivative (PID / PI) controller block.',
+    category: 'control',
+    subcategory: 'Continuous',
+    symbol: 'PID',
+    defaultParameters: { Kp: '2.5', Ki: '50.0', Kd: '0', limit_output: 'false', upper_limit: '1', lower_limit: '-1', anti_windup: 'false' }
   },
   {
     type: 'CONT_PID',
@@ -967,6 +976,15 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     subcategory: 'Math',
     symbol: 'OFFSET',
     defaultParameters: { offset: '0.0' }
+  },
+  {
+    type: 'SUM',
+    label: 'Summing Block',
+    desc: 'Summing junction to sum or subtract two or more signals with configurable signs.',
+    category: 'control',
+    subcategory: 'Math',
+    symbol: 'SUM',
+    defaultParameters: { signs: '++' }
   },
   {
     type: 'SUM_ROUND',
@@ -1718,7 +1736,7 @@ export function getDetailedComponentPins(type: string, comp?: any): Record<strin
     };
   }
 
-  if (type === 'CONT_PID') {
+  if (type === 'PID' || type === 'CONT_PID') {
     return {
       In: { x: -25, y: 0, dx: -1, dy: 0 },
       Out: { x: 25, y: 0, dx: 1, dy: 0 }
@@ -1747,7 +1765,7 @@ export function getDetailedComponentPins(type: string, comp?: any): Record<strin
     };
   }
 
-  if (type === 'SUM_ROUND' || type === 'SUM_RECT' || type === 'SUBTRACT') {
+  if (type === 'SUM' || type === 'SUM_ROUND' || type === 'SUM_RECT' || type === 'SUBTRACT') {
     return {
       A: { x: -20, y: -20, dx: -1, dy: 0 },
       B: { x: -20, y: 20, dx: -1, dy: 0 },
