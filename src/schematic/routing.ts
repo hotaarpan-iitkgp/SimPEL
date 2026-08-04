@@ -102,7 +102,9 @@ export function getPinDomain(compType: string, terminalName: string, comp?: any)
     CTRL_I: ['Ctrl'],
     BREAKER: ['Ctrl'],
     TRPL_SWITCH: ['Ctrl'],
-    MAN_TRPL_SWITCH: ['Ctrl']
+    MAN_TRPL_SWITCH: ['Ctrl'],
+    INDUCTION_MOTOR: ['TL', 'Tl', 'LoadTorque', 'wm', 'w', 'Te', 'm'],
+    IND_MOTOR: ['TL', 'Tl', 'LoadTorque', 'wm', 'w', 'Te', 'm']
   };
   
   if (controlPins[compType] && controlPins[compType].includes(terminalName)) {

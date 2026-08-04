@@ -1757,7 +1757,7 @@ export class CircuitSimulator {
 
                         if (cat.type === "Constant" && item.output) {
                             comp.channels = { Out: item.output };
-                        } else if (cat.type === "Gain" && (item.output || item.output_mag || item.output_q || item.output_alpha || item.output_a || item.output_d)) {
+                        } else if (cat.type === "Gain" && (item.output || item.output_mag || item.output_q || item.output_alpha || item.output_a || item.output_d || item.output_wm || item.output_te || item.output_m)) {
                             const chs: Record<string, string> = {};
                             if (item.output) chs.Out = item.output;
                             if (item.output_mag) chs.Mag = item.output_mag;
@@ -1771,6 +1771,7 @@ export class CircuitSimulator {
                             if (item.input_a) chs.A = item.input_a;
                             if (item.input_b) chs.B = item.input_b;
                             if (item.input_c) chs.C = item.input_c;
+                            if (item.input_tl) chs.TL = item.input_tl;
                             if (item.input_alpha) chs.Alpha = item.input_alpha;
                             if (item.input_beta) chs.Beta = item.input_beta;
                             if (item.input_theta) chs.Theta = item.input_theta;
@@ -1783,6 +1784,9 @@ export class CircuitSimulator {
                             if (item.output_beta) chs.OutBeta = item.output_beta;
                             if (item.output_d) chs.OutD = item.output_d;
                             if (item.output_q) chs.OutQ = item.output_q;
+                            if (item.output_wm) chs.OutWm = item.output_wm;
+                            if (item.output_te) chs.OutTe = item.output_te;
+                            if (item.output_m) chs.OutM = item.output_m;
                             if (item.input1) chs.In1 = item.input1;
                             if (item.input2) chs.In2 = item.input2;
                             if (item.control_signal) chs.Ctrl = item.control_signal;
@@ -2325,7 +2329,7 @@ export class CircuitSimulator {
         for (const b of this.control_loops) {
             const inputs: string[] = [];
             for (const key in b.channels) {
-                if (key === "In" || key.startsWith("In") || key === "A" || key === "B" || key === "C" || key === "Alpha" || key === "Beta" || key === "Theta" || key === "d" || key === "q" || key === "Plus" || key === "Minus" || key === "Ctrl" || key === "Switch" || key === "G" || key === "D" || key === "J" || key === "K" || key === "Phase" || key === "Freq" || key === "Va" || key === "Vb" || key === "Vc") {
+                if (key === "In" || key.startsWith("In") || key === "A" || key === "B" || key === "C" || key === "TL" || key === "Tl" || key === "Alpha" || key === "Beta" || key === "Theta" || key === "d" || key === "q" || key === "Plus" || key === "Minus" || key === "Ctrl" || key === "Switch" || key === "G" || key === "D" || key === "J" || key === "K" || key === "Phase" || key === "Freq" || key === "Va" || key === "Vb" || key === "Vc") {
                     const sigName = b.channels[key];
                     if (typeof sigName === 'string' && sigName) {
                         inputs.push(sigName);
@@ -2438,7 +2442,7 @@ export class CircuitSimulator {
             });
         }
         for (const b of this.control_loops) {
-            const hasOutput = b.channels.Out || b.channels.OutAlpha || b.channels.OutA || b.channels.OutD || b.channels.Mag || b.channels.Q || b.channels.OutV || b.channels.OutI;
+            const hasOutput = b.channels.Out || b.channels.OutAlpha || b.channels.OutA || b.channels.OutD || b.channels.OutWm || b.channels.OutTe || b.channels.OutM || b.channels.Mag || b.channels.Q || b.channels.OutV || b.channels.OutI;
             if (!hasOutput && b.type !== "PROBE" && b.type !== "UnifiedProbe") continue;
             const out = b.channels.Out;
             if (b.type === "Constant") {
@@ -2572,9 +2576,6 @@ export class CircuitSimulator {
                 if (b.type === "Gain") {
                     const orig = b.parameters.original_type;
                     const val = signals[b.channels.In] ?? 0;
-                    if (b.id === "TF1") {
-                        console.log("DEBUG TF1: orig =", orig, "val =", val, "parameters =", JSON.stringify(b.parameters));
-                    }
                     if (orig === "OFFSET") {
                         signals[out] = val + parseScientific(b.parameters.offset ?? "0.0");
                     } else if (orig === "SIGNUM" || orig === "SIGN" || orig === "Signum" || orig === "Sign" || orig === "SGN") {
@@ -2828,6 +2829,110 @@ export class CircuitSimulator {
                         const beta = vd * sinT + vq * cosT;
                         if (b.channels.OutAlpha) this.setControlSignal(signals, b.channels.OutAlpha, alpha);
                         if (b.channels.OutBeta) this.setControlSignal(signals, b.channels.OutBeta, beta);
+                    } else if (orig === "INDUCTION_MOTOR" || orig === "IND_MOTOR") {
+                        let va = 0.0, vb = 0.0, vc = 0.0;
+                        if (b.channels.A && signals[b.channels.A] !== undefined) {
+                            va = signals[b.channels.A];
+                        } else if (b.parameters.node_a) {
+                            const nA = b.parameters.node_a;
+                            const idxA = (nA !== "node_0") ? this.node_to_idx[nA] : -1;
+                            va = (idxA !== undefined && idxA >= 0) ? w_curr[idxA] : 0.0;
+                        }
+                        if (b.channels.B && signals[b.channels.B] !== undefined) {
+                            vb = signals[b.channels.B];
+                        } else if (b.parameters.node_b) {
+                            const nB = b.parameters.node_b;
+                            const idxB = (nB !== "node_0") ? this.node_to_idx[nB] : -1;
+                            vb = (idxB !== undefined && idxB >= 0) ? w_curr[idxB] : 0.0;
+                        }
+                        if (b.channels.C && signals[b.channels.C] !== undefined) {
+                            vc = signals[b.channels.C];
+                        } else if (b.parameters.node_c) {
+                            const nC = b.parameters.node_c;
+                            const idxC = (nC !== "node_0") ? this.node_to_idx[nC] : -1;
+                            vc = (idxC !== undefined && idxC >= 0) ? w_curr[idxC] : 0.0;
+                        }
+                        const TL = signals[b.channels.TL] ?? signals[b.channels.Tl] ?? parseScientific(b.parameters.Tl ?? b.parameters.TL ?? b.parameters.load_torque ?? "0.0");
+                        
+                        const Pn = parseScientific(b.parameters.Pn ?? b.parameters.power ?? "5.5k");
+                        const Vn = parseScientific(b.parameters.Vn ?? b.parameters.voltage ?? "400");
+                        const fn = parseScientific(b.parameters.fn ?? b.parameters.freq ?? "50");
+                        const poles = parseInt(b.parameters.poles ?? b.parameters.p ?? "4") || 4;
+                        const pPairs = poles / 2.0;
+                        const Rs = parseScientific(b.parameters.Rs ?? b.parameters.rs ?? "1.115");
+                        const Lls = parseScientific(b.parameters.Lls ?? b.parameters.lls ?? "0.00597");
+                        const Rr = parseScientific(b.parameters.Rr ?? b.parameters.rr ?? "1.083");
+                        const Llr = parseScientific(b.parameters.Llr ?? b.parameters.llr ?? "0.00597");
+                        const Lm = parseScientific(b.parameters.Lm ?? b.parameters.lm ?? "0.2037");
+                        const J = parseScientific(b.parameters.J ?? b.parameters.inertia ?? "0.02");
+                        const B = parseScientific(b.parameters.B ?? b.parameters.friction ?? "0.001");
+
+                        const Ls = Lls + Lm;
+                        const Lr = Llr + Lm;
+                        const sigma = Math.max(1e-6, 1.0 - (Lm * Lm) / (Ls * Lr));
+
+                        if (!cs[b.id]) {
+                            cs[b.id] = { psi_sa: 0.0, psi_sb: 0.0, psi_ra: 0.0, psi_rb: 0.0, wm: 0.0, Te: 0.0 };
+                        }
+
+                        const st = cs[b.id];
+                        let psi_sa = st.psi_sa ?? 0.0;
+                        let psi_sb = st.psi_sb ?? 0.0;
+                        let psi_ra = st.psi_ra ?? 0.0;
+                        let psi_rb = st.psi_rb ?? 0.0;
+                        let wm = st.wm ?? 0.0;
+
+                        // Stationary alpha-beta stator voltages
+                        const valpha = (2.0 * va - vb - vc) / 3.0;
+                        const vbeta = (vb - vc) / Math.sqrt(3.0);
+
+                        // Currents from fluxes
+                        const isa = (psi_sa / (sigma * Ls)) - (Lm * psi_ra / (sigma * Ls * Lr));
+                        const isb = (psi_sb / (sigma * Ls)) - (Lm * psi_rb / (sigma * Ls * Lr));
+                        const ira = (psi_ra / (sigma * Lr)) - (Lm * psi_sa / (sigma * Ls * Lr));
+                        const irb = (psi_rb / (sigma * Lr)) - (Lm * psi_sb / (sigma * Ls * Lr));
+
+                        // Electromagnetic Torque
+                        const Te = 1.5 * pPairs * (psi_sa * isb - psi_sb * isa);
+                        const w_e = pPairs * wm;
+
+                        // Flux & Mechanical Derivatives
+                        const d_psi_sa = valpha - Rs * isa;
+                        const d_psi_sb = vbeta - Rs * isb;
+                        const d_psi_ra = -Rr * ira - w_e * psi_rb;
+                        const d_psi_rb = -Rr * irb + w_e * psi_ra;
+                        const d_wm = (Te - TL - B * wm) / Math.max(1e-6, J);
+
+                        if (dt > 0.0 && !first && integrate && iter === 2) {
+                            psi_sa += d_psi_sa * dt;
+                            psi_sb += d_psi_sb * dt;
+                            psi_ra += d_psi_ra * dt;
+                            psi_rb += d_psi_rb * dt;
+                            wm += d_wm * dt;
+
+                            st.psi_sa = psi_sa;
+                            st.psi_sb = psi_sb;
+                            st.psi_ra = psi_ra;
+                            st.psi_rb = psi_rb;
+                            st.wm = wm;
+                            st.Te = Te;
+                        }
+
+                        // 3-phase currents
+                        const i_a = isa;
+                        const i_b = -0.5 * isa + (Math.sqrt(3.0) / 2.0) * isb;
+                        const i_c = -0.5 * isa - (Math.sqrt(3.0) / 2.0) * isb;
+
+                        if (b.channels.OutWm) this.setControlSignal(signals, b.channels.OutWm, wm);
+                        if (b.channels.OutTe) this.setControlSignal(signals, b.channels.OutTe, Te);
+                        if (b.channels.OutM) this.setControlSignal(signals, b.channels.OutM, [wm, Te, i_a, i_b, i_c]);
+
+                        this.setControlSignal(signals, `${b.id}.wm`, wm);
+                        this.setControlSignal(signals, `${b.id}.Te`, Te);
+                        this.setControlSignal(signals, `${b.id}.rpm`, wm * (60.0 / (2.0 * Math.PI)));
+                        this.setControlSignal(signals, `${b.id}.isa`, i_a);
+                        this.setControlSignal(signals, `${b.id}.isb`, i_b);
+                        this.setControlSignal(signals, `${b.id}.isc`, i_c);
                     } else if (orig === "ROUND") {
                         const mode = b.parameters.mode ?? "nearest";
                         if (mode === "floor") signals[out] = Math.floor(val);
@@ -3116,7 +3221,10 @@ export class CircuitSimulator {
                             signals[out] = cx + d0 * val;
                         }
                     } else if (orig === "INTEGRATOR") {
-                        if (!cs[b.id]) cs[b.id] = { integral: 0.0 };
+                        if (!cs[b.id]) {
+                            const initVal = parseScientific(b.parameters.initial_condition ?? b.parameters.initial_value ?? b.parameters.x0 ?? b.parameters.ic ?? b.parameters.init ?? "0");
+                            cs[b.id] = { integral: initVal };
+                        }
                         if (dt > 0.0 && !first && integrate && iter === 2) {
                             cs[b.id].integral += val * dt;
                         }

@@ -361,13 +361,16 @@ export function updatePropertiesPanel(): void {
           
           const options = [
             { value: 'square', label: 'square' },
-            { value: 'square root', label: 'square root' },
-            { value: 'exponential', label: 'exponential' },
-            { value: 'logarithm', label: 'logarithm' },
-            { value: 'power', label: 'power' },
-            { value: 'mod', label: 'mod' },
-            { value: 'rem', label: 'rem' },
-            { value: 'reciprocal', label: 'reciprocal' },
+            { value: 'square root', label: 'square root (sqrt)' },
+            { value: 'exponential', label: 'exponential (exp)' },
+            { value: 'logarithm', label: 'logarithm (ln)' },
+            { value: 'log10', label: 'log10' },
+            { value: '10^u', label: '10^u' },
+            { value: 'power', label: 'power (u1 ^ u2)' },
+            { value: 'mod', label: 'mod (u1 mod u2)' },
+            { value: 'rem', label: 'rem (u1 rem u2)' },
+            { value: 'hypot', label: 'hypot (sqrt(u1^2 + u2^2))' },
+            { value: 'reciprocal', label: 'reciprocal (1/u)' },
             { value: 'abs', label: 'abs' }
           ];
           const currVal = String(comp.parameters[key] || 'square').toLowerCase();
@@ -384,7 +387,7 @@ export function updatePropertiesPanel(): void {
           inputField = document.createElement('select');
           inputField.className = 'prop-input';
           
-          const options = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sinh', 'cosh', 'tanh'];
+          const options = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'hypot', 'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh'];
           const currVal = String(comp.parameters[key] || 'sin').toLowerCase();
           options.forEach(optVal => {
             const optionEl = document.createElement('option');

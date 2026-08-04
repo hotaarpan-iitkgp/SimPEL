@@ -2041,6 +2041,26 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           original_type: comp.type
         });
         break;
+      case 'INDUCTION_MOTOR':
+      case 'IND_MOTOR': {
+        const nodesABC = resolveNodes(comp.id, 3, ['A', 'B', 'C']);
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input_a: getIncomingControlTerminal(comp.id, 'A'),
+          input_b: getIncomingControlTerminal(comp.id, 'B'),
+          input_c: getIncomingControlTerminal(comp.id, 'C'),
+          node_a: nodesABC[0],
+          node_b: nodesABC[1],
+          node_c: nodesABC[2],
+          input_tl: getIncomingControlTerminal(comp.id, 'TL') || getIncomingControlTerminal(comp.id, 'Tl'),
+          output_wm: `${comp.id}.wm`,
+          output_te: `${comp.id}.Te`,
+          output_m: `${comp.id}.m`,
+          original_type: comp.type
+        });
+        break;
+      }
       case 'D_FLIP_FLOP':
         control_loops.gains.push({
           ...p,

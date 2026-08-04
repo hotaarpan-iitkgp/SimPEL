@@ -1465,6 +1465,50 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
     symbol: '3Ph XF3'
   },
 
+  // Electrical Machines
+  {
+    type: 'INDUCTION_MOTOR',
+    label: 'Induction Motor',
+    desc: '3-Phase asynchronous induction machine with stator electrical ports A, B, C and load torque signal input TL.',
+    category: 'electrical',
+    subcategory: 'Electrical Machines',
+    symbol: 'IndMotor',
+    defaultParameters: {
+      Pn: '5.5k',
+      Vn: '400',
+      fn: '50',
+      poles: '4',
+      Rs: '1.115',
+      Lls: '0.00597',
+      Rr: '1.083',
+      Llr: '0.00597',
+      Lm: '0.2037',
+      J: '0.02',
+      B: '0.001'
+    }
+  },
+  {
+    type: 'IND_MOTOR',
+    label: 'Induction Motor (Alias)',
+    desc: '3-Phase asynchronous induction machine with stator electrical ports A, B, C and load torque signal input TL.',
+    category: 'electrical',
+    subcategory: 'Electrical Machines',
+    symbol: 'IndMotor',
+    defaultParameters: {
+      Pn: '5.5k',
+      Vn: '400',
+      fn: '50',
+      poles: '4',
+      Rs: '1.115',
+      Lls: '0.00597',
+      Rr: '1.083',
+      Llr: '0.00597',
+      Lm: '0.2037',
+      J: '0.02',
+      B: '0.001'
+    }
+  },
+
   // Electronics
   {
     type: 'OPAMP',
@@ -1854,6 +1898,18 @@ export function getDetailedComponentPins(type: string, comp?: any): Record<strin
       B: { x: 25, y: 0, dx: 1, dy: 0 },
       C: { x: 25, y: 15, dx: 1, dy: 0 },
       N: { x: -25, y: 0, dx: -1, dy: 0 }
+    };
+  }
+
+  if (type === 'INDUCTION_MOTOR' || type === 'IND_MOTOR') {
+    return {
+      A: { x: -30, y: -15, dx: -1, dy: 0 },
+      B: { x: -30, y: 0, dx: -1, dy: 0 },
+      C: { x: -30, y: 15, dx: -1, dy: 0 },
+      TL: { x: 0, y: -25, dx: 0, dy: -1 },
+      wm: { x: 30, y: -15, dx: 1, dy: 0 },
+      Te: { x: 30, y: 0, dx: 1, dy: 0 },
+      m: { x: 30, y: 15, dx: 1, dy: 0 }
     };
   }
 
@@ -2421,6 +2477,23 @@ export function getDetailedComponentSVG(comp: any): string | null {
           <rect x="-8" y="-18" width="16" height="6" rx="1" class="comp-path" />
           <rect x="-8" y="-3" width="16" height="6" rx="1" class="comp-path" />
           <rect x="-8" y="12" width="16" height="6" rx="1" class="comp-path" />
+        `;
+        break;
+      case 'INDUCTION_MOTOR':
+      case 'IND_MOTOR':
+        boundsX = -32; boundsW = 64; boundsY = -27; boundsH = 54; labelY = 32;
+        shape = `
+          <rect x="-30" y="-25" width="60" height="50" rx="6" class="comp-path" stroke-width="1.8" />
+          <circle cx="0" cy="0" r="16" fill="none" class="comp-path" stroke-width="1.5" />
+          <text x="0" y="4" font-family="Inter, sans-serif" font-size="9" font-weight="800" fill="currentColor" text-anchor="middle">M 3~</text>
+          <polygon points="-3,-25 3,-25 0,-20" fill="currentColor" />
+          <text x="0" y="-14" font-family="Inter, sans-serif" font-size="7" font-weight="700" fill="currentColor" text-anchor="middle">TL</text>
+          <text x="-24" y="-12" font-family="Inter, sans-serif" font-size="7" font-weight="700" fill="currentColor" text-anchor="start">A</text>
+          <text x="-24" y="3" font-family="Inter, sans-serif" font-size="7" font-weight="700" fill="currentColor" text-anchor="start">B</text>
+          <text x="-24" y="18" font-family="Inter, sans-serif" font-size="7" font-weight="700" fill="currentColor" text-anchor="start">C</text>
+          <text x="24" y="-12" font-family="Inter, sans-serif" font-size="7" font-weight="700" fill="currentColor" text-anchor="end">wm</text>
+          <text x="24" y="3" font-family="Inter, sans-serif" font-size="7" font-weight="700" fill="currentColor" text-anchor="end">Te</text>
+          <text x="24" y="18" font-family="Inter, sans-serif" font-size="7" font-weight="700" fill="currentColor" text-anchor="end">m</text>
         `;
         break;
       case 'PWL_R':
