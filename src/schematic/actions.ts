@@ -13,6 +13,7 @@ import {
 import { parseTurnsList, discoverPortsJS, DEFAULT_PARAMETERS, EXPORT_TYPE_NAMES, getComponentPins, discoverParamsFromCode } from './config';
 import { updatePropertiesPanel } from './properties';
 import { DETAILED_COMPONENTS, getDetailedComponentPins } from './detailedLibrary';
+export { createSubsystemFromSelection } from './subsystemCreator';
 
 export function getControlOutputPins(comp: any): string[] {
   if (!comp) return [];

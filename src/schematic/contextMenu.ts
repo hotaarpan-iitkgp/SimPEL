@@ -10,6 +10,7 @@ import {
   flipSelectedHorizontal, 
   flipSelectedVertical 
 } from './actions';
+import { createSubsystemFromSelection } from './subsystemCreator';
 
 let menuEl: HTMLElement | null = null;
 
@@ -123,6 +124,9 @@ function ensureContextMenuDOM(): HTMLElement {
       <span class="ctx-label" id="ctx-comment-label">Comment Out</span>
       <span class="ctx-shortcut">Shift+X</span>
     </div>
+    <div class="ctx-item" id="ctx-create-subsystem">
+      <span class="ctx-label">Create Subsystem</span>
+    </div>
     <div class="ctx-divider"></div>
     <div class="ctx-item has-submenu" id="ctx-format">
       <span class="ctx-label">Format</span>
@@ -169,6 +173,12 @@ function ensureContextMenuDOM(): HTMLElement {
     e.stopPropagation();
     hideContextMenu();
     toggleCommentSelected();
+  });
+
+  menuEl.querySelector('#ctx-create-subsystem')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideContextMenu();
+    createSubsystemFromSelection();
   });
 
   menuEl.querySelector('#ctx-flip-h')?.addEventListener('click', (e) => {
@@ -262,6 +272,7 @@ export function showContextMenu(e: MouseEvent, svg: SVGSVGElement): void {
   const copyItem = menu.querySelector('#ctx-copy');
   const deleteItem = menu.querySelector('#ctx-delete');
   const commentItem = menu.querySelector('#ctx-comment');
+  const createSubsysItem = menu.querySelector('#ctx-create-subsystem');
   const formatItem = menu.querySelector('#ctx-format');
 
   if (hasSelection) {
@@ -278,8 +289,10 @@ export function showContextMenu(e: MouseEvent, svg: SVGSVGElement): void {
 
   if (hasCompSelection) {
     formatItem?.classList.remove('disabled');
+    createSubsysItem?.classList.remove('disabled');
   } else {
     formatItem?.classList.add('disabled');
+    createSubsysItem?.classList.add('disabled');
   }
 
   // Display and adjust position to fit within viewport boundaries
