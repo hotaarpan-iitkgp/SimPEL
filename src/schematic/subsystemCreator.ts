@@ -2,12 +2,60 @@ import { state, saveState } from './state';
 import { generateNextId, showToast } from './utils';
 import { draw } from './renderer';
 import { updatePropertiesPanel } from './properties';
-import { getWireDomain } from './routing';
+import { getPinDomain } from './routing';
+import { getComponentPins } from './config';
+import { isControlOutputPin } from './actions';
+
+class DisjointSet {
+  parent: Map<string, string> = new Map();
+
+  find(i: string): string {
+    if (!this.parent.has(i)) this.parent.set(i, i);
+    if (this.parent.get(i) === i) return i;
+    const root = this.find(this.parent.get(i)!);
+    this.parent.set(i, root);
+    return root;
+  }
+
+  union(i: string, j: string): void {
+    const rootI = this.find(i);
+    const rootJ = this.find(j);
+    if (rootI !== rootJ) {
+      this.parent.set(rootI, rootJ);
+    }
+  }
+}
+
+interface PinRef {
+  compId: string;
+  terminal: string;
+}
+
+// Recursively trace wire endpoint to get all associated component pins
+function getEndpointPins(ep: any, wires: any[], visitedWires = new Set<string>()): PinRef[] {
+  if (!ep) return [];
+  if (ep.type === 'pin') {
+    return [{ compId: ep.compId, terminal: ep.terminal }];
+  }
+  if (ep.type === 'wire' && ep.wireId) {
+    if (visitedWires.has(ep.wireId)) return [];
+    visitedWires.add(ep.wireId);
+
+    const targetWire = wires.find((w: any) => w.id === ep.wireId);
+    if (!targetWire) return [];
+
+    const pins: PinRef[] = [];
+    pins.push(...getEndpointPins(targetWire.from, wires, visitedWires));
+    if (targetWire.to) {
+      pins.push(...getEndpointPins(targetWire.to, wires, visitedWires));
+    }
+    return pins;
+  }
+  return [];
+}
 
 export function createSubsystemFromSelection(): void {
   const selectedCompIds = new Set<string>(state.selectedComponentIds);
-  const selectedWireIds = new Set<string>(state.selectedWireIds);
-
   if (selectedCompIds.size === 0) {
     showToast('Select components to create a subsystem.');
     return;
@@ -15,12 +63,9 @@ export function createSubsystemFromSelection(): void {
 
   saveState();
 
-  // 1. Identify selected & unselected components
   const selectedComps = state.components.filter((c: any) => selectedCompIds.has(c.id));
-  const unselectedComps = state.components.filter((c: any) => !selectedCompIds.has(c.id));
-  const unselectedCompIds = new Set<string>(unselectedComps.map((c: any) => c.id));
-
-  // 2. Calculate selection bounding box and center (cx, cy)
+  
+  // 1. Calculate selection bounding box and center (cx, cy)
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   selectedComps.forEach((c: any) => {
     if (c.x < minX) minX = c.x;
@@ -32,96 +77,104 @@ export function createSubsystemFromSelection(): void {
   const cx = Math.round(((minX + maxX) / 2) / 20) * 20;
   const cy = Math.round(((minY + maxY) / 2) / 20) * 20;
 
-  // 3. Classify wires as internal vs crossing
-  const internalWires: any[] = [];
-  const externalWires: any[] = [];
-  const crossingConnections: any[] = [];
+  // 2. Build Union-Find network of all component pins in the schematic
+  const ds = new DisjointSet();
+  const pinKey = (p: PinRef) => `${p.compId}.${p.terminal}`;
 
-  const isEndpointInSelection = (ep: any): boolean => {
-    if (!ep) return false;
-    if (ep.type === 'pin') return selectedCompIds.has(ep.compId);
-    if (ep.type === 'wire') return selectedWireIds.has(ep.wireId);
-    return false;
-  };
+  // Register all pins of all components in Union-Find
+  state.components.forEach((c: any) => {
+    const pinsMap = state.components.find((comp: any) => comp.id === c.id);
+  });
 
   state.wires.forEach((w: any) => {
-    const fromIn = isEndpointInSelection(w.from);
-    const toIn = w.to ? isEndpointInSelection(w.to) : false;
+    const fromPins = getEndpointPins(w.from, state.wires);
+    const toPins = w.to ? getEndpointPins(w.to, state.wires) : [];
 
-    if (fromIn && toIn) {
-      // Internal wire: both ends inside selection
-      internalWires.push(JSON.parse(JSON.stringify(w)));
-    } else if (!fromIn && !toIn) {
-      // External wire: both ends outside selection
-      externalWires.push(JSON.parse(JSON.stringify(w)));
-    } else {
-      // Crossing wire: one end inside, one end outside
-      crossingConnections.push(JSON.parse(JSON.stringify(w)));
+    // Union all pins connected by this wire
+    const allConnected = [...fromPins, ...toPins];
+    for (let i = 1; i < allConnected.length; i++) {
+      ds.union(pinKey(allConnected[0]), pinKey(allConnected[i]));
     }
+  });
+
+  // 3. Group all schematic pins by Net root representative
+  const netMap = new Map<string, { insidePins: PinRef[]; outsidePins: PinRef[] }>();
+
+  state.components.forEach((c: any) => {
+    const isSelected = selectedCompIds.has(c.id);
+    const pinsList = Object.keys(getComponentPins(c));
+    pinsList.forEach(term => {
+      const p = { compId: c.id, terminal: term };
+      const root = ds.find(pinKey(p));
+      if (!netMap.has(root)) {
+        netMap.set(root, { insidePins: [], outsidePins: [] });
+      }
+      const entry = netMap.get(root)!;
+      if (isSelected) {
+        entry.insidePins.push(p);
+      } else {
+        entry.outsidePins.push(p);
+      }
+    });
   });
 
   // Internal components for the new subsystem (deep copy)
   const internalComponents: any[] = JSON.parse(JSON.stringify(selectedComps));
+  const internalWires: any[] = [];
+  const externalWires: any[] = [];
 
-  // Ports to be instantiated inside sub_schematic
+  // Categorize wires:
+  // If a wire connects two inside endpoints -> internalWire
+  // If a wire connects two outside endpoints -> externalWire
+  state.wires.forEach((w: any) => {
+    const fromPins = getEndpointPins(w.from, state.wires);
+    const toPins = w.to ? getEndpointPins(w.to, state.wires) : [];
+    
+    const fromIn = fromPins.length > 0 && fromPins.every(p => selectedCompIds.has(p.compId));
+    const toIn = toPins.length > 0 && toPins.every(p => selectedCompIds.has(p.compId));
+
+    if (fromIn && toIn) {
+      internalWires.push(JSON.parse(JSON.stringify(w)));
+    } else if (!fromIn && !toIn && fromPins.length > 0 && toPins.length > 0) {
+      const fromOut = fromPins.every(p => !selectedCompIds.has(p.compId));
+      const toOut = toPins.every(p => !selectedCompIds.has(p.compId));
+      if (fromOut && toOut) {
+        externalWires.push(JSON.parse(JSON.stringify(w)));
+      }
+    }
+  });
+
+  // 4. Process Crossing Nets and create INPORT, OUTPORT, or E_PORT blocks
   let inportCount = 0;
   let outportCount = 0;
   let eportCount = 0;
 
-  // Map crossing connections to create appropriate INPORT, OUTPORT, or E_PORT blocks
-  crossingConnections.forEach((w: any) => {
-    const domain = getWireDomain(w);
-    const fromIn = isEndpointInSelection(w.from);
+  const subsysId = generateNextId('Subsystem', state.components.map((c: any) => c.id));
 
-    if (domain === 'control') {
-      if (!fromIn) {
-        // Signal originates OUTSIDE and enters INSIDE -> INPORT
-        inportCount++;
-        const portId = `In${inportCount}`;
-        const internalY = (inportCount - 1) * 40 - 40;
+  netMap.forEach(({ insidePins, outsidePins }) => {
+    if (insidePins.length === 0 || outsidePins.length === 0) {
+      return; // Fully internal or fully external Net
+    }
 
-        // Add INPORT component inside sub_schematic
-        internalComponents.push({
-          id: portId,
-          type: 'INPORT',
-          x: -180,
-          y: internalY,
-          rotation: 0,
-          parameters: {}
-        });
+    // Crossing Net! Determine domain
+    let isControl = false;
+    [...insidePins, ...outsidePins].forEach(p => {
+      const comp = state.components.find((c: any) => c.id === p.compId);
+      if (comp && getPinDomain(comp.type, p.terminal, comp) === 'control') {
+        isControl = true;
+      }
+    });
 
-        // Internal wire: INPORT.Out -> internal component's input pin
-        const internalDestEp = {
-          type: w.to.type,
-          compId: w.to.compId,
-          terminal: w.to.terminal,
-          wireId: w.to.wireId,
-          x: w.to.x,
-          y: w.to.y
-        };
+    if (isControl) {
+      // Control Domain: check if source output pin is INSIDE or OUTSIDE
+      const hasInsideSource = insidePins.some(p => isControlOutputPin(p.compId, p.terminal));
 
-        internalWires.push({
-          id: generateNextId('W', internalWires.map((iw: any) => iw.id)),
-          from: { type: 'pin', compId: portId, terminal: 'Out' },
-          to: internalDestEp,
-          manualPath: null
-        });
-
-        // External wire: external source -> newSubsystem.InX
-        externalWires.push({
-          id: w.id,
-          from: w.from,
-          to: { type: 'pin', compId: '__SUBSYS_ID__', terminal: portId },
-          manualPath: w.manualPath
-        });
-
-      } else {
-        // Signal originates INSIDE and exits OUTSIDE -> OUTPORT
+      if (hasInsideSource) {
+        // Signal originates INSIDE -> OUTPORT
         outportCount++;
         const portId = `Out${outportCount}`;
-        const internalY = (outportCount - 1) * 40 - 40;
+        const internalY = (outportCount - 1) * 30 - 30;
 
-        // Add OUTPORT component inside sub_schematic
         internalComponents.push({
           id: portId,
           type: 'OUTPORT',
@@ -131,38 +184,65 @@ export function createSubsystemFromSelection(): void {
           parameters: {}
         });
 
-        // Internal wire: internal component's output pin -> OUTPORT.In
-        const internalSrcEp = {
-          type: w.from.type,
-          compId: w.from.compId,
-          terminal: w.from.terminal,
-          wireId: w.from.wireId,
-          x: w.from.x,
-          y: w.from.y
-        };
-
+        // Inside wire: inside output pin -> OUTPORT.In
+        const insideSrc = insidePins.find(p => isControlOutputPin(p.compId, p.terminal)) || insidePins[0];
         internalWires.push({
           id: generateNextId('W', internalWires.map((iw: any) => iw.id)),
-          from: internalSrcEp,
+          from: { type: 'pin', compId: insideSrc.compId, terminal: insideSrc.terminal },
           to: { type: 'pin', compId: portId, terminal: 'In' },
           manualPath: null
         });
 
-        // External wire: newSubsystem.OutX -> external destination
+        // External wires: Subsystem1.OutX -> outside destination pins
+        outsidePins.forEach(outP => {
+          externalWires.push({
+            id: generateNextId('W', externalWires.map((ew: any) => ew.id)),
+            from: { type: 'pin', compId: subsysId, terminal: portId },
+            to: { type: 'pin', compId: outP.compId, terminal: outP.terminal },
+            manualPath: null
+          });
+        });
+
+      } else {
+        // Signal originates OUTSIDE -> INPORT
+        inportCount++;
+        const portId = `In${inportCount}`;
+        const internalY = (inportCount - 1) * 30 - 30;
+
+        internalComponents.push({
+          id: portId,
+          type: 'INPORT',
+          x: -180,
+          y: internalY,
+          rotation: 0,
+          parameters: {}
+        });
+
+        // Inside wires: INPORT.Out -> inside destination pins
+        insidePins.forEach(inP => {
+          internalWires.push({
+            id: generateNextId('W', internalWires.map((iw: any) => iw.id)),
+            from: { type: 'pin', compId: portId, terminal: 'Out' },
+            to: { type: 'pin', compId: inP.compId, terminal: inP.terminal },
+            manualPath: null
+          });
+        });
+
+        // External wire: outside source pin -> Subsystem1.InX
+        const outsideSrc = outsidePins.find(p => isControlOutputPin(p.compId, p.terminal)) || outsidePins[0];
         externalWires.push({
-          id: w.id,
-          from: { type: 'pin', compId: '__SUBSYS_ID__', terminal: portId },
-          to: w.to,
-          manualPath: w.manualPath
+          id: generateNextId('W', externalWires.map((ew: any) => ew.id)),
+          from: { type: 'pin', compId: outsideSrc.compId, terminal: outsideSrc.terminal },
+          to: { type: 'pin', compId: subsysId, terminal: portId },
+          manualPath: null
         });
       }
     } else {
-      // Electrical domain -> E_PORT
+      // Electrical Domain -> E_PORT
       eportCount++;
       const portId = `EP${eportCount}`;
       const internalX = (eportCount - 1) * 60 - 60;
 
-      // Add E_PORT component inside sub_schematic
       internalComponents.push({
         id: portId,
         type: 'E_PORT',
@@ -172,61 +252,29 @@ export function createSubsystemFromSelection(): void {
         parameters: {}
       });
 
-      if (fromIn) {
-        // Internal pin is from, external is to
-        const internalEp = {
-          type: w.from.type,
-          compId: w.from.compId,
-          terminal: w.from.terminal,
-          wireId: w.from.wireId,
-          x: w.from.x,
-          y: w.from.y
-        };
-
+      // Inside wires: inside pins -> E_PORT.A
+      insidePins.forEach(inP => {
         internalWires.push({
           id: generateNextId('W', internalWires.map((iw: any) => iw.id)),
-          from: internalEp,
+          from: { type: 'pin', compId: inP.compId, terminal: inP.terminal },
           to: { type: 'pin', compId: portId, terminal: 'A' },
           manualPath: null
         });
+      });
 
-        if (w.to) {
-          externalWires.push({
-            id: w.id,
-            from: { type: 'pin', compId: '__SUBSYS_ID__', terminal: portId },
-            to: w.to,
-            manualPath: w.manualPath
-          });
-        }
-      } else {
-        // External pin is from, internal is to
-        const internalEp = {
-          type: w.to.type,
-          compId: w.to.compId,
-          terminal: w.to.terminal,
-          wireId: w.to.wireId,
-          x: w.to.x,
-          y: w.to.y
-        };
-
-        internalWires.push({
-          id: generateNextId('W', internalWires.map((iw: any) => iw.id)),
-          from: { type: 'pin', compId: portId, terminal: 'A' },
-          to: internalEp,
+      // External wires: Subsystem1.EPX -> outside pins
+      outsidePins.forEach(outP => {
+        externalWires.push({
+          id: generateNextId('W', externalWires.map((ew: any) => ew.id)),
+          from: { type: 'pin', compId: subsysId, terminal: portId },
+          to: { type: 'pin', compId: outP.compId, terminal: outP.terminal },
           manualPath: null
         });
-
-        externalWires.push({
-          id: w.id,
-          from: w.from,
-          to: { type: 'pin', compId: '__SUBSYS_ID__', terminal: portId },
-          manualPath: w.manualPath
-        });
-      }
+      });
     }
   });
 
-  // 4. Shift coordinates of internal components and manual wire paths by (-cx, -cy)
+  // 5. Shift coordinates of internal components and manual wire paths by (-cx, -cy)
   internalComponents.forEach((c: any) => {
     if (selectedCompIds.has(c.id)) {
       c.x = Math.round((c.x - cx) / 10) * 10;
@@ -243,14 +291,6 @@ export function createSubsystemFromSelection(): void {
     }
   });
 
-  // 5. Generate new SUBSYSTEM component block ID and assign to external wires
-  const subsysId = generateNextId('Subsystem', state.components.map((c: any) => c.id));
-
-  externalWires.forEach((w: any) => {
-    if (w.from && w.from.compId === '__SUBSYS_ID__') w.from.compId = subsysId;
-    if (w.to && w.to.compId === '__SUBSYS_ID__') w.to.compId = subsysId;
-  });
-
   const newSubsystemComp = {
     id: subsysId,
     type: 'SUBSYSTEM',
@@ -264,12 +304,12 @@ export function createSubsystemFromSelection(): void {
     }
   };
 
-  // 6. Update current level state: remove selected components, add SUBSYSTEM, replace wires
+  // 6. Update current level state
   state.components = state.components.filter((c: any) => !selectedCompIds.has(c.id));
   state.components.push(newSubsystemComp);
   state.wires = externalWires;
 
-  // 7. Clear old selection and select the newly created Subsystem
+  // 7. Clear selection and select new Subsystem
   state.selectedComponentIds = [subsysId];
   state.selectedWireIds = [];
 

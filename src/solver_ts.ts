@@ -1757,7 +1757,7 @@ export class CircuitSimulator {
 
                         if (cat.type === "Constant" && item.output) {
                             comp.channels = { Out: item.output };
-                        } else if (cat.type === "Gain" && (item.output || item.output_mag || item.output_q)) {
+                        } else if (cat.type === "Gain" && (item.output || item.output_mag || item.output_q || item.output_alpha || item.output_a || item.output_d)) {
                             const chs: Record<string, string> = {};
                             if (item.output) chs.Out = item.output;
                             if (item.output_mag) chs.Mag = item.output_mag;
@@ -2325,7 +2325,7 @@ export class CircuitSimulator {
         for (const b of this.control_loops) {
             const inputs: string[] = [];
             for (const key in b.channels) {
-                if (key === "In" || key.startsWith("In") || key === "Plus" || key === "Minus" || key === "Ctrl" || key === "Switch" || key === "G" || key === "D" || key === "J" || key === "K" || key === "Phase" || key === "Freq" || key === "Va" || key === "Vb" || key === "Vc") {
+                if (key === "In" || key.startsWith("In") || key === "A" || key === "B" || key === "C" || key === "Alpha" || key === "Beta" || key === "Theta" || key === "d" || key === "q" || key === "Plus" || key === "Minus" || key === "Ctrl" || key === "Switch" || key === "G" || key === "D" || key === "J" || key === "K" || key === "Phase" || key === "Freq" || key === "Va" || key === "Vb" || key === "Vc") {
                     const sigName = b.channels[key];
                     if (typeof sigName === 'string' && sigName) {
                         inputs.push(sigName);
@@ -2438,7 +2438,9 @@ export class CircuitSimulator {
             });
         }
         for (const b of this.control_loops) {
-            const out = b.channels.Out; if (!out && b.type !== "PROBE" && b.type !== "UnifiedProbe") continue;
+            const hasOutput = b.channels.Out || b.channels.OutAlpha || b.channels.OutA || b.channels.OutD || b.channels.Mag || b.channels.Q || b.channels.OutV || b.channels.OutI;
+            if (!hasOutput && b.type !== "PROBE" && b.type !== "UnifiedProbe") continue;
+            const out = b.channels.Out;
             if (b.type === "Constant") {
                 const orig = b.parameters.original_type;
                 if (orig === "STEP") {
@@ -2567,7 +2569,7 @@ export class CircuitSimulator {
             }
             for (const b of this.control_loops) {
                 const out = b.channels.Out;
-                if (b.type === "Gain" && out) {
+                if (b.type === "Gain") {
                     const orig = b.parameters.original_type;
                     const val = signals[b.channels.In] ?? 0;
                     if (b.id === "TF1") {
