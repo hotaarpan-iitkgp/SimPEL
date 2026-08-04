@@ -1,3 +1,5 @@
+import { getSubsystemDimensions } from './config';
+
 export interface DetailedComponent {
   type: string;
   label: string;
@@ -2041,27 +2043,13 @@ export function getDetailedComponentSVG(comp: any): string | null {
   const id = comp.id;
   const rotation = comp.rotation;
 
-  if (type === 'SUBSYSTEM') {
-    const subschematic = comp.sub_schematic || { components: [] };
-    const inports = (subschematic.components || [])
-      .filter((c: any) => c.type === 'INPORT')
-      .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
-    const outports = (subschematic.components || [])
-      .filter((c: any) => c.type === 'OUTPORT')
-      .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
-    const eports = (subschematic.components || [])
-      .filter((c: any) => c.type === 'E_PORT')
-      .sort((a: any, b: any) => (a.x ?? 0) - (b.x ?? 0));
+  if (type === 'SUBSYSTEM' || type === 'CONFIG_SUBSYSTEM') {
+    const { width, height, halfW, halfH, inports, outports, eports } = getSubsystemDimensions(comp);
 
     const numLeft = inports.length;
     const numRight = outports.length;
     const numBottom = eports.length;
-
-    const width = Math.max(60, numBottom * 40 + 20);
-    const height = Math.max(50, Math.max(numLeft, numRight) * 20 + 20);
-
-    const halfW = width / 2;
-    const halfH = height / 2;
+    const pinSpacing = 24;
 
     const isLightMode = typeof document !== 'undefined' && document.querySelector('.light-mode') !== null;
     let borderColor = isLightMode ? '#0284c7' : '#0ea5e9'; // sky border
@@ -2072,7 +2060,7 @@ export function getDetailedComponentSVG(comp: any): string | null {
     
     // Left signal ports (triangles pointing in)
     inports.forEach((ip: any, idx: number) => {
-      const yOffset = - (numLeft - 1) * 10 + idx * 20;
+      const yOffset = - ((numLeft - 1) / 2) * pinSpacing + idx * pinSpacing;
       pinsSVG += `
         <polygon points="-${halfW},${yOffset-4} -${halfW+6},${yOffset} -${halfW},${yOffset+4}" fill="${symbolColor}" />
         <text x="-${halfW-8}" y="${yOffset+3}" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="${symbolColor}" text-anchor="start">${ip.id.split('.').pop()}</text>
@@ -2081,7 +2069,7 @@ export function getDetailedComponentSVG(comp: any): string | null {
 
     // Right signal ports (triangles pointing out)
     outports.forEach((op: any, idx: number) => {
-      const yOffset = - (numRight - 1) * 10 + idx * 20;
+      const yOffset = - ((numRight - 1) / 2) * pinSpacing + idx * pinSpacing;
       pinsSVG += `
         <polygon points="${halfW-6},${yOffset-4} ${halfW},${yOffset} ${halfW-6},${yOffset+4}" fill="${symbolColor}" />
         <text x="${halfW-8}" y="${yOffset+3}" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="${symbolColor}" text-anchor="end">${op.id.split('.').pop()}</text>
@@ -2090,7 +2078,7 @@ export function getDetailedComponentSVG(comp: any): string | null {
 
     // Bottom electrical ports (circles with vertical text labels to prevent horizontal overlap)
     eports.forEach((ep: any, idx: number) => {
-      const xOffset = - (numBottom - 1) * 20 + idx * 40;
+      const xOffset = - ((numBottom - 1) / 2) * 40 + idx * 40;
       pinsSVG += `
         <circle cx="${xOffset}" cy="${halfH}" r="4" fill="none" stroke="${symbolColor}" stroke-width="2" />
         <text x="${xOffset + 3}" y="${halfH - 8}" transform="rotate(-90, ${xOffset + 3}, ${halfH - 8})" font-family="Inter, sans-serif" font-size="7.5" font-weight="700" fill="${symbolColor}" text-anchor="start">${ep.id.split('.').pop()}</text>

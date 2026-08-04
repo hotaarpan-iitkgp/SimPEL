@@ -47,6 +47,37 @@ export function parseTurnsList(str: string): number[] {
   return turns;
 }
 
+export function getSubsystemDimensions(comp: any): { width: number; height: number; halfW: number; halfH: number; inports: any[]; outports: any[]; eports: any[] } {
+  const subschematic = comp.sub_schematic || { components: [] };
+  const inports = (subschematic.components || [])
+    .filter((c: any) => c.type === 'INPORT')
+    .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
+  const outports = (subschematic.components || [])
+    .filter((c: any) => c.type === 'OUTPORT')
+    .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
+  const eports = (subschematic.components || [])
+    .filter((c: any) => c.type === 'E_PORT')
+    .sort((a: any, b: any) => (a.x ?? 0) - (b.x ?? 0));
+
+  const numLeft = inports.length;
+  const numRight = outports.length;
+  const numBottom = eports.length;
+
+  const maxVertical = Math.max(numLeft, numRight);
+  const pinSpacing = 24;
+
+  const maxPinY = maxVertical > 0 ? ((maxVertical - 1) / 2) * pinSpacing : 0;
+  const halfH = Math.max(25, Math.ceil((maxPinY + 20) / 10) * 10);
+
+  const maxEPortX = numBottom > 0 ? ((numBottom - 1) / 2) * 40 : 0;
+  const halfW = Math.max(30, Math.ceil((maxEPortX + 25) / 10) * 10);
+
+  const width = halfW * 2;
+  const height = halfH * 2;
+
+  return { width, height, halfW, halfH, inports, outports, eports };
+}
+
 // Return pins map dynamically based on component type and customized parameter options
 export function getComponentPins(comp: any): Record<string, any> {
   if (!comp) return {};
@@ -68,44 +99,30 @@ export function getComponentPins(comp: any): Record<string, any> {
     }
     return pins;
   }
-  if (comp.type === 'SUBSYSTEM') {
+  if (comp.type === 'SUBSYSTEM' || comp.type === 'CONFIG_SUBSYSTEM') {
     const pins: Record<string, any> = {};
-    const subschematic = comp.sub_schematic || { components: [] };
-    const inports = (subschematic.components || [])
-      .filter((c: any) => c.type === 'INPORT')
-      .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
-    const outports = (subschematic.components || [])
-      .filter((c: any) => c.type === 'OUTPORT')
-      .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
-    const eports = (subschematic.components || [])
-      .filter((c: any) => c.type === 'E_PORT')
-      .sort((a: any, b: any) => (a.x ?? 0) - (b.x ?? 0));
+    const { halfW, halfH, inports, outports, eports } = getSubsystemDimensions(comp);
 
     const numLeft = inports.length;
     const numRight = outports.length;
     const numBottom = eports.length;
-
-    const width = Math.max(60, numBottom * 40 + 20);
-    const height = Math.max(50, Math.max(numLeft, numRight) * 20 + 20);
-
-    const halfW = width / 2;
-    const halfH = height / 2;
+    const pinSpacing = 24;
 
     // Arrange inports on the left edge (-halfW, yOffset)
     inports.forEach((ip: any, idx: number) => {
-      const yOffset = - (numLeft - 1) * 10 + idx * 20;
+      const yOffset = - ((numLeft - 1) / 2) * pinSpacing + idx * pinSpacing;
       pins[ip.id] = { x: -halfW, y: Math.round(yOffset), dx: -1, dy: 0 };
     });
 
     // Arrange outports on the right edge (halfW, yOffset)
     outports.forEach((op: any, idx: number) => {
-      const yOffset = - (numRight - 1) * 10 + idx * 20;
+      const yOffset = - ((numRight - 1) / 2) * pinSpacing + idx * pinSpacing;
       pins[op.id] = { x: halfW, y: Math.round(yOffset), dx: 1, dy: 0 };
     });
 
     // Arrange eports on the bottom edge (xOffset, halfH)
     eports.forEach((ep: any, idx: number) => {
-      const xOffset = - (numBottom - 1) * 20 + idx * 40;
+      const xOffset = - ((numBottom - 1) / 2) * 40 + idx * 40;
       pins[ep.id] = { x: Math.round(xOffset), y: halfH, dx: 0, dy: 1 };
     });
 

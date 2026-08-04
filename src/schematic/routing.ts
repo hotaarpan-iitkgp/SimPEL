@@ -1,5 +1,5 @@
 import { state } from './state';
-import { COMPONENT_PINS, getComponentPins, parseTurnsList, discoverPortsJS } from './config';
+import { COMPONENT_PINS, getComponentPins, parseTurnsList, discoverPortsJS, getSubsystemDimensions } from './config';
 import { DETAILED_COMPONENTS } from './detailedLibrary';
 
 // Calculate dynamic terminal coordinates in Canvas Space
@@ -276,6 +276,10 @@ export function getComponentBounds(comp: any): { xMin: number; xMax: number; yMi
     const numPins = selected.length;
     w = 60;
     h = Math.max(40, numPins * 30);
+  } else if (comp.type === 'SUBSYSTEM' || comp.type === 'CONFIG_SUBSYSTEM') {
+    const { width, height } = getSubsystemDimensions(comp);
+    w = width;
+    h = height;
   }
   const rot = (comp.rotation || 0) % 360;
   if (rot === 90 || rot === 270 || rot === -90 || rot === -270) {
