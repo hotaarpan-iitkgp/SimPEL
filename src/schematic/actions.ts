@@ -1862,6 +1862,30 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
         });
         break;
       }
+      case 'INDUCTION_MOTOR':
+      case 'IND_MOTOR': {
+        const nodesABC = resolveNodes(comp.id, 3, ['A', 'B', 'C']);
+        const rsVal = p.Rs || 1.115;
+        physical_stage.resistors.push({
+          id: `${comp.id}_RsA`,
+          nodes: [nodesABC[0], `${comp.id}_N`],
+          value: rsVal,
+          esr: 0.0
+        });
+        physical_stage.resistors.push({
+          id: `${comp.id}_RsB`,
+          nodes: [nodesABC[1], `${comp.id}_N`],
+          value: rsVal,
+          esr: 0.0
+        });
+        physical_stage.resistors.push({
+          id: `${comp.id}_RsC`,
+          nodes: [nodesABC[2], `${comp.id}_N`],
+          value: rsVal,
+          esr: 0.0
+        });
+        break;
+      }
       default: {
         const isDetailedElect = DETAILED_COMPONENTS.some(dc => dc.type === comp.type && dc.category === 'electrical');
         if (isDetailedElect && comp.type !== 'E_PORT' && comp.type !== 'E_LABEL') {
