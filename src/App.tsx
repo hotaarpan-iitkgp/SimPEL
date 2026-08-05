@@ -458,8 +458,20 @@ export default function App() {
     try {
       let parsed = JSON.parse(exportedNetlist);
 
+      const extractCompList = (stage: any): any[] => {
+        if (Array.isArray(stage)) return stage;
+        if (stage && typeof stage === 'object') {
+          return Object.values(stage).flatMap((v: any) => Array.isArray(v) ? v : []);
+        }
+        return [];
+      };
+
+      const hasPhysicalComps = extractCompList(parsed.physical_stage).length > 0;
+      const hasControlBlocks = extractCompList(parsed.control_loops).length > 0;
+      const isStandaloneNetlist = hasPhysicalComps || hasControlBlocks;
+
       // If physical_stage or control_loops are missing or empty in raw JSON, extract via exportDualGraphJSON
-      if (!parsed.physical_stage || !Array.isArray(parsed.physical_stage) || parsed.physical_stage.length === 0) {
+      if (!isStandaloneNetlist) {
         const dualGraph = exportDualGraphJSON(true);
         parsed = {
           ...parsed,
@@ -471,9 +483,12 @@ export default function App() {
         };
       }
 
+      const simParams = parsed.simulation_parameters || parsed.simulationSettings || {};
+      parsed.simulation_parameters = simParams;
+
       // Validate GOTO and FROM blocks matching tag labels
-      const physicalComps = Array.isArray(parsed.physical_stage) ? parsed.physical_stage : [];
-      const controlComps = Array.isArray(parsed.control_loops) ? parsed.control_loops : [];
+      const physicalComps = extractCompList(parsed.physical_stage);
+      const controlComps = extractCompList(parsed.control_loops);
       const allComponents = [...physicalComps, ...controlComps];
       const fromBlocks = allComponents.filter((c: any) => c.type === 'FROM_SIG');
       const gotoBlocks = allComponents.filter((c: any) => c.type === 'GOTO_SIG');
@@ -1688,9 +1703,16 @@ export default function App() {
   const getParsedSchemaSummary = () => {
     try {
       const parsed = JSON.parse(jsonText);
-      const physical = Array.isArray(parsed.physical_stage) ? parsed.physical_stage : [];
-      const control = Array.isArray(parsed.control_loops) ? parsed.control_loops : [];
-      const config = parsed.simulation_parameters || {};
+      const extractList = (stage: any): any[] => {
+        if (Array.isArray(stage)) return stage;
+        if (stage && typeof stage === 'object') {
+          return Object.values(stage).flatMap((arr: any) => Array.isArray(arr) ? arr : []);
+        }
+        return [];
+      };
+      const physical = extractList(parsed.physical_stage);
+      const control = extractList(parsed.control_loops);
+      const config = parsed.simulation_parameters || parsed.simulationSettings || {};
       return { physical, control, config, valid: true };
     } catch {
       return { physical: [], control: [], config: {}, valid: false };
@@ -3428,6 +3450,20 @@ export default function App() {
                 ) : (
                   <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/15">Valid Netlist</span>
                 )}
+                <button
+                  onClick={() => {
+                    if (jsonError) {
+                      alert(`Cannot run simulation: ${jsonError}`);
+                      return;
+                    }
+                    runSchematicSimulation(jsonText);
+                  }}
+                  className="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95 text-[9.5px]"
+                  title="Simulate netlist code directly"
+                >
+                  <Play className="h-3 w-3 fill-current" />
+                  <span>Run Netlist</span>
+                </button>
               </div>
             </div>
 
@@ -3451,35 +3487,52 @@ export default function App() {
             </div>
 
             {/* Editor Action keys */}
-            <div className="grid grid-cols-2 gap-2 mt-0.5 text-[10px] font-bold">
+            <div className="flex flex-col gap-2 mt-0.5">
               <button
-                onClick={formatJsonTextCode}
-                className="px-3 py-1.5 border border-slate-900 hover:border-slate-800 bg-slate-950 hover:bg-slate-900 transition-all rounded-lg text-slate-300 cursor-pointer text-center select-none"
-                title="Prettify JSON indentation"
+                onClick={() => {
+                  if (jsonError) {
+                    alert(`Cannot run simulation due to JSON syntax error in netlist code: ${jsonError}`);
+                    return;
+                  }
+                  runSchematicSimulation(jsonText);
+                }}
+                className="w-full px-4 py-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500 hover:from-emerald-400 hover:via-teal-400 hover:to-sky-400 text-slate-950 font-extrabold rounded-xl shadow-lg shadow-emerald-500/20 border border-emerald-300/40 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99] text-xs tracking-wide uppercase"
+                title="Run simulation directly from the RAW NETLIST SOURCE CODE in the editor"
               >
-                Format Indents
+                <Play className="h-4 w-4 fill-slate-950 text-slate-950" />
+                <span>Run Simulation from Netlist Code</span>
               </button>
-              <button
-                onClick={copyNetlistToClipboard}
-                className="px-3 py-1.5 border border-slate-900 hover:border-slate-800 bg-slate-950 hover:bg-slate-900 transition-all rounded-lg text-slate-300 cursor-pointer text-center select-none"
-                title="Copy standard netlist to system clipboard"
-              >
-                Copy Code
-              </button>
-              <button
-                onClick={downloadNetlistFile}
-                className="px-3 py-1.5 border border-slate-900 hover:border-slate-800 bg-slate-950 hover:bg-slate-900 transition-all rounded-lg text-slate-300 cursor-pointer text-center select-none"
-                title="Download active content as a .json file standard"
-              >
-                Download Netlist
-              </button>
-              <button
-                onClick={() => setIsExtractionModalOpen(true)}
-                className="px-3 py-1.5 border border-slate-900 hover:border-emerald-500/40 bg-slate-950 hover:bg-emerald-950/20 text-emerald-455 hover:text-emerald-300 transition-all rounded-lg cursor-pointer text-center select-none font-bold"
-                title="Extract MNA equations for all operating modes (Complete Model + Ideal Switch Modes)"
-              >
-                Extract MNA & Modes
-              </button>
+
+              <div className="grid grid-cols-2 gap-2 text-[10px] font-bold">
+                <button
+                  onClick={formatJsonTextCode}
+                  className="px-3 py-1.5 border border-slate-900 hover:border-slate-800 bg-slate-950 hover:bg-slate-900 transition-all rounded-lg text-slate-300 cursor-pointer text-center select-none"
+                  title="Prettify JSON indentation"
+                >
+                  Format Indents
+                </button>
+                <button
+                  onClick={copyNetlistToClipboard}
+                  className="px-3 py-1.5 border border-slate-900 hover:border-slate-800 bg-slate-950 hover:bg-slate-900 transition-all rounded-lg text-slate-300 cursor-pointer text-center select-none"
+                  title="Copy standard netlist to system clipboard"
+                >
+                  Copy Code
+                </button>
+                <button
+                  onClick={downloadNetlistFile}
+                  className="px-3 py-1.5 border border-slate-900 hover:border-slate-800 bg-slate-950 hover:bg-slate-900 transition-all rounded-lg text-slate-300 cursor-pointer text-center select-none"
+                  title="Download active content as a .json file standard"
+                >
+                  Download Netlist
+                </button>
+                <button
+                  onClick={() => setIsExtractionModalOpen(true)}
+                  className="px-3 py-1.5 border border-slate-900 hover:border-emerald-500/40 bg-slate-950 hover:bg-emerald-950/20 text-emerald-400 hover:text-emerald-300 transition-all rounded-lg cursor-pointer text-center select-none font-bold"
+                  title="Extract MNA equations for all operating modes (Complete Model + Ideal Switch Modes)"
+                >
+                  Extract MNA & Modes
+                </button>
+              </div>
             </div>
           </div>
 
