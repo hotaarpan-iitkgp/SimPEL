@@ -808,22 +808,13 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
 
   // Modulators
   {
-    type: 'PWM',
-    label: 'PWM',
-    desc: 'Generate standard pulse-width modulated signals.',
-    category: 'control',
-    subcategory: 'Modulators',
-    symbol: 'PWM',
-    defaultParameters: { frequency: '10k' }
-  },
-  {
     type: 'PWM_3PH',
     label: 'PWM (3-Phase)',
-    desc: 'Generate duty cycles and control signals for 3-phase converters.',
+    desc: 'Generate 3-phase PWM gate signals (top & bottom for legs A, B, C) with carrier comparison and dead time.',
     category: 'control',
     subcategory: 'Modulators',
     symbol: 'PWM 3Ph',
-    defaultParameters: { frequency: '10k' }
+    defaultParameters: { frequency: '10k', dead_time: '1u', min: '-1', max: '1' }
   },
   {
     type: 'SVPWM',
@@ -1867,6 +1858,20 @@ export function getDetailedComponentPins(type: string, comp?: any): Record<strin
       a3: { x: 0, y: 25, dx: 0, dy: 1 },
       b3: { x: -10, y: 25, dx: 0, dy: 1 },
       c3: { x: 10, y: 25, dx: 0, dy: 1 }
+    };
+  }
+
+  if (type === 'PWM_3PH') {
+    return {
+      Va: { x: -30, y: -20, dx: -1, dy: 0 },
+      Vb: { x: -30, y: 0, dx: -1, dy: 0 },
+      Vc: { x: -30, y: 20, dx: -1, dy: 0 },
+      gA1: { x: 30, y: -25, dx: 1, dy: 0 },
+      gA2: { x: 30, y: -15, dx: 1, dy: 0 },
+      gB1: { x: 30, y: -5, dx: 1, dy: 0 },
+      gB2: { x: 30, y: 5, dx: 1, dy: 0 },
+      gC1: { x: 30, y: 15, dx: 1, dy: 0 },
+      gC2: { x: 30, y: 25, dx: 1, dy: 0 }
     };
   }
 

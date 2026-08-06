@@ -1785,8 +1785,15 @@ export class CircuitSimulator {
                             if (item.output_d) chs.OutD = item.output_d;
                             if (item.output_q) chs.OutQ = item.output_q;
                             if (item.output_wm) chs.OutWm = item.output_wm;
-                            if (item.output_te) chs.OutTe = item.output_te;
-                            if (item.output_m) chs.OutM = item.output_m;
+                            if (item.input_va) chs.Va = item.input_va;
+                            if (item.input_vb) chs.Vb = item.input_vb;
+                            if (item.input_vc) chs.Vc = item.input_vc;
+                            if (item.output_ga1) chs.gA1 = item.output_ga1;
+                            if (item.output_ga2) chs.gA2 = item.output_ga2;
+                            if (item.output_gb1) chs.gB1 = item.output_gb1;
+                            if (item.output_gb2) chs.gB2 = item.output_gb2;
+                            if (item.output_gc1) chs.gC1 = item.output_gc1;
+                            if (item.output_gc2) chs.gC2 = item.output_gc2;
                             if (item.input1) chs.In1 = item.input1;
                             if (item.input2) chs.In2 = item.input2;
                             if (item.control_signal) chs.Ctrl = item.control_signal;
@@ -2794,6 +2801,77 @@ export class CircuitSimulator {
                             };
                             this.setControlSignal(signals, out, this.evalVector1(valIn, evalFn));
                         }
+                    } else if (orig === "PWM_3PH") {
+                        const fc = parseScientific(b.parameters.frequency ?? b.parameters.fc ?? "10k");
+                        const deadTime = parseScientific(b.parameters.dead_time ?? b.parameters.dt ?? "1u");
+                        const minVal = parseScientific(b.parameters.min ?? "-1");
+                        const maxVal = parseScientific(b.parameters.max ?? "1");
+                        const Tc = 1.0 / Math.max(1.0, fc);
+
+                        const defaultPhaseA = Math.sin(2.0 * Math.PI * 50.0 * time);
+                        const defaultPhaseB = Math.sin(2.0 * Math.PI * 50.0 * time - 2.0 * Math.PI / 3.0);
+                        const defaultPhaseC = Math.sin(2.0 * Math.PI * 50.0 * time - 4.0 * Math.PI / 3.0);
+
+                        const vA = (b.channels.Va && signals[b.channels.Va] !== undefined) ? signals[b.channels.Va] : defaultPhaseA;
+                        const vB = (b.channels.Vb && signals[b.channels.Vb] !== undefined) ? signals[b.channels.Vb] : defaultPhaseB;
+                        const vC = (b.channels.Vc && signals[b.channels.Vc] !== undefined) ? signals[b.channels.Vc] : defaultPhaseC;
+
+                        let tLocal = time % Tc;
+                        if (tLocal < 0) tLocal += Tc;
+                        const u = (tLocal < Tc / 2.0) ? (tLocal / (Tc / 2.0)) : (1.0 - (tLocal - Tc / 2.0) / (Tc / 2.0));
+                        const v_car = minVal + u * (maxVal - minVal);
+
+                        const raw_gA1 = vA > v_car ? 1.0 : 0.0;
+                        const raw_gA2 = vA <= v_car ? 1.0 : 0.0;
+                        const raw_gB1 = vB > v_car ? 1.0 : 0.0;
+                        const raw_gB2 = vB <= v_car ? 1.0 : 0.0;
+                        const raw_gC1 = vC > v_car ? 1.0 : 0.0;
+                        const raw_gC2 = vC <= v_car ? 1.0 : 0.0;
+
+                        if (!cs[b.id]) {
+                            cs[b.id] = {
+                                last_off_gA1: -1.0, last_off_gA2: -1.0,
+                                last_off_gB1: -1.0, last_off_gB2: -1.0,
+                                last_off_gC1: -1.0, last_off_gC2: -1.0,
+                                prev_gA1: 0.0, prev_gA2: 0.0,
+                                prev_gB1: 0.0, prev_gB2: 0.0,
+                                prev_gC1: 0.0, prev_gC2: 0.0
+                            };
+                        }
+                        const st = cs[b.id];
+
+                        if (st.prev_gA1 > 0.5 && raw_gA1 <= 0.5) st.last_off_gA1 = time;
+                        if (st.prev_gA2 > 0.5 && raw_gA2 <= 0.5) st.last_off_gA2 = time;
+                        if (st.prev_gB1 > 0.5 && raw_gB1 <= 0.5) st.last_off_gB1 = time;
+                        if (st.prev_gB2 > 0.5 && raw_gB2 <= 0.5) st.last_off_gB2 = time;
+                        if (st.prev_gC1 > 0.5 && raw_gC1 <= 0.5) st.last_off_gC1 = time;
+                        if (st.prev_gC2 > 0.5 && raw_gC2 <= 0.5) st.last_off_gC2 = time;
+
+                        let gA1 = raw_gA1;
+                        if (gA1 > 0.5 && deadTime > 0 && st.last_off_gA2 >= 0 && (time - st.last_off_gA2) < deadTime) gA1 = 0.0;
+                        let gA2 = raw_gA2;
+                        if (gA2 > 0.5 && deadTime > 0 && st.last_off_gA1 >= 0 && (time - st.last_off_gA1) < deadTime) gA2 = 0.0;
+
+                        let gB1 = raw_gB1;
+                        if (gB1 > 0.5 && deadTime > 0 && st.last_off_gB2 >= 0 && (time - st.last_off_gB2) < deadTime) gB1 = 0.0;
+                        let gB2 = raw_gB2;
+                        if (gB2 > 0.5 && deadTime > 0 && st.last_off_gB1 >= 0 && (time - st.last_off_gB1) < deadTime) gB2 = 0.0;
+
+                        let gC1 = raw_gC1;
+                        if (gC1 > 0.5 && deadTime > 0 && st.last_off_gC2 >= 0 && (time - st.last_off_gC2) < deadTime) gC1 = 0.0;
+                        let gC2 = raw_gC2;
+                        if (gC2 > 0.5 && deadTime > 0 && st.last_off_gC1 >= 0 && (time - st.last_off_gC1) < deadTime) gC2 = 0.0;
+
+                        st.prev_gA1 = gA1; st.prev_gA2 = gA2;
+                        st.prev_gB1 = gB1; st.prev_gB2 = gB2;
+                        st.prev_gC1 = gC1; st.prev_gC2 = gC2;
+
+                        if (b.channels.gA1) this.setControlSignal(signals, b.channels.gA1, gA1);
+                        if (b.channels.gA2) this.setControlSignal(signals, b.channels.gA2, gA2);
+                        if (b.channels.gB1) this.setControlSignal(signals, b.channels.gB1, gB1);
+                        if (b.channels.gB2) this.setControlSignal(signals, b.channels.gB2, gB2);
+                        if (b.channels.gC1) this.setControlSignal(signals, b.channels.gC1, gC1);
+                        if (b.channels.gC2) this.setControlSignal(signals, b.channels.gC2, gC2);
                     } else if (orig === "CLARKE") {
                         const va = signals[b.channels.A] ?? 0.0;
                         const vb = signals[b.channels.B] ?? 0.0;

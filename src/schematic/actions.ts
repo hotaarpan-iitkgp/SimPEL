@@ -2016,6 +2016,21 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           output_phase: `${comp.id}.Phase`,
           original_type: comp.type
         });
+      case 'PWM_3PH':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input_va: getIncomingControlTerminal(comp.id, 'Va'),
+          input_vb: getIncomingControlTerminal(comp.id, 'Vb'),
+          input_vc: getIncomingControlTerminal(comp.id, 'Vc'),
+          output_ga1: `${comp.id}.gA1`,
+          output_ga2: `${comp.id}.gA2`,
+          output_gb1: `${comp.id}.gB1`,
+          output_gb2: `${comp.id}.gB2`,
+          output_gc1: `${comp.id}.gC1`,
+          output_gc2: `${comp.id}.gC2`,
+          original_type: comp.type
+        });
         break;
       case 'CLARKE':
         control_loops.gains.push({
