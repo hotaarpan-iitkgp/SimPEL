@@ -819,10 +819,11 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
   {
     type: 'SVPWM',
     label: 'Space Vector PWM',
-    desc: 'Implement space vector modulation for 3-phase systems.',
+    desc: 'Generate 3-phase gate pulses using Space Vector PWM (SVPWM) zero-sequence offset injection with dead time.',
     category: 'control',
     subcategory: 'Modulators',
-    symbol: 'SVPWM'
+    symbol: 'SVPWM',
+    defaultParameters: { frequency: '10k', dead_time: '1u', min: '-1', max: '1' }
   },
 
   // Signal Transforms
@@ -1865,6 +1866,22 @@ export function getDetailedComponentPins(type: string, comp?: any): Record<strin
     return {
       Va: { x: -30, y: -20, dx: -1, dy: 0 },
       Vb: { x: -30, y: 0, dx: -1, dy: 0 },
+      Vc: { x: -30, y: 20, dx: -1, dy: 0 },
+      gA1: { x: 30, y: -25, dx: 1, dy: 0 },
+      gA2: { x: 30, y: -15, dx: 1, dy: 0 },
+      gB1: { x: 30, y: -5, dx: 1, dy: 0 },
+      gB2: { x: 30, y: 5, dx: 1, dy: 0 },
+      gC1: { x: 30, y: 15, dx: 1, dy: 0 },
+      gC2: { x: 30, y: 25, dx: 1, dy: 0 }
+    };
+  }
+
+  if (type === 'SVPWM') {
+    return {
+      Alpha: { x: -30, y: -20, dx: -1, dy: 0 },
+      Beta: { x: -30, y: -10, dx: -1, dy: 0 },
+      Va: { x: -30, y: 0, dx: -1, dy: 0 },
+      Vb: { x: -30, y: 10, dx: -1, dy: 0 },
       Vc: { x: -30, y: 20, dx: -1, dy: 0 },
       gA1: { x: 30, y: -25, dx: 1, dy: 0 },
       gA2: { x: 30, y: -15, dx: 1, dy: 0 },
