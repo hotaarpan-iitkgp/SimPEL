@@ -111,7 +111,7 @@ try {
   // Let's sample the switch states
   console.log("Control signals and probe values in first 20 steps:");
   for (let i = 0; i < Math.min(20, result.time.length); i++) {
-    console.log(`t = ${result.time[i].toFixed(6)} s, v2 = ${result.voltages["node_2"][i].toFixed(4)} V, PI_Reg: ${result.signals["PI_Reg.Out"]?.[i]?.toFixed(4)}, Carrier: ${result.signals["PWM_Modulator.Out"]?.[i]?.toFixed(4)}, Comp Out: ${result.signals["PWM_Comp.Out"]?.[i]}, D1 Cond: ${result.signals["PROBE1.Conducting_D1"]?.[i]}, D1 V: ${result.signals["PROBE1.V_D1"]?.[i]?.toFixed(4)} V, D1 I: ${result.custom_plots["I_D1"]?.[i]?.toFixed(4)} A`);
+    console.log(`t = ${result.time[i].toFixed(6)} s, v2 = ${result.voltages["node_2"][i].toFixed(4)} V, PI_Reg: ${result.signals["PI_Reg.Out"]?.[i]?.toFixed(4)}, Carrier: ${result.signals["PWM_Modulator.Out"]?.[i]?.toFixed(4)}, Comp Out: ${result.signals["PWM_Comp.Out"]?.[i]}, D1 V: ${result.custom_plots["V_D1"]?.[i]?.toFixed(4)} V, D1 I: ${result.custom_plots["I_D1"]?.[i]?.toFixed(4)} A`);
   }
 
   let max_id = -Infinity;

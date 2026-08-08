@@ -2593,13 +2593,13 @@ export class CircuitSimulator {
                 for (const b of this.control_loops) {
                     const orig = b.parameters?.original_type || b.type;
                     const origUpper = (orig || "").toUpperCase();
-                    if (b.type === "Constant" || ["STEP", "RAMP", "CLOCK", "SINE_WAVE", "PULSE_GEN", "TRI_GEN", "RANDOM_NUM", "WHITE_NOISE", "CONSTANT"].includes(origUpper)) {
+                    if (b.type === "Constant" || b.type === "Triangle_Carrier" || ["STEP", "RAMP", "CLOCK", "SINE_WAVE", "PULSE_GEN", "TRI_GEN", "RANDOM_NUM", "WHITE_NOISE", "CONSTANT", "TRIANGLE_CARRIER"].includes(origUpper)) {
                         continue;
                     }
                 const out = b.channels.Out || b.channels.Out1 || b.id;
                 const inSig = b.channels.In ?? b.channels.In1 ?? b.channels.u ?? b.channels.A;
                 const val = inSig ? (signals[inSig] ?? 0) : 0;
-                if (b.type === "Gain" || origUpper !== "") {
+                if (b.type === "Gain" || (b.parameters && b.parameters.original_type)) {
                     if (orig === "OFFSET") {
                         signals[out] = val + parseScientific(b.parameters.offset ?? "0.0");
                     } else if (orig === "SIGNUM" || orig === "SIGN" || orig === "Signum" || orig === "Sign" || orig === "SGN") {
@@ -3840,8 +3840,7 @@ export class CircuitSimulator {
                                 st.last_t = time;
                             }
                         }
-                        signals[out] = y_temp;
-                    } else {
+                    } else if (b.type === "Gain" || origUpper === "GAIN") {
                         const inKey = b.channels.In ?? b.channels.In1;
                         const valIn = (inKey && signals[inKey] !== undefined) ? signals[inKey] : val;
                         const K = parseScientific(b.parameters.K ?? b.parameters.gain ?? "1");
@@ -4180,6 +4179,7 @@ export class CircuitSimulator {
                     const inPlus = signals[b.channels.Plus] ?? signals[b.channels.In1] ?? signals[b.channels.In] ?? 0.0;
                     const inMinus = signals[b.channels.Minus] ?? signals[b.channels.In2] ?? signals[b.channels.Ref] ?? 0.0;
                     const hyst = parseScientific(b.parameters.hysteresis ?? "0");
+                    let res = 0.0;
                     if (hyst > 0) {
                         if (!cs[b.id]) cs[b.id] = { state: 0 };
                         const diff = inPlus - inMinus;
@@ -4187,10 +4187,11 @@ export class CircuitSimulator {
                         if (diff > hyst / 2.0) st = 1.0;
                         else if (diff < -hyst / 2.0) st = 0.0;
                         if (integrate && iter === 2) cs[b.id].state = st;
-                        signals[out] = st;
+                        res = st;
                     } else {
-                        signals[out] = (inPlus >= inMinus) ? 1.0 : 0.0;
+                        res = (inPlus >= inMinus) ? 1.0 : 0.0;
                     }
+                    signals[out] = res;
                 } else if ((b.type === "COMPARE_TO_CONSTANT" || b.type === "CompareToConstant" || b.type === "COMP_CONST") && out) {
                     const op = (b.parameters.operator ?? b.parameters.op ?? b.parameters.relational_operator ?? b.parameters.condition ?? "==").trim();
                     const cVal = parseScientific(b.parameters.constant ?? b.parameters.const ?? b.parameters.value ?? b.parameters.threshold ?? b.parameters.c ?? "0.0");
