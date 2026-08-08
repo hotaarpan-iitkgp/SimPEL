@@ -2346,13 +2346,20 @@ export class CircuitSimulator {
                 }
             }
 
-            const orig = b.parameters?.original_type;
-            const isStateDelay = ["UNIT_DELAY", "MEMORY_BLOCK", "DELAY", "TRANSPORT_DELAY", "INTEGRATOR", "DISCRETE_INT", "DISCRETE_TF", "DISCRETE_SS", "RATE_LIMITER"].includes(orig) || b.type === "PI_Controller";
+            for (const inputSig of inputs) {
+                const producerId = producerMap.get(inputSig);
+                if (producerId && producerId !== b.id) {
+                    const producerBlock = blockMap.get(producerId);
+                    const prodOrigUpper = producerBlock ? (producerBlock.parameters?.original_type || producerBlock.type || "").toUpperCase() : "";
+                    const isProducerState = [
+                        "UNIT_DELAY", "MEMORY_BLOCK", "DELAY", "TRANSPORT_DELAY",
+                        "INTEGRATOR", "DISCRETE_INT", "DISCRETE_TF", "DISCRETE_SS",
+                        "RATE_LIMITER", "TRANSFER_FCN", "TF", "PID", "CONT_PID",
+                        "DISCRETE_PID", "PI_CONTROLLER", "CONTINUOUSPID", "PID_CONTROLLER",
+                        "STATE_SPACE"
+                    ].includes(prodOrigUpper) || (producerBlock && (producerBlock.type === "PI_Controller" || producerBlock.type === "ContinuousPID"));
 
-            if (!isStateDelay) {
-                for (const inputSig of inputs) {
-                    const producerId = producerMap.get(inputSig);
-                    if (producerId && producerId !== b.id) {
+                    if (!isProducerState) {
                         if (!graph.get(producerId)!.has(b.id)) {
                             graph.get(producerId)!.add(b.id);
                             inDegree.set(b.id, (inDegree.get(b.id) || 0) + 1);
@@ -2454,39 +2461,39 @@ export class CircuitSimulator {
             const hasOutput = b.channels.Out || b.channels.OutAlpha || b.channels.OutA || b.channels.OutD || b.channels.OutWm || b.channels.OutTe || b.channels.OutM || b.channels.Mag || b.channels.Q || b.channels.OutV || b.channels.OutI;
             if (!hasOutput && b.type !== "PROBE" && b.type !== "UnifiedProbe") continue;
             const out = b.channels.Out;
-            if (b.type === "Constant") {
-                const orig = b.parameters.original_type;
-                if (orig === "STEP") {
-                    const step_time = parseScientific(b.parameters.step_time ?? "1");
-                    const initial_value = parseScientific(b.parameters.initial_value ?? "0");
-                    const final_value = parseScientific(b.parameters.final_value ?? "1");
+            const origSrcUpper = (b.parameters?.original_type || b.type || "").toUpperCase();
+            if (b.type === "Constant" || ["STEP", "RAMP", "CLOCK", "SINE_WAVE", "PULSE_GEN", "TRI_GEN", "RANDOM_NUM", "WHITE_NOISE"].includes(origSrcUpper)) {
+                if (origSrcUpper === "STEP") {
+                    const step_time = parseScientific(b.parameters.step_time ?? b.parameters.StepTime ?? b.parameters["Step Time"] ?? b.parameters.time ?? "1");
+                    const initial_value = parseScientific(b.parameters.initial_value ?? b.parameters.InitialValue ?? b.parameters["Initial Value"] ?? b.parameters.initial_val ?? b.parameters.init ?? "0");
+                    const final_value = parseScientific(b.parameters.final_value ?? b.parameters.FinalValue ?? b.parameters["Final Value"] ?? b.parameters.final_val ?? b.parameters.value ?? "1");
                     signals[out] = (time >= step_time) ? final_value : initial_value;
-                } else if (orig === "RAMP") {
+                } else if (origSrcUpper === "RAMP") {
                     const slope = parseScientific(b.parameters.slope ?? "1");
                     const start_time = parseScientific(b.parameters.start_time ?? "0");
                     const initial_output = parseScientific(b.parameters.initial_output ?? "0");
                     signals[out] = (time >= start_time) ? initial_output + slope * (time - start_time) : initial_output;
-                } else if (orig === "CLOCK") {
+                } else if (origSrcUpper === "CLOCK") {
                     signals[out] = time;
-                } else if (orig === "SINE_WAVE") {
+                } else if (origSrcUpper === "SINE_WAVE") {
                     const amp = parseScientific(b.parameters.amplitude ?? "1");
                     const freq = parseScientific(b.parameters.frequency ?? "50");
                     const phase = parseScientific(b.parameters.phase ?? "0");
                     signals[out] = amp * Math.sin(2.0 * Math.PI * freq * time + phase * Math.PI / 180.0);
-                } else if (orig === "PULSE_GEN") {
+                } else if (origSrcUpper === "PULSE_GEN") {
                     const amp = parseScientific(b.parameters.amplitude ?? "1");
                     const period = parseScientific(b.parameters.period ?? "1");
                     const width = parseScientific(b.parameters.width ?? "0.5");
                     const delay = parseScientific(b.parameters.delay ?? "0");
                     const t_pulse = (time - delay) % period;
                     signals[out] = (t_pulse >= 0.0 && t_pulse < period * width) ? amp : 0.0;
-                } else if (orig === "TRI_GEN") {
+                } else if (origSrcUpper === "TRI_GEN") {
                     const freq = parseScientific(b.parameters.frequency ?? "10k");
                     const min = parseScientific(b.parameters.min ?? "0");
                     const max = parseScientific(b.parameters.max ?? "1");
                     const pr = 1.0 / freq; const tl = time % pr;
                     signals[out] = (tl < pr / 2.0) ? min + (max - min) * (tl / (pr / 2.0)) : max - (max - min) * ((tl - pr / 2.0) / (pr / 2.0));
-                } else if (orig === "RANDOM_NUM") {
+                } else if (origSrcUpper === "RANDOM_NUM") {
                     if (!cs[b.id]) cs[b.id] = { val: 0.0, prev_time: -1.0 };
                     if (time !== cs[b.id].prev_time) {
                         const mean = parseScientific(b.parameters.mean ?? "0");
@@ -2499,7 +2506,7 @@ export class CircuitSimulator {
                         cs[b.id].prev_time = time;
                     }
                     signals[out] = cs[b.id].val;
-                } else if (orig === "WHITE_NOISE") {
+                } else if (origSrcUpper === "WHITE_NOISE") {
                     if (!cs[b.id]) cs[b.id] = { val: 0.0, prev_time: -1.0 };
                     if (time !== cs[b.id].prev_time) {
                         const psd = parseScientific(b.parameters.psd ?? "0.1");
@@ -2580,11 +2587,19 @@ export class CircuitSimulator {
                     if (ov) signals[ov] = v; if (oi) signals[oi] = i;
                 }
             }
-            for (const b of this.control_loops) {
-                const out = b.channels.Out;
-                if (b.type === "Gain") {
-                    const orig = b.parameters.original_type;
-                    const val = signals[b.channels.In] ?? 0;
+            const numPasses = (integrate && dt > 0.0 && !first && !is_logging) ? 2 : 1;
+            for (let pass = 0; pass < numPasses; pass++) {
+                const doIntegrate = (pass === numPasses - 1) ? integrate : false;
+                for (const b of this.control_loops) {
+                    const orig = b.parameters?.original_type || b.type;
+                    const origUpper = (orig || "").toUpperCase();
+                    if (b.type === "Constant" || ["STEP", "RAMP", "CLOCK", "SINE_WAVE", "PULSE_GEN", "TRI_GEN", "RANDOM_NUM", "WHITE_NOISE", "CONSTANT"].includes(origUpper)) {
+                        continue;
+                    }
+                const out = b.channels.Out || b.channels.Out1 || b.id;
+                const inSig = b.channels.In ?? b.channels.In1 ?? b.channels.u ?? b.channels.A;
+                const val = inSig ? (signals[inSig] ?? 0) : 0;
+                if (b.type === "Gain" || origUpper !== "") {
                     if (orig === "OFFSET") {
                         signals[out] = val + parseScientific(b.parameters.offset ?? "0.0");
                     } else if (orig === "SIGNUM" || orig === "SIGN" || orig === "Signum" || orig === "Sign" || orig === "SGN") {
@@ -3284,9 +3299,9 @@ export class CircuitSimulator {
                             cs[b.id].last_hit = hit;
                         }
                         signals[out] = hit;
-                    } else if (orig === "TRANSFER_FCN") {
-                        const numStr = b.parameters.num ?? "[1]";
-                        const denStr = b.parameters.den ?? "[1 1]";
+                    } else if (orig === "TRANSFER_FCN" || origUpper === "TRANSFER_FCN" || b.type === "TRANSFER_FCN") {
+                        const numStr = b.parameters.num ?? b.parameters.Num ?? "[1]";
+                        const denStr = b.parameters.den ?? b.parameters.Den ?? "[1 1]";
                         const parseVector = (s: any) => {
                             if (s === null || s === undefined) return [];
                             let str = String(s).trim();
@@ -3653,101 +3668,144 @@ export class CircuitSimulator {
                             }
                         }
                         signals[out] = y_temp;
-                    } else if (orig === "DISCRETE_PID") {
-                        const Kp = parseScientific(b.parameters.Kp ?? "1.0");
-                        const Ki = parseScientific(b.parameters.Ki ?? "10.0");
-                        const Kd = parseScientific(b.parameters.Kd ?? "0.0");
-                        const Tf = parseScientific(b.parameters.Tf ?? "0.001");
-                        const ts = parseScientific(b.parameters.ts ?? "100u");
-                        const method = b.parameters.method ?? "Forward Euler";
-                        
-                        const k = Math.floor((time + 1e-11) / ts);
-                        
-                        if (!cs[b.id]) {
-                            cs[b.id] = {
-                                held_out: 0.0,
-                                prev_error: 0.0,
-                                held_I: 0.0,
-                                held_D: 0.0,
-                                last_sample_k: k
-                            };
-                        } else {
-                            if (cs[b.id].held_out === undefined) cs[b.id].held_out = 0.0;
-                            if (cs[b.id].prev_error === undefined) cs[b.id].prev_error = 0.0;
-                            if (cs[b.id].held_I === undefined) cs[b.id].held_I = 0.0;
-                            if (cs[b.id].held_D === undefined) cs[b.id].held_D = 0.0;
-                            if (cs[b.id].last_sample_k === undefined) cs[b.id].last_sample_k = k;
-                        }
-                        
-                        let prev_err = cs[b.id].prev_error;
-                        let I_prev = cs[b.id].held_I;
-                        let D_prev = cs[b.id].held_D;
-                        let y_temp = cs[b.id].held_out;
-                        
-                        let I_new = I_prev;
-                        let D_new = D_prev;
-                        
-                        if (is_logging && cs[b.id].held_out !== undefined) {
-                            y_temp = cs[b.id].held_out;
-                        } else {
-                            if (k > cs[b.id].last_sample_k) {
-                                const e = val;
-                                const P = Kp * e;
-                                
-                                D_new = (Tf / (Tf + ts)) * D_prev + (Kd / (Tf + ts)) * (e - prev_err);
-                                
-                                const limit_output = b.parameters.limit_output === 'true';
-                                const upper_limit = parseScientific(b.parameters.upper_limit ?? "1.0");
-                                const lower_limit = parseScientific(b.parameters.lower_limit ?? "-1.0");
-                                const anti_windup = b.parameters.anti_windup === 'true';
-                                
-                                let I_test = I_prev;
-                                if (method === "Forward Euler") {
-                                    I_test = I_prev + Ki * ts * prev_err;
-                                } else if (method === "Backward Euler") {
-                                    I_test = I_prev + Ki * ts * e;
-                                } else if (method === "Trapezoidal") {
-                                    I_test = I_prev + 0.5 * Ki * ts * (e + prev_err);
+                    } else if (["SUBTRACT", "SUM", "SUM_ROUND", "SUM_RECT", "SUMMINGJUNCTION", "SUB", "ADD"].includes(origUpper) || b.type === "SUBTRACT" || b.type === "SUM" || b.type === "SummingJunction") {
+                        const signs = (b.parameters.signs || (origUpper === "SUBTRACT" || origUpper === "SUB" || b.type === "SUBTRACT" ? "+-" : "++")).trim();
+                        let sum: any = 0.0;
+                        const hasInChannels = Object.keys(b.channels).some(k => k.startsWith('In') || k === 'A' || k === 'B' || k === 'Plus' || k === 'Minus' || k === '+' || k === '-');
+                        if (hasInChannels) {
+                            let i = 1;
+                            while (true) {
+                                let ch = b.channels[`In${i}`];
+                                if (!ch && i === 1) ch = b.channels.In1 || b.channels.A || b.channels.Plus || b.channels['+'] || b.channels.In;
+                                if (!ch && i === 2) ch = b.channels.In2 || b.channels.B || b.channels.Minus || b.channels['-'];
+                                if (ch === undefined && i > 10) break;
+                                if (ch !== undefined) {
+                                    const signChar = signs[i - 1] ?? '+';
+                                    const s = signChar === '-' ? -1.0 : 1.0;
+                                    const valIn = signals[ch] ?? 0.0;
+                                    sum = this.evalVector2(sum, valIn, (a, b) => a + s * b);
                                 }
-                                
-                                const u_unsat = P + I_test + D_new;
-                                
-                                let integrate_ok = true;
-                                if (limit_output && anti_windup) {
-                                    if (u_unsat > upper_limit && e > 0) {
-                                        integrate_ok = false;
-                                    } else if (u_unsat < lower_limit && e < 0) {
-                                        integrate_ok = false;
+                                i++;
+                                if (i > 100) break;
+                            }
+                        }
+                        signals[out] = sum;
+                        this.setControlSignal(signals, out, sum);
+                    } else if (["DISCRETE_PID", "PID", "CONT_PID", "CONTINUOUSPID", "PI_CONTROLLER", "PID_CONTROLLER"].includes(origUpper) || ["PID", "CONT_PID", "DISCRETE_PID", "ContinuousPID", "PI_Controller"].includes(b.type)) {
+                        const errorInKey = b.channels.In ?? b.channels.In1 ?? b.channels.e ?? b.channels.error ?? b.channels.Error ?? b.channels.A;
+                        const e = errorInKey ? (signals[errorInKey] ?? 0.0) : val;
+                        
+                        const Kp = parseScientific(b.parameters.Kp ?? b.parameters.kp ?? "1.0");
+                        const Ki = parseScientific(b.parameters.Ki ?? b.parameters.ki ?? "0.0");
+                        const Kd = parseScientific(b.parameters.Kd ?? b.parameters.kd ?? "0.0");
+                        const Tf = parseScientific(b.parameters.Tf ?? b.parameters.tf ?? (b.parameters.N ? String(1 / parseScientific(b.parameters.N)) : "0.01"));
+                        
+                        const limit_output = b.parameters.limit_output === 'true' || b.parameters.limit_output === true || b.parameters.LimitOutput === 'True' || b.parameters.LimitOutput === 'true' || b.parameters['Limit Output'] === 'True' || b.parameters['Limit Output'] === 'true';
+                        const upper_limit = parseScientific(b.parameters.upper_limit ?? b.parameters.UpperLimit ?? b.parameters['Upper Limit'] ?? "1.0");
+                        const lower_limit = parseScientific(b.parameters.lower_limit ?? b.parameters.LowerLimit ?? b.parameters['Lower Limit'] ?? "-1.0");
+                        const anti_windup = b.parameters.anti_windup === 'true' || b.parameters.anti_windup === true || b.parameters.AntiWindup === 'True' || b.parameters.AntiWindup === 'true' || b.parameters['Anti Windup'] === 'True' || b.parameters['Anti Windup'] === 'true';
+                        
+                        if (origUpper === "DISCRETE_PID" || b.type === "DISCRETE_PID") {
+                            const ts = parseScientific(b.parameters.ts ?? b.parameters.Ts ?? "100u");
+                            const method = b.parameters.method ?? "Forward Euler";
+                            const k = Math.floor((time + 1e-11) / ts);
+                            
+                            if (!cs[b.id]) {
+                                cs[b.id] = { held_out: 0.0, prev_error: 0.0, held_I: 0.0, held_D: 0.0, last_sample_k: k };
+                            } else {
+                                if (cs[b.id].held_out === undefined) cs[b.id].held_out = 0.0;
+                                if (cs[b.id].prev_error === undefined) cs[b.id].prev_error = 0.0;
+                                if (cs[b.id].held_I === undefined) cs[b.id].held_I = 0.0;
+                                if (cs[b.id].held_D === undefined) cs[b.id].held_D = 0.0;
+                                if (cs[b.id].last_sample_k === undefined) cs[b.id].last_sample_k = k;
+                            }
+                            
+                            let prev_err = cs[b.id].prev_error;
+                            let I_prev = cs[b.id].held_I;
+                            let D_prev = cs[b.id].held_D;
+                            let y_temp = cs[b.id].held_out;
+                            let I_new = I_prev;
+                            let D_new = D_prev;
+                            
+                            if (is_logging && cs[b.id].held_out !== undefined) {
+                                y_temp = cs[b.id].held_out;
+                            } else {
+                                if (k > cs[b.id].last_sample_k) {
+                                    const P = Kp * e;
+                                    D_new = (Tf / (Tf + ts)) * D_prev + (Kd / (Tf + ts)) * (e - prev_err);
+                                    
+                                    let I_test = I_prev;
+                                    if (method === "Forward Euler") I_test = I_prev + Ki * ts * prev_err;
+                                    else if (method === "Backward Euler") I_test = I_prev + Ki * ts * e;
+                                    else if (method === "Trapezoidal") I_test = I_prev + 0.5 * Ki * ts * (e + prev_err);
+                                    
+                                    const u_unsat = P + I_test + D_new;
+                                    let integrate_ok = true;
+                                    if (limit_output && anti_windup) {
+                                        if (u_unsat > upper_limit && e > 0) integrate_ok = false;
+                                        else if (u_unsat < lower_limit && e < 0) integrate_ok = false;
+                                    }
+                                    I_new = integrate_ok ? I_test : I_prev;
+                                    const u_sat = P + I_new + D_new;
+                                    if (limit_output) {
+                                        if (u_sat > upper_limit) y_temp = upper_limit;
+                                        else if (u_sat < lower_limit) y_temp = lower_limit;
+                                        else y_temp = u_sat;
+                                    } else {
+                                        y_temp = u_sat;
                                     }
                                 }
-                                
+                            }
+                            if (integrate && iter === 2) {
+                                if (k > cs[b.id].last_sample_k) {
+                                    cs[b.id].prev_error = e;
+                                    cs[b.id].held_I = I_new;
+                                    cs[b.id].held_D = D_new;
+                                    cs[b.id].held_out = y_temp;
+                                    cs[b.id].last_sample_k = k;
+                                }
+                            }
+                            signals[out] = y_temp;
+                            this.setControlSignal(signals, out, y_temp);
+                        } else {
+                            // Continuous PID / PI Controller
+                            if (!cs[b.id]) {
+                                cs[b.id] = { integral: 0.0, prev_error: e, prev_deriv: 0.0 };
+                            } else {
+                                if (cs[b.id].integral === undefined) cs[b.id].integral = 0.0;
+                                if (cs[b.id].prev_error === undefined) cs[b.id].prev_error = e;
+                                if (cs[b.id].prev_deriv === undefined) cs[b.id].prev_deriv = 0.0;
+                            }
+                            
+                            let deriv = cs[b.id].prev_deriv;
+                            if (Kd > 0.0 && dt > 0.0 && !first && integrate && iter === 2 && !is_logging) {
+                                deriv = (Tf / (dt + Tf)) * cs[b.id].prev_deriv + (Kd / (dt + Tf)) * (e - cs[b.id].prev_error);
+                            }
+                            
+                            const u_unsat = Kp * e + Ki * cs[b.id].integral + deriv;
+                            let u = u_unsat;
+                            if (limit_output) {
+                                if (u > upper_limit) u = upper_limit;
+                                else if (u < lower_limit) u = lower_limit;
+                            }
+                            
+                            if (dt > 0.0 && !first && integrate && iter === 2 && !is_logging) {
+                                let integrate_ok = true;
+                                if (limit_output && anti_windup) {
+                                    if (u_unsat > upper_limit && e > 0) integrate_ok = false;
+                                    else if (u_unsat < lower_limit && e < 0) integrate_ok = false;
+                                }
                                 if (integrate_ok) {
-                                    I_new = I_test;
-                                } else {
-                                    I_new = I_prev;
+                                    cs[b.id].integral += e * dt;
                                 }
-                                
-                                const u_sat = P + I_new + D_new;
-                                if (limit_output) {
-                                    if (u_sat > upper_limit) y_temp = upper_limit;
-                                    else if (u_sat < lower_limit) y_temp = lower_limit;
-                                    else y_temp = u_sat;
-                                } else {
-                                    y_temp = u_sat;
+                                if (Kd > 0.0) {
+                                    cs[b.id].prev_deriv = deriv;
                                 }
+                                cs[b.id].prev_error = e;
                             }
+                            signals[out] = u;
+                            this.setControlSignal(signals, out, u);
                         }
-                        
-                        if (integrate && iter === 2) {
-                            if (k > cs[b.id].last_sample_k) {
-                                cs[b.id].prev_error = val;
-                                cs[b.id].held_I = I_new;
-                                cs[b.id].held_D = D_new;
-                                cs[b.id].held_out = y_temp;
-                                cs[b.id].last_sample_k = k;
-                            }
-                        }
-                        signals[out] = y_temp;
                     } else if (orig === "PERIODIC_IMP_AVG") {
                         const trig = signals[b.channels.Ctrl] ?? 0.0;
                         const initialVal = parseScientific(b.parameters.initial_value ?? "0.0");
@@ -3892,18 +3950,20 @@ export class CircuitSimulator {
                     }
                     if (b.channels.Q) signals[b.channels.Q] = q;
                     if (b.channels.Q_bar) signals[b.channels.Q_bar] = q > 0.5 ? 0.0 : 1.0;
-                } else if (b.type === "SummingJunction" && out) {
+                } else if ((b.type === "SummingJunction" || b.type === "SUM" || b.type === "SUBTRACT" || ["SUM", "SUBTRACT", "SUM_ROUND", "SUM_RECT", "SUMMINGJUNCTION", "SUB", "ADD"].includes(origUpper)) && out) {
                     const ctrlSig = b.channels.Ctrl;
                     if (ctrlSig && (signals[ctrlSig] ?? 0.0) <= 0.5) {
                         signals[out] = 0.0;
                     } else {
-                        const signs = b.parameters.signs || "++";
+                        const signs = b.parameters.signs || (origUpper === "SUBTRACT" || origUpper === "SUB" || b.type === "SUBTRACT" ? "+-" : "++");
                         let sum: any = 0.0;
-                        const hasInChannels = Object.keys(b.channels).some(k => k.startsWith('In'));
+                        const hasInChannels = Object.keys(b.channels).some(k => k.startsWith('In') || k === 'A' || k === 'B' || k === 'Plus' || k === 'Minus' || k === '+' || k === '-');
                         if (hasInChannels) {
                             let i = 1;
                             while (true) {
-                                const ch = b.channels[`In${i}`];
+                                let ch = b.channels[`In${i}`];
+                                if (!ch && i === 1) ch = b.channels.In1 || b.channels.A || b.channels.Plus || b.channels['+'] || b.channels.In;
+                                if (!ch && i === 2) ch = b.channels.In2 || b.channels.B || b.channels.Minus || b.channels['-'];
                                 if (ch === undefined && i > 10) break;
                                 if (ch !== undefined) {
                                     const signChar = signs[i - 1] ?? '+';
@@ -3914,18 +3974,19 @@ export class CircuitSimulator {
                                 i++;
                                 if (i > 100) break;
                             }
-                        } else if (b.channels.A || b.channels.B) {
+                        } else if (b.channels.A || b.channels.B || b.channels.Plus || b.channels.Minus) {
                             const s1 = signs[0] === '-' ? -1 : 1;
                             const s2 = signs[1] === '-' ? -1 : 1;
-                            const valA = b.channels.A ? (signals[b.channels.A] ?? 0.0) : 0.0;
-                            const valB = b.channels.B ? (signals[b.channels.B] ?? 0.0) : 0.0;
+                            const valA = (b.channels.A || b.channels.Plus) ? (signals[b.channels.A || b.channels.Plus] ?? 0.0) : 0.0;
+                            const valB = (b.channels.B || b.channels.Minus) ? (signals[b.channels.B || b.channels.Minus] ?? 0.0) : 0.0;
                             sum = this.evalVector2(0.0, valA, (a, b) => a + s1 * b);
                             sum = this.evalVector2(sum, valB, (a, b) => a + s2 * b);
                         }
                         this.setControlSignal(signals, out, sum);
                     }
-                } else if (b.type === "PI_Controller" && out) {
-                    const error = signals[b.channels.In] ?? 0.0;
+                } else if ((["PI_CONTROLLER", "CONTINUOUSPID", "PID", "CONT_PID", "DISCRETE_PID", "PID_CONTROLLER"].includes(origUpper) || ["PI_Controller", "ContinuousPID", "PID", "CONT_PID", "DISCRETE_PID"].includes(b.type)) && out) {
+                    const inSig = b.channels.In ?? b.channels.In1 ?? b.channels.e ?? b.channels.error ?? b.channels.Error ?? b.channels.A;
+                    const error = inSig ? (signals[inSig] ?? 0.0) : 0.0;
                     if (!cs[b.id]) {
                         cs[b.id] = { integral: 0.0, prev_error: error, prev_deriv: 0.0 };
                     } else {
@@ -3933,10 +3994,10 @@ export class CircuitSimulator {
                         if (cs[b.id].prev_error === undefined) cs[b.id].prev_error = error;
                         if (cs[b.id].prev_deriv === undefined) cs[b.id].prev_deriv = 0.0;
                     }
-                    const Kp = parseScientific(b.parameters.Kp ?? "2.5");
-                    const Ki = parseScientific(b.parameters.Ki ?? "50.0");
-                    const Kd = parseScientific(b.parameters.Kd ?? "0.0");
-                    const Tf = 0.01;
+                    const Kp = parseScientific(b.parameters.Kp ?? b.parameters.kp ?? "1.0");
+                    const Ki = parseScientific(b.parameters.Ki ?? b.parameters.ki ?? "0.0");
+                    const Kd = parseScientific(b.parameters.Kd ?? b.parameters.kd ?? "0.0");
+                    const Tf = parseScientific(b.parameters.Tf ?? b.parameters.tf ?? (b.parameters.N ? String(1 / parseScientific(b.parameters.N)) : "0.01"));
                     
                     let deriv = cs[b.id].prev_deriv;
                     if (Kd > 0.0 && dt > 0.0 && !first && integrate && iter === 2) {
@@ -3945,10 +4006,10 @@ export class CircuitSimulator {
                     
                     const u_unsat = Kp * error + Ki * cs[b.id].integral + deriv;
                     
-                    const limit_output = b.parameters.limit_output === 'true';
-                    const upper_limit = parseScientific(b.parameters.upper_limit ?? "1.0");
-                    const lower_limit = parseScientific(b.parameters.lower_limit ?? "-1.0");
-                    const anti_windup = b.parameters.anti_windup === 'true';
+                    const limit_output = b.parameters.limit_output === 'true' || b.parameters.limit_output === true || b.parameters.LimitOutput === 'True' || b.parameters.LimitOutput === 'true' || b.parameters['Limit Output'] === 'True' || b.parameters['Limit Output'] === 'true';
+                    const upper_limit = parseScientific(b.parameters.upper_limit ?? b.parameters.UpperLimit ?? b.parameters['Upper Limit'] ?? "1.0");
+                    const lower_limit = parseScientific(b.parameters.lower_limit ?? b.parameters.LowerLimit ?? b.parameters['Lower Limit'] ?? "-1.0");
+                    const anti_windup = b.parameters.anti_windup === 'true' || b.parameters.anti_windup === true || b.parameters.AntiWindup === 'True' || b.parameters.AntiWindup === 'true' || b.parameters['Anti Windup'] === 'True' || b.parameters['Anti Windup'] === 'true';
                     
                     let u = u_unsat;
                     if (limit_output) {
@@ -3973,57 +4034,7 @@ export class CircuitSimulator {
                         }
                         cs[b.id].prev_error = error;
                     }
-                    signals[out] = u;
-                } else if (b.type === "ContinuousPID" && out) {
-                    const error = signals[b.channels.In] ?? 0.0;
-                    if (!cs[b.id]) {
-                        cs[b.id] = { integral: 0.0, prev_error: error, prev_deriv: 0.0 };
-                    } else {
-                        if (cs[b.id].integral === undefined) cs[b.id].integral = 0.0;
-                        if (cs[b.id].prev_error === undefined) cs[b.id].prev_error = error;
-                        if (cs[b.id].prev_deriv === undefined) cs[b.id].prev_deriv = 0.0;
-                    }
-                    const Kp = parseScientific(b.parameters.Kp ?? "1.0");
-                    const Ki = parseScientific(b.parameters.Ki ?? "0.0");
-                    const Kd = parseScientific(b.parameters.Kd ?? "0.0");
-                    const Tf = parseScientific(b.parameters.Tf ?? "0.01");
-                    
-                    let deriv = cs[b.id].prev_deriv;
-                    if (Kd > 0.0 && dt > 0.0 && !first && integrate && iter === 2) {
-                        deriv = (Tf / (dt + Tf)) * cs[b.id].prev_deriv + (Kd / (dt + Tf)) * (error - cs[b.id].prev_error);
-                    }
-                    
-                    const u_unsat = Kp * error + Ki * cs[b.id].integral + deriv;
-                    
-                    const limit_output = b.parameters.limit_output === 'true';
-                    const upper_limit = parseScientific(b.parameters.upper_limit ?? "1.0");
-                    const lower_limit = parseScientific(b.parameters.lower_limit ?? "-1.0");
-                    const anti_windup = b.parameters.anti_windup === 'true';
-                    
-                    let u = u_unsat;
-                    if (limit_output) {
-                        if (u > upper_limit) u = upper_limit;
-                        else if (u < lower_limit) u = lower_limit;
-                    }
-                    
-                    if (dt > 0.0 && !first && integrate && iter === 2) {
-                        let integrate_ok = true;
-                        if (limit_output && anti_windup) {
-                            if (u_unsat > upper_limit && error > 0) {
-                                integrate_ok = false;
-                            } else if (u_unsat < lower_limit && error < 0) {
-                                integrate_ok = false;
-                            }
-                        }
-                        if (integrate_ok) {
-                            cs[b.id].integral += error * dt;
-                        }
-                        if (Kd > 0.0) {
-                            cs[b.id].prev_deriv = deriv;
-                        }
-                        cs[b.id].prev_error = error;
-                    }
-                    signals[out] = u;
+                    this.setControlSignal(signals, out, u);
                 } else if (b.type === "PLL") {
                     const fn = parseScientific(b.parameters.fn ?? "50.0");
                     const w_nom = 2.0 * Math.PI * fn;
@@ -4631,6 +4642,7 @@ export class CircuitSimulator {
                     });
                 }
             }
+        }
         
         // Post-process to record all block terminal values explicitly for plotting
         for (const b of this.control_loops) {
