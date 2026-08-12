@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { CircuitSimulator } from "./src/solver_ts";
 
 console.log("=== Diode Spikes Validation Test Bench ===");

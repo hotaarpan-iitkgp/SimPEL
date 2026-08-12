@@ -1617,6 +1617,7 @@ export class CircuitSimulator {
     key_trigger_states: Record<string, number> = {};
     physical_stage_map: Map<string, ComponentTS> = new Map();
     b_rhs_buf: number[] = [];
+    haltSimulation: boolean = false;
 
     constructor(physical: any, control: any, params: any) {
         let physicalArray: ComponentTS[] = [];
@@ -4034,7 +4035,7 @@ export class CircuitSimulator {
                         cs[b.id].prev_error = error;
                     }
                     this.setControlSignal(signals, out, u);
-                } else if (b.type === "PLL") {
+                } else if (b.type === "PLL" || b.type === "PLL_1PH" || origUpper === "PLL_1PH") {
                     const fn = parseScientific(b.parameters.fn ?? "50.0");
                     const w_nom = 2.0 * Math.PI * fn;
                     const Kp = parseScientific(b.parameters.Kp ?? "20.0");
@@ -4085,6 +4086,123 @@ export class CircuitSimulator {
                     if (b.channels.Freq) signals[b.channels.Freq] = omega_est / (2.0 * Math.PI);
                     if (b.channels.Cos) signals[b.channels.Cos] = Math.cos(theta);
                     if (b.channels.Sin) signals[b.channels.Sin] = Math.sin(theta);
+                } else if (b.type === "PLL_3PH" || origUpper === "PLL_3PH") {
+                    const fn = parseScientific(b.parameters.fn ?? "50.0");
+                    const w_nom = 2.0 * Math.PI * fn;
+                    const Kp = parseScientific(b.parameters.Kp ?? "20.0");
+                    const Ki = parseScientific(b.parameters.Ki ?? "1000.0");
+                    
+                    if (!cs[b.id]) {
+                        cs[b.id] = { theta: 0.0, pll_int: 0.0, vq: 0.0 };
+                    }
+                    
+                    let theta = cs[b.id].theta;
+                    let pll_int = cs[b.id].pll_int;
+                    
+                    const omega_est = w_nom + Kp * cs[b.id].vq + Ki * pll_int;
+                    
+                    if (dt > 0.0 && !first && integrate && iter === 2) {
+                        const va = signals[b.channels.Va ?? b.channels.InA ?? b.channels.In1] ?? 0.0;
+                        const vb = signals[b.channels.Vb ?? b.channels.InB ?? b.channels.In2] ?? 0.0;
+                        const vc = signals[b.channels.Vc ?? b.channels.InC ?? b.channels.In3] ?? 0.0;
+                        const valpha = (2.0 / 3.0) * (va - 0.5 * vb - 0.5 * vc);
+                        const vbeta = (2.0 / 3.0) * ((Math.sqrt(3.0) / 2.0) * vb - (Math.sqrt(3.0) / 2.0) * vc);
+                        
+                        const vq = -valpha * Math.sin(theta) + vbeta * Math.cos(theta);
+                        
+                        cs[b.id].vq = vq;
+                        pll_int += vq * dt;
+                        theta += omega_est * dt;
+                        if (theta > 2.0 * Math.PI) theta -= 2.0 * Math.PI;
+                        if (theta < 0.0) theta += 2.0 * Math.PI;
+                        
+                        cs[b.id].theta = theta;
+                        cs[b.id].pll_int = pll_int;
+                    }
+                    
+                    if (b.channels.Theta) signals[b.channels.Theta] = theta;
+                    if (b.channels.Freq) signals[b.channels.Freq] = omega_est / (2.0 * Math.PI);
+                    if (b.channels.Cos) signals[b.channels.Cos] = Math.cos(theta);
+                    if (b.channels.Sin) signals[b.channels.Sin] = Math.sin(theta);
+                } else if ((b.type === "PAUSE_STOP" || origUpper === "PAUSE_STOP") && out) {
+                    const inVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    if (inVal > 0.5 && !first && dt > 0) {
+                        (this as any).haltSimulation = true;
+                        signals[out] = 1.0;
+                    } else {
+                        signals[out] = 0.0;
+                    }
+                } else if (b.type === "TO_FILE" || origUpper === "TO_FILE") {
+                    const inVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    if (!cs[b.id]) { cs[b.id] = { buffer: [] }; }
+                    if (integrate && iter === 2) {
+                        cs[b.id].buffer.push({ t: time, v: inVal });
+                    }
+                    // For JS environments, we buffer internally; extracting it can be done from results log if needed.
+                } else if ((b.type === "FROM_FILE" || origUpper === "FROM_FILE") && out) {
+                    if (!cs[b.id]) {
+                        try {
+                            const data = JSON.parse(b.parameters.data || "[]");
+                            cs[b.id] = { data: data, idx: 0 };
+                        } catch(e) {
+                            cs[b.id] = { data: [], idx: 0 };
+                        }
+                    }
+                    const data = cs[b.id].data;
+                    let val = 0.0;
+                    if (data && data.length > 0) {
+                        let idx = cs[b.id].idx;
+                        while(idx < data.length - 1 && data[idx + 1].t <= time) { idx++; }
+                        cs[b.id].idx = idx;
+                        if (idx < data.length - 1 && data[idx + 1].t > data[idx].t) {
+                            const t0 = data[idx].t; const v0 = data[idx].v;
+                            const t1 = data[idx+1].t; const v1 = data[idx+1].v;
+                            val = v0 + (v1 - v0) * (time - t0) / (t1 - t0);
+                        } else {
+                            val = data[idx].v ?? 0.0;
+                        }
+                    }
+                    this.setControlSignal(signals, out, val);
+                } else if (b.type === "LOSS_CALC" || origUpper === "LOSS_CALC") {
+                    const v_in = signals[b.channels.V ?? b.channels.v] ?? 0.0;
+                    const i_in = signals[b.channels.I ?? b.channels.i] ?? 0.0;
+                    const e_on = parseScientific(b.parameters.Eon ?? "0.0");
+                    const e_off = parseScientific(b.parameters.Eoff ?? "0.0");
+                    const state_in = (signals[b.channels.State ?? b.channels.state ?? b.channels.In1] ?? 0.0) > 0.5 ? 1 : 0;
+                    
+                    if (!cs[b.id]) {
+                        cs[b.id] = { e_loss: 0.0, prev_state: state_in };
+                    }
+                    
+                    let e_loss = cs[b.id].e_loss;
+                    const prev_state = cs[b.id].prev_state;
+                    
+                    if (integrate && iter === 2) {
+                        if (state_in === 1) {
+                            e_loss += Math.abs(v_in * i_in) * dt;
+                        }
+                        if (prev_state === 0 && state_in === 1) {
+                            e_loss += e_on;
+                        } else if (prev_state === 1 && state_in === 0) {
+                            e_loss += e_off;
+                        }
+                        cs[b.id].e_loss = e_loss;
+                        cs[b.id].prev_state = state_in;
+                    }
+                    
+                    if (b.channels.Loss) signals[b.channels.Loss] = e_loss;
+                } else if ((b.type === "TASK_FRAME" || origUpper === "TASK_FRAME") && out) {
+                    const inVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    this.setControlSignal(signals, out, inVal);
+                } else if ((b.type === "TASK_TRANS" || origUpper === "TASK_TRANS") && out) {
+                    const inVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    this.setControlSignal(signals, out, inVal);
+                } else if ((b.type === "DLL" || origUpper === "DLL") && out) {
+                    // WASM DLL stub wrapper
+                    this.setControlSignal(signals, out, 0.0);
+                } else if ((b.type === "FMU" || origUpper === "FMU") && out) {
+                    // FMU stub wrapper
+                    this.setControlSignal(signals, out, 0.0);
                 } else if (b.type === "PWM_MASTER") {
                     const N = parseInt(b.parameters.num_carriers) || 3;
                     const fc = parseScientific(b.parameters.fc ?? "10k");
@@ -5838,6 +5956,10 @@ export class CircuitSimulator {
         let iterations = 0;
         const max_iterations = 200000;
         while (t < t_end - 1e-12) {
+            if (this.haltSimulation) {
+                console.log("Simulation halted by PAUSE_STOP block.");
+                break;
+            }
             iterations++;
             if (iterations > max_iterations) {
                 console.warn(`Simulation terminated early: exceeded max iterations (${max_iterations})`);

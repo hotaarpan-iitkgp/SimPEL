@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { CircuitSimulator } from "./src/solver_ts";
 
 console.log("=== PWM MASTER Validation Test Bench ===");
