@@ -26,7 +26,8 @@
   "include": [
     "src",
     "server.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "test_*.ts"
   ],
   "exclude": [
     "node_modules",

@@ -47,8 +47,13 @@ export function parseTurnsList(str: string): number[] {
   return turns;
 }
 
-export function getSubsystemDimensions(comp: any): { width: number; height: number; halfW: number; halfH: number; inports: any[]; outports: any[]; eports: any[] } {
-  const subschematic = comp.sub_schematic || { components: [] };
+export function getSubsystemDimensions(comp: any): { width: number; height: number; halfW: number; halfH: number; inports: any[]; outports: any[]; eports: any[]; triggerPorts: any[]; enablePorts: any[] } {
+  let subschematic = comp.sub_schematic;
+  if (comp.type === 'CONFIG_SUBSYSTEM' && comp.sub_schematics && comp.parameters?.active_config) {
+    subschematic = comp.sub_schematics[comp.parameters.active_config] || subschematic;
+  }
+  subschematic = subschematic || { components: [] };
+
   const inports = (subschematic.components || [])
     .filter((c: any) => c.type === 'INPORT')
     .sort((a: any, b: any) => (a.y ?? 0) - (b.y ?? 0));
@@ -58,6 +63,10 @@ export function getSubsystemDimensions(comp: any): { width: number; height: numb
   const eports = (subschematic.components || [])
     .filter((c: any) => c.type === 'E_PORT')
     .sort((a: any, b: any) => (a.x ?? 0) - (b.x ?? 0));
+  const triggerPorts = (subschematic.components || [])
+    .filter((c: any) => c.type === 'TRIGGER');
+  const enablePorts = (subschematic.components || [])
+    .filter((c: any) => c.type === 'ENABLE');
 
   const numLeft = inports.length;
   const numRight = outports.length;
@@ -75,7 +84,7 @@ export function getSubsystemDimensions(comp: any): { width: number; height: numb
   const width = halfW * 2;
   const height = halfH * 2;
 
-  return { width, height, halfW, halfH, inports, outports, eports };
+  return { width, height, halfW, halfH, inports, outports, eports, triggerPorts, enablePorts };
 }
 
 // Return pins map dynamically based on component type and customized parameter options
@@ -99,9 +108,9 @@ export function getComponentPins(comp: any): Record<string, any> {
     }
     return pins;
   }
-  if (comp.type === 'SUBSYSTEM' || comp.type === 'CONFIG_SUBSYSTEM') {
+  if (comp.type === 'SUBSYSTEM' || comp.type === 'CONFIG_SUBSYSTEM' || comp.type === 'MODEL_REF') {
     const pins: Record<string, any> = {};
-    const { halfW, halfH, inports, outports, eports } = getSubsystemDimensions(comp);
+    const { halfW, halfH, inports, outports, eports, triggerPorts, enablePorts } = getSubsystemDimensions(comp);
 
     const numLeft = inports.length;
     const numRight = outports.length;
@@ -125,6 +134,16 @@ export function getComponentPins(comp: any): Record<string, any> {
       const xOffset = - ((numBottom - 1) / 2) * 40 + idx * 40;
       pins[ep.id] = { x: Math.round(xOffset), y: halfH, dx: 0, dy: 1 };
     });
+
+    // Arrange Trigger port on top edge
+    if (triggerPorts && triggerPorts.length > 0) {
+      pins[triggerPorts[0].id || 'Trig'] = { x: 0, y: -halfH, dx: 0, dy: -1 };
+    }
+    // Arrange Enable port on top edge
+    if (enablePorts && enablePorts.length > 0) {
+      const xOffset = (triggerPorts && triggerPorts.length > 0) ? -20 : 0;
+      pins[enablePorts[0].id || 'Enable'] = { x: xOffset, y: -halfH, dx: 0, dy: -1 };
+    }
 
     return pins;
   }

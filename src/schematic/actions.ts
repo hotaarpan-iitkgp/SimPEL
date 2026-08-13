@@ -2910,7 +2910,7 @@ export function compileHierarchicalNetlist(
     comps.forEach(comp => {
       const prefixedId = prefix ? `${prefix}.${comp.id}` : comp.id;
 
-      if (comp.type === 'SUBSYSTEM') {
+      if (comp.type === 'SUBSYSTEM' || comp.type === 'CONFIG_SUBSYSTEM' || comp.type === 'MODEL_REF') {
         const localScope: Record<string, number> = { ...parentScope };
         if (comp.parameters) {
           Object.keys(comp.parameters).forEach(k => {
@@ -2920,22 +2920,27 @@ export function compileHierarchicalNetlist(
           });
         }
 
-        const subSchematic = comp.sub_schematic || { components: [], wires: [] };
+        let subSchematic = comp.sub_schematic;
+        if (comp.type === 'CONFIG_SUBSYSTEM' && comp.sub_schematics && comp.parameters?.active_config) {
+          subSchematic = comp.sub_schematics[comp.parameters.active_config] || subSchematic;
+        }
+        subSchematic = subSchematic || { components: [], wires: [] };
+
         processLayer(
           subSchematic.components || [],
           subSchematic.wires || [],
           localScope,
           prefixedId
         );
-        // Add a ghost SUBSYSTEM entry so that control signal tracers
+        // Add a ghost SUBSYSTEM/CONFIG_SUBSYSTEM/MODEL_REF entry so that control signal tracers
         // (getIncomingControlTerminal) can find this subsystem boundary
-        // and correctly jump through INPORT/OUTPORT port bypasses.
+        // and correctly jump through INPORT/OUTPORT/TRIGGER/ENABLE port bypasses.
         flatComponents.push({
           id: prefixedId,
-          type: 'SUBSYSTEM',
+          type: comp.type,
           x: comp.x,
           y: comp.y,
-          parameters: {},
+          parameters: comp.parameters || {},
           sub_schematic: subSchematic
         });
       } else {

@@ -1617,6 +1617,7 @@ export class CircuitSimulator {
     key_trigger_states: Record<string, number> = {};
     physical_stage_map: Map<string, ComponentTS> = new Map();
     b_rhs_buf: number[] = [];
+    haltSimulation: boolean = false;
 
     constructor(physical: any, control: any, params: any) {
         let physicalArray: ComponentTS[] = [];
@@ -4034,7 +4035,7 @@ export class CircuitSimulator {
                         cs[b.id].prev_error = error;
                     }
                     this.setControlSignal(signals, out, u);
-                } else if (b.type === "PLL") {
+                } else if (b.type === "PLL" || b.type === "PLL_1PH" || origUpper === "PLL_1PH") {
                     const fn = parseScientific(b.parameters.fn ?? "50.0");
                     const w_nom = 2.0 * Math.PI * fn;
                     const Kp = parseScientific(b.parameters.Kp ?? "20.0");
@@ -4085,6 +4086,123 @@ export class CircuitSimulator {
                     if (b.channels.Freq) signals[b.channels.Freq] = omega_est / (2.0 * Math.PI);
                     if (b.channels.Cos) signals[b.channels.Cos] = Math.cos(theta);
                     if (b.channels.Sin) signals[b.channels.Sin] = Math.sin(theta);
+                } else if (b.type === "PLL_3PH" || origUpper === "PLL_3PH") {
+                    const fn = parseScientific(b.parameters.fn ?? "50.0");
+                    const w_nom = 2.0 * Math.PI * fn;
+                    const Kp = parseScientific(b.parameters.Kp ?? "20.0");
+                    const Ki = parseScientific(b.parameters.Ki ?? "1000.0");
+                    
+                    if (!cs[b.id]) {
+                        cs[b.id] = { theta: 0.0, pll_int: 0.0, vq: 0.0 };
+                    }
+                    
+                    let theta = cs[b.id].theta;
+                    let pll_int = cs[b.id].pll_int;
+                    
+                    const omega_est = w_nom + Kp * cs[b.id].vq + Ki * pll_int;
+                    
+                    if (dt > 0.0 && !first && integrate && iter === 2) {
+                        const va = signals[b.channels.Va ?? b.channels.InA ?? b.channels.In1] ?? 0.0;
+                        const vb = signals[b.channels.Vb ?? b.channels.InB ?? b.channels.In2] ?? 0.0;
+                        const vc = signals[b.channels.Vc ?? b.channels.InC ?? b.channels.In3] ?? 0.0;
+                        const valpha = (2.0 / 3.0) * (va - 0.5 * vb - 0.5 * vc);
+                        const vbeta = (2.0 / 3.0) * ((Math.sqrt(3.0) / 2.0) * vb - (Math.sqrt(3.0) / 2.0) * vc);
+                        
+                        const vq = -valpha * Math.sin(theta) + vbeta * Math.cos(theta);
+                        
+                        cs[b.id].vq = vq;
+                        pll_int += vq * dt;
+                        theta += omega_est * dt;
+                        if (theta > 2.0 * Math.PI) theta -= 2.0 * Math.PI;
+                        if (theta < 0.0) theta += 2.0 * Math.PI;
+                        
+                        cs[b.id].theta = theta;
+                        cs[b.id].pll_int = pll_int;
+                    }
+                    
+                    if (b.channels.Theta) signals[b.channels.Theta] = theta;
+                    if (b.channels.Freq) signals[b.channels.Freq] = omega_est / (2.0 * Math.PI);
+                    if (b.channels.Cos) signals[b.channels.Cos] = Math.cos(theta);
+                    if (b.channels.Sin) signals[b.channels.Sin] = Math.sin(theta);
+                } else if ((b.type === "PAUSE_STOP" || origUpper === "PAUSE_STOP") && out) {
+                    const inVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    if (inVal > 0.5 && !first && dt > 0) {
+                        (this as any).haltSimulation = true;
+                        signals[out] = 1.0;
+                    } else {
+                        signals[out] = 0.0;
+                    }
+                } else if (b.type === "TO_FILE" || origUpper === "TO_FILE") {
+                    const inVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    if (!cs[b.id]) { cs[b.id] = { buffer: [] }; }
+                    if (integrate && iter === 2) {
+                        cs[b.id].buffer.push({ t: time, v: inVal });
+                    }
+                    // For JS environments, we buffer internally; extracting it can be done from results log if needed.
+                } else if ((b.type === "FROM_FILE" || origUpper === "FROM_FILE") && out) {
+                    if (!cs[b.id]) {
+                        try {
+                            const data = JSON.parse(b.parameters.data || "[]");
+                            cs[b.id] = { data: data, idx: 0 };
+                        } catch(e) {
+                            cs[b.id] = { data: [], idx: 0 };
+                        }
+                    }
+                    const data = cs[b.id].data;
+                    let val = 0.0;
+                    if (data && data.length > 0) {
+                        let idx = cs[b.id].idx;
+                        while(idx < data.length - 1 && data[idx + 1].t <= time) { idx++; }
+                        cs[b.id].idx = idx;
+                        if (idx < data.length - 1 && data[idx + 1].t > data[idx].t) {
+                            const t0 = data[idx].t; const v0 = data[idx].v;
+                            const t1 = data[idx+1].t; const v1 = data[idx+1].v;
+                            val = v0 + (v1 - v0) * (time - t0) / (t1 - t0);
+                        } else {
+                            val = data[idx].v ?? 0.0;
+                        }
+                    }
+                    this.setControlSignal(signals, out, val);
+                } else if (b.type === "LOSS_CALC" || origUpper === "LOSS_CALC") {
+                    const v_in = signals[b.channels.V ?? b.channels.v] ?? 0.0;
+                    const i_in = signals[b.channels.I ?? b.channels.i] ?? 0.0;
+                    const e_on = parseScientific(b.parameters.Eon ?? "0.0");
+                    const e_off = parseScientific(b.parameters.Eoff ?? "0.0");
+                    const state_in = (signals[b.channels.State ?? b.channels.state ?? b.channels.In1] ?? 0.0) > 0.5 ? 1 : 0;
+                    
+                    if (!cs[b.id]) {
+                        cs[b.id] = { e_loss: 0.0, prev_state: state_in };
+                    }
+                    
+                    let e_loss = cs[b.id].e_loss;
+                    const prev_state = cs[b.id].prev_state;
+                    
+                    if (integrate && iter === 2) {
+                        if (state_in === 1) {
+                            e_loss += Math.abs(v_in * i_in) * dt;
+                        }
+                        if (prev_state === 0 && state_in === 1) {
+                            e_loss += e_on;
+                        } else if (prev_state === 1 && state_in === 0) {
+                            e_loss += e_off;
+                        }
+                        cs[b.id].e_loss = e_loss;
+                        cs[b.id].prev_state = state_in;
+                    }
+                    
+                    if (b.channels.Loss) signals[b.channels.Loss] = e_loss;
+                } else if ((b.type === "TASK_FRAME" || origUpper === "TASK_FRAME") && out) {
+                    const inVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    this.setControlSignal(signals, out, inVal);
+                } else if ((b.type === "TASK_TRANS" || origUpper === "TASK_TRANS") && out) {
+                    const inVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    this.setControlSignal(signals, out, inVal);
+                } else if ((b.type === "DLL" || origUpper === "DLL") && out) {
+                    // WASM DLL stub wrapper
+                    this.setControlSignal(signals, out, 0.0);
+                } else if ((b.type === "FMU" || origUpper === "FMU") && out) {
+                    // FMU stub wrapper
+                    this.setControlSignal(signals, out, 0.0);
                 } else if (b.type === "PWM_MASTER") {
                     const N = parseInt(b.parameters.num_carriers) || 3;
                     const fc = parseScientific(b.parameters.fc ?? "10k");
@@ -4398,6 +4516,397 @@ export class CircuitSimulator {
                         outIdx++;
                         if (numOutputs > 0 && outIdx > numOutputs && !b.channels[`Out${outIdx}`]) break;
                     }
+                } else if ((b.type === "TRIGGER" || origUpper === "TRIGGER") && out) {
+                    const trigVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    const edgeType = b.parameters.trigger_type ?? b.parameters.edge ?? "rising";
+                    if (!cs[b.id]) cs[b.id] = { prev_trig: trigVal };
+                    const prevTrig = cs[b.id].prev_trig;
+                    let triggered = false;
+                    if (edgeType === "rising") {
+                        if (prevTrig <= 0.5 && trigVal > 0.5) triggered = true;
+                    } else if (edgeType === "falling") {
+                        if (prevTrig > 0.5 && trigVal <= 0.5) triggered = true;
+                    } else {
+                        if ((prevTrig <= 0.5 && trigVal > 0.5) || (prevTrig > 0.5 && trigVal <= 0.5)) triggered = true;
+                    }
+                    if (integrate && iter === 2) cs[b.id].prev_trig = trigVal;
+                    signals[out] = triggered ? 1.0 : 0.0;
+                } else if ((b.type === "ENABLE" || origUpper === "ENABLE") && out) {
+                    const enableVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    const mode = b.parameters.enable_type ?? "active_high";
+                    const isEnabled = mode === "active_low" ? (enableVal <= 0.5) : (enableVal > 0.5);
+                    signals[out] = isEnabled ? 1.0 : 0.0;
+                } else if ((b.type === "SIG_SEL" || b.type === "SignalSelector" || origUpper === "SIG_SEL") && out) {
+                    const inKey = b.channels.In ?? b.channels.In1;
+                    const inVal = inKey ? signals[inKey] : 0.0;
+                    const indicesStr = b.parameters.indices ?? b.parameters.elements ?? "[0]";
+                    let indices: number[] = [];
+                    if (Array.isArray(indicesStr)) {
+                        indices = indicesStr;
+                    } else {
+                        const clean = String(indicesStr).replace(/[\[\]]/g, '');
+                        indices = clean.split(/[\s,;]+/).filter(x => x.trim() !== '').map(x => parseInt(x) || 0);
+                    }
+                    if (Array.isArray(inVal)) {
+                        if (indices.length === 1) {
+                            this.setControlSignal(signals, out, inVal[indices[0]] ?? 0.0);
+                        } else {
+                            const res = indices.map(idx => inVal[idx] ?? 0.0);
+                            this.setControlSignal(signals, out, res);
+                        }
+                    } else {
+                        this.setControlSignal(signals, out, inVal);
+                    }
+                } else if ((b.type === "DYNAMIC_SIG_SEL" || b.type === "DynamicSignalSelector" || origUpper === "DYNAMIC_SIG_SEL") && out) {
+                    const inKey = b.channels.In ?? b.channels.In1;
+                    const idxKey = b.channels.Idx ?? b.channels.index ?? b.channels.In2;
+                    const inVal = inKey ? signals[inKey] : 0.0;
+                    const idxVal = Math.max(0, Math.floor(idxKey ? (signals[idxKey] ?? 0.0) : 0.0));
+                    if (Array.isArray(inVal)) {
+                        const clampedIdx = Math.min(inVal.length - 1, idxVal);
+                        this.setControlSignal(signals, out, inVal[clampedIdx] ?? 0.0);
+                    } else {
+                        this.setControlSignal(signals, out, inVal);
+                    }
+                } else if ((b.type === "SCALAR_EXP" || b.type === "ScalarExpander" || origUpper === "SCALAR_EXP") && out) {
+                    const inKey = b.channels.In ?? b.channels.In1;
+                    const valIn = inKey ? (signals[inKey] ?? 0.0) : 0.0;
+                    const width = parseInt(b.parameters.width ?? b.parameters.size ?? "2") || 2;
+                    const scalar = typeof valIn === 'number' ? valIn : (Array.isArray(valIn) ? valIn[0] : 0.0);
+                    const vec = new Array(width).fill(scalar);
+                    this.setControlSignal(signals, out, vec);
+                } else if ((b.type === "PRODUCT_RECT" || origUpper === "PRODUCT_RECT") && out) {
+                    const ops = b.parameters.operators ?? b.parameters.signs ?? "**";
+                    let prod: any = 1.0;
+                    let i = 1;
+                    while (true) {
+                        const ch = b.channels[`In${i}`];
+                        if (!ch && i > 2) break;
+                        if (ch !== undefined) {
+                            const val = signals[ch] ?? 0.0;
+                            const opChar = ops[i - 1] ?? '*';
+                            if (opChar === '/') {
+                                prod = this.evalVector2(prod, val, (a, b) => a / (Math.abs(b) > 1e-15 ? b : 1e-15));
+                            } else {
+                                prod = this.evalVector2(prod, val, (a, b) => a * b);
+                            }
+                        }
+                        i++;
+                        if (i > 100) break;
+                    }
+                    this.setControlSignal(signals, out, prod);
+                } else if ((b.type === "BITWISE_OP" || origUpper === "BITWISE_OP") && out) {
+                    const op = (b.parameters.operator ?? b.parameters.op ?? "AND").toUpperCase();
+                    const v1 = Math.floor(signals[b.channels.In1 ?? b.channels.In] ?? 0.0);
+                    const v2 = Math.floor(signals[b.channels.In2] ?? 0.0);
+                    let res = 0;
+                    if (op === "AND") res = v1 & v2;
+                    else if (op === "OR") res = v1 | v2;
+                    else if (op === "XOR") res = v1 ^ v2;
+                    else if (op === "NOT") res = ~v1;
+                    else if (op === "SHIFT_LEFT" || op === "SHL") res = v1 << v2;
+                    else if (op === "SHIFT_RIGHT" || op === "SHR") res = v1 >> v2;
+                    this.setControlSignal(signals, out, res);
+                } else if ((b.type === "COMB_LOGIC" || origUpper === "COMB_LOGIC") && out) {
+                    const inKey = b.channels.In ?? b.channels.In1;
+                    const inVal = inKey ? signals[inKey] : 0.0;
+                    let inputs: number[] = [];
+                    if (Array.isArray(inVal)) {
+                        inputs = inVal.map(v => v > 0.5 ? 1 : 0);
+                    } else {
+                        let i = 1;
+                        while (b.channels[`In${i}`] !== undefined) {
+                            inputs.push((signals[b.channels[`In${i}`]] ?? 0.0) > 0.5 ? 1 : 0);
+                            i++;
+                        }
+                        if (inputs.length === 0) inputs = [inVal > 0.5 ? 1 : 0];
+                    }
+                    let rowIdx = 0;
+                    for (let i = 0; i < inputs.length; i++) {
+                        rowIdx = (rowIdx << 1) | inputs[i];
+                    }
+                    const tableStr = b.parameters.truth_table ?? b.parameters.table ?? "[0; 1]";
+                    let table: number[][] = [];
+                    try {
+                        const clean = String(tableStr).replace(/[\[\]]/g, '').trim();
+                        table = clean.split(';').map(r => r.split(/[\s,]+/).filter(x => x.trim() !== '').map(x => parseFloat(x) || 0.0));
+                    } catch (_) {}
+                    const row = table[rowIdx] || table[0] || [0.0];
+                    this.setControlSignal(signals, out, row.length === 1 ? row[0] : row);
+                } else if (b.type === "SHIFT_REG" || origUpper === "SHIFT_REG") {
+                    const clk = signals[b.channels.Clk ?? b.channels.Ctrl] ?? 0.0;
+                    const inVal = (signals[b.channels.In ?? b.channels.In1] ?? 0.0) > 0.5 ? 1.0 : 0.0;
+                    const size = parseInt(b.parameters.size ?? "8") || 8;
+                    const dir = b.parameters.shift_dir ?? "right";
+                    if (!cs[b.id]) {
+                        cs[b.id] = { reg: new Array(size).fill(0.0), prev_clk: clk };
+                    }
+                    const st = cs[b.id];
+                    if (integrate && iter === 2) {
+                        if (st.prev_clk <= 0.5 && clk > 0.5) {
+                            if (dir === "left") {
+                                st.reg.shift();
+                                st.reg.push(inVal);
+                            } else {
+                                st.reg.pop();
+                                st.reg.unshift(inVal);
+                            }
+                        }
+                        st.prev_clk = clk;
+                    }
+                    if (out) this.setControlSignal(signals, out, st.reg);
+                } else if ((b.type === "LUT_3D" || origUpper === "LUT_3D") && out) {
+                    const xVal = signals[b.channels.X ?? b.channels.In1] ?? 0.0;
+                    const yVal = signals[b.channels.Y ?? b.channels.In2] ?? 0.0;
+                    const zVal = signals[b.channels.Z ?? b.channels.In3] ?? 0.0;
+                    const parseVec = (s: string) => (s || "").replace(/[\[\]]/g, '').split(/[\s,;]+/).filter(Boolean).map(Number);
+                    const vx = parseVec(b.parameters.x ?? "[0, 1]");
+                    const vy = parseVec(b.parameters.y ?? "[0, 1]");
+                    const vz = parseVec(b.parameters.z ?? "[0, 1]");
+                    const tableStr = b.parameters.table_data ?? b.parameters.table ?? "0";
+                    const table = parseVec(tableStr);
+                    if (vx.length < 2 || vy.length < 2 || vz.length < 2 || table.length === 0) {
+                        signals[out] = table[0] ?? 0.0;
+                    } else {
+                        const clamp = (v: number, arr: number[]) => Math.max(arr[0], Math.min(arr[arr.length - 1], v));
+                        const findSegment = (v: number, arr: number[]) => {
+                            for (let i = 0; i < arr.length - 1; i++) {
+                                if (v >= arr[i] && v <= arr[i + 1]) return i;
+                            }
+                            return 0;
+                        };
+                        const cx = clamp(xVal, vx), cy = clamp(yVal, vy), cz = clamp(zVal, vz);
+                        const ix = findSegment(cx, vx), iy = findSegment(cy, vy), iz = findSegment(cz, vz);
+                        const tx = (cx - vx[ix]) / (vx[ix + 1] - vx[ix] || 1);
+                        const ty = (cy - vy[iy]) / (vy[iy + 1] - vy[iy] || 1);
+                        const tz = (cz - vz[iz]) / (vz[iz + 1] - vz[iz] || 1);
+                        const getVal = (i: number, j: number, k: number) => {
+                            const idx = i * (vy.length * vz.length) + j * vz.length + k;
+                            return table[idx] ?? table[0] ?? 0.0;
+                        };
+                        const c00 = getVal(ix, iy, iz) * (1 - tx) + getVal(ix + 1, iy, iz) * tx;
+                        const c01 = getVal(ix, iy, iz + 1) * (1 - tx) + getVal(ix + 1, iy, iz + 1) * tx;
+                        const c10 = getVal(ix, iy + 1, iz) * (1 - tx) + getVal(ix + 1, iy + 1, iz) * tx;
+                        const c11 = getVal(ix, iy + 1, iz + 1) * (1 - tx) + getVal(ix + 1, iy + 1, iz + 1) * tx;
+                        const c0 = c00 * (1 - ty) + c10 * ty;
+                        const c1 = c01 * (1 - ty) + c11 * ty;
+                        signals[out] = c0 * (1 - tz) + c1 * tz;
+                    }
+                } else if ((b.type === "FOURIER_SERIES" || origUpper === "FOURIER_SERIES") && out) {
+                    const a0 = parseScientific(b.parameters.a0 ?? "0.0");
+                    const f0 = parseScientific(b.parameters.f0 ?? b.parameters.frequency ?? "50.0");
+                    const parseVec = (s: string) => (s || "").replace(/[\[\]]/g, '').split(/[\s,;]+/).filter(Boolean).map(Number);
+                    const an = parseVec(b.parameters.an ?? "[]");
+                    const bn = parseVec(b.parameters.bn ?? "[]");
+                    let val = a0;
+                    const w0 = 2.0 * Math.PI * f0;
+                    const N = Math.max(an.length, bn.length);
+                    for (let n = 1; n <= N; n++) {
+                        const a = an[n - 1] ?? 0.0;
+                        const bCoeff = bn[n - 1] ?? 0.0;
+                        val += a * Math.cos(n * w0 * time) + bCoeff * Math.sin(n * w0 * time);
+                    }
+                    signals[out] = val;
+                } else if ((b.type === "PER_AVG" || b.type === "PeriodicAverage" || origUpper === "PER_AVG") && out) {
+                    const uVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    const rst = signals[b.channels.Trig ?? b.channels.Rst ?? b.channels.Ctrl] ?? 0.0;
+                    const initVal = parseScientific(b.parameters.initial_value ?? "0.0");
+                    if (!cs[b.id]) {
+                        cs[b.id] = { integral: 0.0, period_time: 0.0, held_out: initVal, prev_rst: rst, prev_u: uVal };
+                    }
+                    const st = cs[b.id];
+                    let y = st.held_out;
+                    const isRising = (st.prev_rst <= 0.5 && rst > 0.5);
+                    if (isRising && st.period_time > 0.0) {
+                        y = st.integral / st.period_time;
+                    }
+                    if (integrate && iter === 2) {
+                        if (isRising && st.period_time > 0.0) {
+                            st.held_out = y;
+                            st.integral = 0.0;
+                            st.period_time = 0.0;
+                        } else {
+                            st.integral += 0.5 * (uVal + st.prev_u) * (dt > 0 ? dt : 0);
+                            st.period_time += (dt > 0 ? dt : 0);
+                        }
+                        st.prev_rst = rst;
+                        st.prev_u = uVal;
+                    }
+                    signals[out] = y;
+                } else if ((b.type === "MOV_AVG" || b.type === "MovingAverage" || origUpper === "MOV_AVG") && out) {
+                    const uVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    const windowTime = parseScientific(b.parameters.window_time ?? b.parameters.T ?? "0.02");
+                    const ts = parseScientific(b.parameters.ts ?? "100u");
+                    const N = Math.max(2, Math.round(windowTime / (ts > 0 ? ts : 1e-4)));
+                    const k = Math.floor((time + 1e-11) / (ts > 0 ? ts : 1e-4));
+                    if (!cs[b.id]) {
+                        cs[b.id] = { history: new Array(N).fill(0.0), idx: 0, sum: 0.0, last_k: k, held_out: uVal };
+                    }
+                    const st = cs[b.id];
+                    let y = st.held_out;
+                    if (k > st.last_k) {
+                        const oldVal = st.history[st.idx];
+                        st.sum = st.sum - oldVal + uVal;
+                        st.history[st.idx] = uVal;
+                        st.idx = (st.idx + 1) % N;
+                        y = st.sum / N;
+                    }
+                    if (integrate && iter === 2) {
+                        if (k > st.last_k) {
+                            st.held_out = y;
+                            st.last_k = k;
+                        }
+                    }
+                    signals[out] = y;
+                } else if ((b.type === "FILTER_1ST" || b.type === "Lowpass" || origUpper === "FILTER_1ST" || origUpper === "LOWPASS") && out) {
+                    const uVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    const fc = parseScientific(b.parameters.fc ?? b.parameters.frequency ?? b.parameters.cutoff_freq ?? "100.0");
+                    const tau = 1.0 / (2.0 * Math.PI * (fc > 0 ? fc : 100.0));
+                    if (!cs[b.id]) {
+                        cs[b.id] = { y: uVal };
+                    }
+                    let y = cs[b.id].y;
+                    if (dt > 0 && integrate && iter === 2) {
+                        const alpha = dt / (tau + dt);
+                        y = y + alpha * (uVal - y);
+                        cs[b.id].y = y;
+                    }
+                    signals[out] = y;
+                } else if ((b.type === "FILTER_2ND" || origUpper === "FILTER_2ND") && out) {
+                    const uVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    const fc = parseScientific(b.parameters.fc ?? b.parameters.frequency ?? "100.0");
+                    const zeta = parseScientific(b.parameters.zeta ?? b.parameters.damping ?? "0.707");
+                    const w0 = 2.0 * Math.PI * (fc > 0 ? fc : 100.0);
+                    if (!cs[b.id]) {
+                        cs[b.id] = { y: uVal, dy: 0.0 };
+                    }
+                    let y = cs[b.id].y;
+                    let dy = cs[b.id].dy;
+                    if (dt > 0 && integrate && iter === 2) {
+                        const d2y = w0 * w0 * (uVal - y) - 2.0 * zeta * w0 * dy;
+                        dy += d2y * dt;
+                        y += dy * dt;
+                        cs[b.id].y = y;
+                        cs[b.id].dy = dy;
+                    }
+                    signals[out] = y;
+                } else if ((b.type === "RMS_VAL" || b.type === "RMS" || origUpper === "RMS_VAL") && out) {
+                    const uVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    const f = parseScientific(b.parameters.frequency ?? b.parameters.f ?? "50.0");
+                    const ts = parseScientific(b.parameters.ts ?? "100u");
+                    const N = Math.max(2, Math.round(1.0 / ((f > 0 ? f : 50.0) * (ts > 0 ? ts : 1e-4))));
+                    const k = Math.floor((time + 1e-11) / (ts > 0 ? ts : 1e-4));
+                    if (!cs[b.id]) {
+                        cs[b.id] = { history: new Array(N).fill(0.0), idx: 0, sumSq: 0.0, last_k: k, held_rms: Math.abs(uVal) };
+                    }
+                    const st = cs[b.id];
+                    let rms = st.held_rms;
+                    if (k > st.last_k) {
+                        const uSq = uVal * uVal;
+                        const oldSq = st.history[st.idx];
+                        st.sumSq = Math.max(0.0, st.sumSq - oldSq + uSq);
+                        st.history[st.idx] = uSq;
+                        st.idx = (st.idx + 1) % N;
+                        rms = Math.sqrt(st.sumSq / N);
+                    }
+                    if (integrate && iter === 2) {
+                        if (k > st.last_k) {
+                            st.held_rms = rms;
+                            st.last_k = k;
+                        }
+                    }
+                    signals[out] = rms;
+                } else if (b.type === "FOURIER_ANALYSIS" || origUpper === "FOURIER_ANALYSIS") {
+                    const uVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    const f = parseScientific(b.parameters.fundamental_freq ?? b.parameters.f ?? "50.0");
+                    const harmonic = parseInt(b.parameters.harmonic ?? "1") || 1;
+                    const ts = parseScientific(b.parameters.ts ?? "100u");
+                    const N = Math.max(2, Math.round(1.0 / ((f > 0 ? f : 50.0) * (ts > 0 ? ts : 1e-4))));
+                    const k = Math.floor((time + 1e-11) / (ts > 0 ? ts : 1e-4));
+                    if (!cs[b.id]) {
+                        cs[b.id] = { history: new Array(N).fill(0.0), idx: 0, last_k: k, mag: 0.0, phase: 0.0, thd: 0.0 };
+                    }
+                    const st = cs[b.id];
+                    let mag = st.mag, phase = st.phase, thd = st.thd;
+                    if (k > st.last_k) {
+                        st.history[st.idx] = uVal;
+                        st.idx = (st.idx + 1) % N;
+                        let Re1 = 0.0, Im1 = 0.0;
+                        let ReH = 0.0, ImH = 0.0;
+                        let totalSq = 0.0;
+                        const om1 = 2.0 * Math.PI / N;
+                        const omH = 2.0 * Math.PI * harmonic / N;
+                        for (let i = 0; i < N; i++) {
+                            const s = st.history[i];
+                            totalSq += s * s;
+                            Re1 += s * Math.cos(om1 * i);
+                            Im1 += s * Math.sin(om1 * i);
+                            ReH += s * Math.cos(omH * i);
+                            ImH += s * Math.sin(omH * i);
+                        }
+                        Re1 *= 2.0 / N; Im1 *= 2.0 / N;
+                        ReH *= 2.0 / N; ImH *= 2.0 / N;
+                        const mag1 = Math.sqrt(Re1 * Re1 + Im1 * Im1);
+                        mag = Math.sqrt(ReH * ReH + ImH * ImH);
+                        phase = Math.atan2(-ImH, ReH) * (180.0 / Math.PI);
+                        const rmsTot = Math.sqrt(totalSq / N);
+                        const harmRmsSq = Math.max(0.0, rmsTot * rmsTot - (mag1 * mag1 / 2.0));
+                        thd = mag1 > 1e-6 ? (Math.sqrt(harmRmsSq) / (mag1 / Math.sqrt(2.0))) * 100.0 : 0.0;
+                    }
+                    if (integrate && iter === 2) {
+                        if (k > st.last_k) {
+                            st.mag = mag; st.phase = phase; st.thd = thd; st.last_k = k;
+                        }
+                    }
+                    if (b.channels.Mag) signals[b.channels.Mag] = mag;
+                    if (b.channels.Phase) signals[b.channels.Phase] = phase;
+                    if (b.channels.THD) signals[b.channels.THD] = thd;
+                    if (out) signals[out] = mag;
+                } else if ((b.type === "THD_VAL" || b.type === "THD" || origUpper === "THD_VAL") && out) {
+                    const uVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    const f = parseScientific(b.parameters.fundamental_freq ?? b.parameters.f ?? "50.0");
+                    const ts = parseScientific(b.parameters.ts ?? "100u");
+                    const N = Math.max(2, Math.round(1.0 / ((f > 0 ? f : 50.0) * (ts > 0 ? ts : 1e-4))));
+                    const k = Math.floor((time + 1e-11) / (ts > 0 ? ts : 1e-4));
+                    if (!cs[b.id]) {
+                        cs[b.id] = { history: new Array(N).fill(0.0), idx: 0, last_k: k, thd: 0.0 };
+                    }
+                    const st = cs[b.id];
+                    let thd = st.thd;
+                    if (k > st.last_k) {
+                        st.history[st.idx] = uVal;
+                        st.idx = (st.idx + 1) % N;
+                        let Re1 = 0.0, Im1 = 0.0, totalSq = 0.0;
+                        const om1 = 2.0 * Math.PI / N;
+                        for (let i = 0; i < N; i++) {
+                            const s = st.history[i];
+                            totalSq += s * s;
+                            Re1 += s * Math.cos(om1 * i);
+                            Im1 += s * Math.sin(om1 * i);
+                        }
+                        Re1 *= 2.0 / N; Im1 *= 2.0 / N;
+                        const mag1 = Math.sqrt(Re1 * Re1 + Im1 * Im1);
+                        const rmsTot = Math.sqrt(totalSq / N);
+                        const harmRmsSq = Math.max(0.0, rmsTot * rmsTot - (mag1 * mag1 / 2.0));
+                        thd = mag1 > 1e-6 ? (Math.sqrt(harmRmsSq) / (mag1 / Math.sqrt(2.0))) * 100.0 : 0.0;
+                    }
+                    if (integrate && iter === 2) {
+                        if (k > st.last_k) {
+                            st.thd = thd; st.last_k = k;
+                        }
+                    }
+                    signals[out] = thd;
+                } else if ((b.type === "STATE_MACHINE" || origUpper === "STATE_MACHINE") && out) {
+                    const inVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
+                    if (!cs[b.id]) {
+                        cs[b.id] = { state: 0 };
+                    }
+                    const st = cs[b.id];
+                    if (dt > 0 && integrate && iter === 2) {
+                        if (st.state === 0 && inVal > 0.5) st.state = 1;
+                        else if (st.state === 1 && inVal <= 0.0) st.state = 0;
+                    }
+                    signals[out] = st.state;
                 } else if (b.type === "INTERNAL_VAR" && out) {
                     const target = b.parameters.probe_target;
                     let val = 0.0;
@@ -5447,6 +5956,10 @@ export class CircuitSimulator {
         let iterations = 0;
         const max_iterations = 200000;
         while (t < t_end - 1e-12) {
+            if (this.haltSimulation) {
+                console.log("Simulation halted by PAUSE_STOP block.");
+                break;
+            }
             iterations++;
             if (iterations > max_iterations) {
                 console.warn(`Simulation terminated early: exceeded max iterations (${max_iterations})`);

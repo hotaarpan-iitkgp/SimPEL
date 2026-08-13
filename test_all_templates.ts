@@ -1,6 +1,7 @@
+/// <reference types="node" />
 // Mock minimal DOM for Node.js environment
-(global as any).window = global;
-(global as any).document = {
+(globalThis as any).window = globalThis;
+(globalThis as any).document = {
   createElement: () => ({
     getContext: () => ({}),
     style: {}
