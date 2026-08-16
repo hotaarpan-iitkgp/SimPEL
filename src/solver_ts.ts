@@ -2451,6 +2451,53 @@ export class CircuitSimulator {
 
     evaluateControls(time: number, w_curr: number[], cs: Record<string, any>, dt: number, ss: Record<string, string>, first = false, integrate = false, is_logging = false): Record<string, any> {
         const signals: Record<string, any> = {};
+        
+        // Pre-compute and inject physical variables into signals for control blocks
+        if (this.physical_stage) {
+            for (const comp of this.physical_stage) {
+                const kv = "V_" + comp.id; 
+                const ki = "I_" + comp.id; 
+                const n1 = comp.nodes[0] ?? "node_0", n2 = comp.nodes[1] ?? "node_0";
+                const i1 = (n1 !== "node_0") ? this.node_to_idx[n1] : -1; 
+                const i2 = (n2 !== "node_0") ? this.node_to_idx[n2] : -1;
+                const v = ((i1 >= 0) ? w_curr[i1] : 0.0) - ((i2 >= 0) ? w_curr[i2] : 0.0);
+                
+                signals[kv] = v;
+                signals[`${comp.id}.V`] = v; 
+                
+                let curr = 0.0;
+                if (comp.type === "Resistor" || comp.type === "R") { 
+                    let val = (comp as any).value_numeric ?? parseScientific(comp.parameters.value ?? "10"); 
+                    if (val < 1e-6) val = 1e-6; 
+                    curr = v / val; 
+                }
+                else if (comp.type === "Inductor" || comp.type === "L") { 
+                    const idx = this.L_to_idx[comp.id]; 
+                    curr = (idx !== undefined) ? w_curr[idx] : 0.0; 
+                }
+                else if (comp.type === "Capacitor" || comp.type === "C") {
+                    const cv = (comp as any).C_numeric ?? parseScientific(comp.parameters.C ?? "100u");
+                    if (this.cap_history[comp.id] && dt > 0) {
+                        curr = cv / dt * (v - this.cap_history[comp.id].v_prev);
+                    }
+                } 
+                else if (["VoltageSource", "ACVoltageSource", "Ammeter", "V", "AC_V", "AM", "ControlledVoltageSource", "OPAMP", "E_COMP"].includes(comp.type)) { 
+                    const idx = this.V_to_idx[comp.id]; 
+                    curr = (idx !== undefined) ? w_curr[idx] : 0.0; 
+                } 
+                else if (["Switch", "Diode", "MOSFET", "vg-FET", "THYRISTOR", "GTO", "IGCT", "S", "D"].includes(comp.type)) { 
+                    const idx = this.V_to_idx[comp.id]; 
+                    curr = (idx !== undefined) ? w_curr[idx] : 0.0; 
+                } 
+                else if (["CurrentSource", "ACCurrentSource", "ControlledCurrentSource", "I", "AC_I"].includes(comp.type)) {
+                    curr = (comp as any).last_i ?? 0.0;
+                }
+                
+                signals[ki] = curr;
+                signals[`${comp.id}.I`] = curr; 
+            }
+        }
+
         // Inject key trigger states
         if (this.key_trigger_states) {
             Object.entries(this.key_trigger_states).forEach(([k, v]) => {
