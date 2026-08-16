@@ -399,11 +399,11 @@ class JsExpressionCompiler {
             }
             
             if (this.localVars.has(name)) return name;
-            if (name in this.block.state) return `state["${name}"]`;
-            if (name in this.block.params) return `params["${name}"]`;
             if (name === "time") return `time`;
             if (name === "dt" || name === "dt_val") return `dt`;
             if (name === "pi" || name === "PI" || name === "M_PI") return `Math.PI`;
+            if (name in this.block.state) return `state["${name}"]`;
+            if (name in this.block.params) return `params["${name}"]`;
             if (name in this.block.state_arrays) {
                 return `state_arrays["${name}"]`;
             }
