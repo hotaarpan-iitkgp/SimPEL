@@ -1946,7 +1946,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           ...p,
           id: comp.id,
           output: `${comp.id}.Out`,
-          value: p.value || 1.0,
+          value: p.value !== undefined && p.value !== '' ? p.value : 1.0,
           original_type: comp.type
         });
         break;

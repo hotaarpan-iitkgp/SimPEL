@@ -2475,7 +2475,15 @@ export class CircuitSimulator {
                     const initial_output = parseScientific(b.parameters.initial_output ?? "0");
                     signals[out] = (time >= start_time) ? initial_output + slope * (time - start_time) : initial_output;
                 } else if (origSrcUpper === "CLOCK") {
-                    signals[out] = time;
+                    const freq = parseScientific(b.parameters.frequency ?? "1000");
+                    const duty = parseScientific(b.parameters.duty_cycle ?? "50");
+                    const amp = parseScientific(b.parameters.amplitude ?? "1");
+                    const offset = parseScientific(b.parameters.offset ?? "0");
+                    const period = freq > 0 ? 1.0 / freq : 1.0;
+                    const t_mod = time % period;
+                    const t_mod_pos = t_mod < 0 ? t_mod + period : t_mod;
+                    const c_val = (t_mod_pos < period * (duty / 100.0)) ? amp : 0.0;
+                    signals[out] = c_val + offset;
                 } else if (origSrcUpper === "SINE_WAVE") {
                     const amp = parseScientific(b.parameters.amplitude ?? "1");
                     const freq = parseScientific(b.parameters.frequency ?? "50");
@@ -2520,7 +2528,7 @@ export class CircuitSimulator {
                     }
                     signals[out] = cs[b.id].val;
                 } else {
-                    const cVal = parseVectorOrScalar(b.parameters.value ?? b.parameters.constant ?? b.parameters.const ?? "1");
+                    const cVal = parseVectorOrScalar(b.parameters.value ?? b.parameters.constant ?? b.parameters.const ?? "1"); console.log("CONST BLOCK EVAL:", b.id, "value param:", b.parameters.value, "parsed cVal:", cVal);
                     this.setControlSignal(signals, out, cVal);
                 }
             } else if (b.type === "Triangle_Carrier") {
@@ -3434,7 +3442,8 @@ export class CircuitSimulator {
                         }
                     } else if (orig === "INIT_COND") {
                         const init_val = parseScientific(b.parameters.initial_value ?? b.parameters.x0 ?? "0");
-                        signals[out] = first ? init_val : val;
+                        const inSig = b.channels.In ?? b.channels.In1 ?? b.channels.u ?? b.channels.A;
+                        signals[out] = (first || !inSig) ? init_val : val;
                     } else if (orig === "ZOH") {
                         const ts = parseScientific(b.parameters.ts ?? "100u");
                         const k = Math.floor((time + 1e-11) / ts);

@@ -267,6 +267,15 @@ export function updatePropertiesPanel(): void {
         if (!comp.parameters.edge) comp.parameters.edge = 'rising';
         if (!comp.parameters.pulse_width) comp.parameters.pulse_width = '1e-3';
       }
+      if (comp.type === 'CLOCK') {
+        if (!comp.parameters.frequency) comp.parameters.frequency = '1000';
+        if (!comp.parameters.duty_cycle) comp.parameters.duty_cycle = '50';
+        if (!comp.parameters.amplitude) comp.parameters.amplitude = '1.0';
+        if (!comp.parameters.offset) comp.parameters.offset = '0.0';
+      }
+      if (comp.type === 'CONST') {
+        if (comp.parameters.value === undefined) comp.parameters.value = '1.0';
+      }
       Object.keys(comp.parameters).forEach(key => {
         if (key === 'code') return; // Handled by Python Modal editor
         if (comp.type === 'CSCRIPT') return;

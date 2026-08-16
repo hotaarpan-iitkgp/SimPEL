@@ -239,10 +239,11 @@ export const DETAILED_COMPONENTS: DetailedComponent[] = [
   {
     type: 'CLOCK',
     label: 'Clock',
-    desc: 'Output the current simulation time.',
+    desc: 'Output a square wave clock signal.',
     category: 'control',
     subcategory: 'Sources',
-    symbol: 't'
+    symbol: 'CLK',
+    defaultParameters: { frequency: '1000', duty_cycle: '50', amplitude: '1.0', offset: '0.0' }
   },
   {
     type: 'INIT_COND',
