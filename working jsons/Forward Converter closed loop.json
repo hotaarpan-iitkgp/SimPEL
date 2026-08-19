@@ -101,7 +101,7 @@
       "y": 380,
       "rotation": 180,
       "parameters": {
-        "value": "5"
+        "value": "12.0"
       },
       "label": "Target Reference",
       "lastClickTime": 1783167690084
@@ -115,8 +115,8 @@
       "parameters": {
         "timestep": "0",
         "plot_custom_vars": "ramp,duty",
-        "code": "// ─── ZONE 1: Parameters (editable in properties panel) ───\nconst double V_ref = 5.0;      // Target regulated output voltage (V)\nconst double Kp = 0.35;        // Proportional gain\nconst double Ki = 150.0;       // Integral gain\nconst double fc = 5000.0;     // Switching frequency (50 kHz)\nconst double dt = 1e-6;        // Controller time step\nconst double D_max = 0.45;     // Maximum duty cycle\nconst double D_min = 0.01;     // Minimum duty cycle\n\n// ─── ZONE 2: State Variables (persistent across time steps) ───\ndouble integrator = 0.0;      // PI loop accumulator\ndouble ramp = 0.0;            // PWM sawtooth carrier accumulator\n\n// ─── ZONE 3: Step Function (runs every time step) ───\nvoid step() {\n    double v_target = inputs[0];\n    double v_actual = inputs[1];\n    double error = v_target - v_actual;\n    double P = Kp * error;\n    double next_integrator = integrator + Ki * error * dt;\n    double duty = P + next_integrator;\n\n    if (duty > D_max) {\n        duty = D_max;\n        if (error < 0.0) {\n            integrator = next_integrator;\n        }\n    } else if (duty < D_min) {\n        duty = D_min;\n        if (error > 0.0) {\n            integrator = next_integrator;\n        }\n    } else {\n        integrator = next_integrator;\n    }\n\n    double next_ramp = ramp + fc * dt;\n    ramp = (next_ramp >= 1.0) ? next_ramp - 1.0 : next_ramp;\n    double gate = (ramp < duty) ? 1.0 : 0.0;\n    outputs[0] = gate;\n}",
-        "V_ref": "5.0",
+        "code": "// ─── ZONE 1: Parameters (editable in properties panel) ───\nconst double V_ref = 12.0;     // Target regulated output voltage (V)\nconst double Kp = 0.35;        // Proportional gain\nconst double Ki = 150.0;       // Integral gain\nconst double fc = 5000.0;     // Switching frequency (50 kHz)\nconst double dt = 1e-6;        // Controller time step\nconst double D_max = 0.45;     // Maximum duty cycle\nconst double D_min = 0.01;     // Minimum duty cycle\n\n// ─── ZONE 2: State Variables (persistent across time steps) ───\ndouble integrator = 0.0;      // PI loop accumulator\ndouble ramp = 0.0;            // PWM sawtooth carrier accumulator\n\n// ─── ZONE 3: Step Function (runs every time step) ───\nvoid step() {\n    double v_target = inputs[0];\n    double v_actual = inputs[1];\n    double error = v_target - v_actual;\n    double P = Kp * error;\n    double next_integrator = integrator + Ki * error * dt;\n    double duty = P + next_integrator;\n\n    if (duty > D_max) {\n        duty = D_max;\n        if (error < 0.0) {\n            integrator = next_integrator;\n        }\n    } else if (duty < D_min) {\n        duty = D_min;\n        if (error > 0.0) {\n            integrator = next_integrator;\n        }\n    } else {\n        integrator = next_integrator;\n    }\n\n    double next_ramp = ramp + fc * dt;\n    ramp = (next_ramp >= 1.0) ? next_ramp - 1.0 : next_ramp;\n    double gate = (ramp < duty) ? 1.0 : 0.0;\n    outputs[0] = gate;\n}",
+        "V_ref": "12.0",
         "Kp": "0.35",
         "Ki": "150.0",
         "fc": "5000.0",
@@ -136,7 +136,7 @@
       "rotation": 0,
       "parameters": {
         "primary_turns": "[100]",
-        "secondary_turns": "[30]"
+        "secondary_turns": "[75]"
       },
       "lastClickTime": 1783167693234
     }

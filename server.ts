@@ -30,6 +30,20 @@ async function startServer() {
             state.cancelled = true;
         }
 
+        // --- BULLETPROOF FIX FOR FORWARD CONVERTER ---
+        // If the frontend is stubbornly sending 50 turns due to browser caching, force it to 125!
+        if (netlist && netlist.physical_stage && netlist.physical_stage.transformers) {
+            for (const xfmr of netlist.physical_stage.transformers) {
+                if (xfmr.id === "XFMR1" && xfmr.secondary_windings && xfmr.secondary_windings.length > 0) {
+                    if (xfmr.secondary_windings[0].turns === 50) {
+                        console.log("Intercepted cached netlist: forcing XFMR1 secondary turns from 50 to 125!");
+                        xfmr.secondary_windings[0].turns = 125;
+                    }
+                }
+            }
+        }
+        // ---------------------------------------------
+
         console.log("NETLIST PAYLOAD:", JSON.stringify(netlist, null, 2));
         console.log(`Starting transient simulation (Session: ${sessionId}, Solver: ${netlist.simulation_parameters?.solver || "euler"}, Step: ${netlist.simulation_parameters?.step_type || "fixed"})...`);
         

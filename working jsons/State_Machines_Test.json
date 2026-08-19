@@ -1,0 +1,34 @@
+{
+  "components": [
+    {
+      "id": "SINE1",
+      "type": "SINE_WAVE",
+      "x": -600, "y": 0, "rotation": 0,
+      "parameters": { "amplitude": "1.0", "frequency": "50", "phase": "0" }
+    },
+    {
+      "id": "STATE1",
+      "type": "STATE_MACHINE",
+      "x": -200, "y": 0, "rotation": 0,
+      "parameters": {}
+    }
+  ],
+  "wires": [
+    { "id": "w1", "from": { "type": "pin", "compId": "SINE1", "terminal": "Out" }, "to": { "type": "pin", "compId": "STATE1", "terminal": "In" } }
+  ],
+  "plotConfiguration": {
+    "plots": [
+      {
+        "title": "State Machines Output",
+        "variables": [
+          "SINE1.Out",
+          "STATE1.Out"
+        ]
+      }
+    ]
+  },
+  "simulation_parameters": {
+    "t_end": "0.1", "h": "1e-4", "solver": "euler", "step_type": "fixed"
+  },
+  "description": "Test of State Machine Blocks"
+}

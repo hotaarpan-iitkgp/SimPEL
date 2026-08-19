@@ -90,7 +90,8 @@ export function getSubsystemDimensions(comp: any): { width: number; height: numb
 // Return pins map dynamically based on component type and customized parameter options
 export function getComponentPins(comp: any): Record<string, any> {
   if (!comp) return {};
-  if (comp.type === 'PROBE') {
+  const cType = comp.type === 'CONSTANT' ? 'CONST' : comp.type;
+  if (cType === 'PROBE') {
     const selected = (comp.parameters && comp.parameters.selected_signals || "").split(",").filter(Boolean);
     const pins: Record<string, any> = {};
     const numPins = selected.length;
@@ -108,7 +109,7 @@ export function getComponentPins(comp: any): Record<string, any> {
     }
     return pins;
   }
-  if (comp.type === 'SUBSYSTEM' || comp.type === 'CONFIG_SUBSYSTEM' || comp.type === 'MODEL_REF') {
+  if (cType === 'SUBSYSTEM' || cType === 'CONFIG_SUBSYSTEM' || cType === 'MODEL_REF') {
     const pins: Record<string, any> = {};
     const { halfW, halfH, inports, outports, eports, triggerPorts, enablePorts } = getSubsystemDimensions(comp);
 
@@ -147,7 +148,7 @@ export function getComponentPins(comp: any): Record<string, any> {
 
     return pins;
   }
-  if (comp.type === 'SUM_ROUND') {
+  if (cType === 'SUM_ROUND') {
     const numInputs = parseInt(comp.parameters && comp.parameters.inputs) || 2;
     const pins: Record<string, any> = {};
     const radius = Math.max(16, (numInputs - 1) * 10 + 5);
@@ -159,7 +160,7 @@ export function getComponentPins(comp: any): Record<string, any> {
     pins['Out'] = { x: radius, y: 0, dx: 1, dy: 0 };
     return pins;
   }
-  if (comp.type === 'SUM_RECT' || comp.type === 'PRODUCT_RECT') {
+  if (cType === 'SUM_RECT' || cType === 'PRODUCT_RECT') {
     const numInputs = parseInt(comp.parameters && comp.parameters.inputs) || 2;
     const pins: Record<string, any> = {};
     const width = 50;
@@ -173,7 +174,7 @@ export function getComponentPins(comp: any): Record<string, any> {
     pins['Ctrl'] = { x: -halfW, y: -height / 2, dx: -1, dy: 0 };
     return pins;
   }
-  if (comp.type === 'MULTIPORT_SWITCH') {
+  if (cType === 'MULTIPORT_SWITCH') {
     const numInputs = parseInt(comp.parameters && comp.parameters.inputs) || 3;
     const pins: Record<string, any> = {};
     const width = 50;
@@ -347,7 +348,7 @@ export function getComponentPins(comp: any): Record<string, any> {
     }
     return pins;
   }
-  return COMPONENT_PINS[comp.type] || {};
+  return COMPONENT_PINS[cType] || {};
 }
 
 // Helper to discover input and output ports in Javascript code for the schematic editor

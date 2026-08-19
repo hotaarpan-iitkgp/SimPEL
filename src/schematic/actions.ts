@@ -1312,6 +1312,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
   const control_loops: any = {
     constants: [],
     gains: [],
+    transfer_functions: [],
     pi_controllers: [],
     pid_controllers: [],
     summing_junctions: [],
@@ -1933,6 +1934,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
     const p = paramsVals(comp);
     
     switch (comp.type) {
+      case 'CONSTANT':
       case 'CONST':
       case 'STEP':
       case 'RAMP':
@@ -1964,17 +1966,65 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
       case 'TRIG_FCN':
       case 'MATH_FCN':
       case 'INTEGRATOR':
+        control_loops.transfer_functions.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
       case 'DERIVATIVE':
+        control_loops.transfer_functions.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
       case 'ROUND':
       case 'LUT_1D':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
       case 'TRANSFER_FCN':
+        control_loops.transfer_functions.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
       case 'STATE_SPACE':
+        control_loops.transfer_functions.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
       case 'DELAY':
       case 'TRANSPORT_DELAY':
       case 'TURN_ON_DELAY':
       case 'MEMORY_BLOCK':
       case 'QUANTIZER':
       case 'HIT_CROSSING':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
       case 'DISCRETE_INT':
       case 'DISCRETE_TF':
       case 'DISCRETE_SS':
@@ -1997,6 +2047,23 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           original_type: comp.type
         });
         break;
+      case 'PER_AVG':
+      case 'MOV_AVG':
+      case 'FILTER_1ST':
+      case 'FILTER_2ND':
+      case 'FOURIER_ANALYSIS':
+      case 'RMS_VAL':
+      case 'THD_VAL':
+      case 'STATE_MACHINE':
+      case 'PLL_LOOP':
+        control_loops.gains.push({
+          ...p,
+          id: comp.id,
+          input: getIncomingControlTerminal(comp.id, 'In'),
+          output: `${comp.id}.Out`,
+          original_type: comp.type
+        });
+        break;
       case 'PERIODIC_IMP_AVG':
         control_loops.gains.push({
           ...p,
@@ -2016,6 +2083,7 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           output_phase: `${comp.id}.Phase`,
           original_type: comp.type
         });
+        break;
       case 'PWM_3PH':
         control_loops.gains.push({
           ...p,

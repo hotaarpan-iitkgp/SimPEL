@@ -328,7 +328,7 @@ export default function StudentApp() {
 
   // Load default template or persisted schematic on mount
   useEffect(() => {
-    const persisted = localStorage.getItem('circuitsim_persisted_schematic');
+    const persisted = null; // localStorage.getItem('circuitsim_persisted_schematic');
     const persistedTemplateKey = localStorage.getItem('circuitsim_persisted_template_key');
     if (persisted) {
       try {
@@ -663,7 +663,7 @@ export default function StudentApp() {
         );
       } else {
         try {
-          const response = await fetch('http://127.0.0.1:3001/api/simulate', {
+          const response = await fetch('/api/simulate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(parsed)

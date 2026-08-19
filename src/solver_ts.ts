@@ -1716,6 +1716,7 @@ export class CircuitSimulator {
             const categories = [
                 { key: "constants", type: "Constant" },
                 { key: "gains", type: "Gain" },
+                { key: "transfer_functions", type: "Gain" },
                 { key: "pi_controllers", type: "PI_Controller" },
                 { key: "pid_controllers", type: "ContinuousPID" },
                 { key: "summing_junctions", type: "SummingJunction" },
@@ -2655,9 +2656,8 @@ export class CircuitSimulator {
                 const out = b.channels.Out || b.channels.Out1 || b.id;
                 const inSig = b.channels.In ?? b.channels.In1 ?? b.channels.u ?? b.channels.A;
                 const val = inSig ? (signals[inSig] ?? 0) : 0;
-                if (b.type === "Gain" || (b.parameters && b.parameters.original_type)) {
-                    if (orig === "OFFSET") {
-                        signals[out] = val + parseScientific(b.parameters.offset ?? "0.0");
+                if (orig === "OFFSET") {
+                    signals[out] = val + parseScientific(b.parameters.offset ?? "0.0");
                     } else if (orig === "SIGNUM" || orig === "SIGN" || orig === "Signum" || orig === "Sign" || orig === "SGN") {
                         const valIn = signals[b.channels.In] ?? signals[b.channels.In1] ?? val;
                         const eps = parseScientific(b.parameters.threshold ?? b.parameters.zero_threshold ?? b.parameters.eps ?? "1e-9");
@@ -3897,7 +3897,7 @@ export class CircuitSimulator {
                                 st.last_t = time;
                             }
                         }
-                    } else if (b.type === "Gain" || origUpper === "GAIN") {
+                    } else if (origUpper === "GAIN" || (b.type === "Gain" && (!origUpper || origUpper === "GAIN" || origUpper === "PROPORTIONAL"))) {
                         const inKey = b.channels.In ?? b.channels.In1;
                         const valIn = (inKey && signals[inKey] !== undefined) ? signals[inKey] : val;
                         const K = parseScientific(b.parameters.K ?? b.parameters.gain ?? "1");
@@ -3907,8 +3907,7 @@ export class CircuitSimulator {
                         } else {
                             signals[out] = K * (typeof valIn === 'number' ? valIn : 0.0);
                         }
-                    }
-                } else if (b.type === "Gain" && !out && b.parameters.original_type === "FOURIER_TRANS") {
+                    } else if (b.type === "Gain" && b.parameters.original_type === "FOURIER_TRANS") {
                     // FOURIER_TRANS: multi-output Gain with Mag and Phase channels
                     const outMag = b.channels.Mag;
                     const outPhase = b.channels.Phase;
@@ -3936,24 +3935,22 @@ export class CircuitSimulator {
                         phase_temp = st.held_phase;
                     } else {
                         if (k > st.last_sample_k) {
-                            // Update circular buffer
-                            st.history[st.idx] = uVal;
-                            st.idx = (st.idx + 1) % N;
-                            // Running DFT at harmonic frequency
                             const omega = 2.0 * Math.PI * harmonic / N;
                             let Re = 0.0, Im = 0.0;
                             for (let i = 0; i < N; i++) {
-                                const sample = st.history[i];
+                                const sample = (i === st.idx) ? uVal : st.history[i];
                                 Re += sample * Math.cos(omega * i);
                                 Im += sample * Math.sin(omega * i);
                             }
                             Re = (2.0 / N) * Re;
                             Im = (2.0 / N) * Im;
-                            mag_temp = Math.sqrt(Re * Re + Im * Im);
-                            phase_temp = Math.atan2(-Im, Re) * (180.0 / Math.PI);
+                            mag_temp = (k < N) ? 0.0 : Math.sqrt(Re * Re + Im * Im);
+                            phase_temp = (k < N) ? 0.0 : Math.atan2(-Im, Re) * (180.0 / Math.PI);
                         }
                         if (integrate && iter === 2) {
                             if (k > st.last_sample_k) {
+                                st.history[st.idx] = uVal;
+                                st.idx = (st.idx + 1) % N;
                                 st.held_mag = mag_temp;
                                 st.held_phase = phase_temp;
                                 st.last_sample_k = k;
@@ -3962,7 +3959,7 @@ export class CircuitSimulator {
                     }
                     if (outMag) signals[outMag] = mag_temp;
                     if (outPhase) signals[outPhase] = phase_temp;
-                } else if (b.type === "Gain" && !out && (b.parameters.original_type === "D_FLIP_FLOP" || b.parameters.original_type === "JK_FLIP_FLOP")) {
+                } else if (b.type === "Gain" && (b.parameters.original_type === "D_FLIP_FLOP" || b.parameters.original_type === "JK_FLIP_FLOP")) {
                     const orig = b.parameters.original_type;
                     const clkVal = signals[b.channels.Ctrl] ?? 0.0;
                     if (!cs[b.id]) {
@@ -4091,7 +4088,7 @@ export class CircuitSimulator {
                         cs[b.id].prev_error = error;
                     }
                     this.setControlSignal(signals, out, u);
-                } else if (b.type === "PLL" || b.type === "PLL_1PH" || origUpper === "PLL_1PH") {
+                } else if (b.type === "PLL" || b.type === "PLL_1PH" || origUpper === "PLL_1PH" || origUpper === "PLL_LOOP") {
                     const fn = parseScientific(b.parameters.fn ?? "50.0");
                     const w_nom = 2.0 * Math.PI * fn;
                     const Kp = parseScientific(b.parameters.Kp ?? "20.0");
@@ -4142,6 +4139,7 @@ export class CircuitSimulator {
                     if (b.channels.Freq) signals[b.channels.Freq] = omega_est / (2.0 * Math.PI);
                     if (b.channels.Cos) signals[b.channels.Cos] = Math.cos(theta);
                     if (b.channels.Sin) signals[b.channels.Sin] = Math.sin(theta);
+                    if (out) signals[out] = theta;
                 } else if (b.type === "PLL_3PH" || origUpper === "PLL_3PH") {
                     const fn = parseScientific(b.parameters.fn ?? "50.0");
                     const w_nom = 2.0 * Math.PI * fn;
@@ -4802,19 +4800,18 @@ export class CircuitSimulator {
                     let y = st.held_out;
                     if (k > st.last_k) {
                         const oldVal = st.history[st.idx];
-                        st.sum = st.sum - oldVal + uVal;
-                        st.history[st.idx] = uVal;
-                        st.idx = (st.idx + 1) % N;
-                        y = st.sum / N;
-                    }
-                    if (integrate && iter === 2) {
-                        if (k > st.last_k) {
+                        y = (k < N) ? 0.0 : (st.sum - oldVal + uVal) / N;
+                        if (integrate && iter === 2) {
+                            st.sum = st.sum - oldVal + uVal;
+                            st.history[st.idx] = uVal;
+                            st.idx = (st.idx + 1) % N;
                             st.held_out = y;
                             st.last_k = k;
                         }
                     }
                     signals[out] = y;
                 } else if ((b.type === "FILTER_1ST" || b.type === "Lowpass" || origUpper === "FILTER_1ST" || origUpper === "LOWPASS") && out) {
+                    if (b.id === 'F5' && Math.abs(time - 0.025) < 1e-6) console.log("F5 AT FILTER_1ST CONDITION! y=", cs[b.id]?.y);
                     const uVal = signals[b.channels.In ?? b.channels.In1] ?? 0.0;
                     const fc = parseScientific(b.parameters.fc ?? b.parameters.frequency ?? b.parameters.cutoff_freq ?? "100.0");
                     const tau = 1.0 / (2.0 * Math.PI * (fc > 0 ? fc : 100.0));
@@ -4860,13 +4857,12 @@ export class CircuitSimulator {
                     if (k > st.last_k) {
                         const uSq = uVal * uVal;
                         const oldSq = st.history[st.idx];
-                        st.sumSq = Math.max(0.0, st.sumSq - oldSq + uSq);
-                        st.history[st.idx] = uSq;
-                        st.idx = (st.idx + 1) % N;
-                        rms = Math.sqrt(st.sumSq / N);
-                    }
-                    if (integrate && iter === 2) {
-                        if (k > st.last_k) {
+                        const newSumSq = Math.max(0.0, st.sumSq - oldSq + uSq);
+                        rms = (k < N) ? 0.0 : Math.sqrt(newSumSq / N);
+                        if (integrate && iter === 2) {
+                            st.sumSq = newSumSq;
+                            st.history[st.idx] = uSq;
+                            st.idx = (st.idx + 1) % N;
                             st.held_rms = rms;
                             st.last_k = k;
                         }
@@ -4885,15 +4881,13 @@ export class CircuitSimulator {
                     const st = cs[b.id];
                     let mag = st.mag, phase = st.phase, thd = st.thd;
                     if (k > st.last_k) {
-                        st.history[st.idx] = uVal;
-                        st.idx = (st.idx + 1) % N;
                         let Re1 = 0.0, Im1 = 0.0;
                         let ReH = 0.0, ImH = 0.0;
                         let totalSq = 0.0;
                         const om1 = 2.0 * Math.PI / N;
                         const omH = 2.0 * Math.PI * harmonic / N;
                         for (let i = 0; i < N; i++) {
-                            const s = st.history[i];
+                            const s = (i === st.idx) ? uVal : st.history[i];
                             totalSq += s * s;
                             Re1 += s * Math.cos(om1 * i);
                             Im1 += s * Math.sin(om1 * i);
@@ -4903,14 +4897,14 @@ export class CircuitSimulator {
                         Re1 *= 2.0 / N; Im1 *= 2.0 / N;
                         ReH *= 2.0 / N; ImH *= 2.0 / N;
                         const mag1 = Math.sqrt(Re1 * Re1 + Im1 * Im1);
-                        mag = Math.sqrt(ReH * ReH + ImH * ImH);
-                        phase = Math.atan2(-ImH, ReH) * (180.0 / Math.PI);
+                        mag = (k < N) ? 0.0 : Math.sqrt(ReH * ReH + ImH * ImH);
+                        phase = (k < N) ? 0.0 : Math.atan2(-ImH, ReH) * (180.0 / Math.PI);
                         const rmsTot = Math.sqrt(totalSq / N);
                         const harmRmsSq = Math.max(0.0, rmsTot * rmsTot - (mag1 * mag1 / 2.0));
-                        thd = mag1 > 1e-6 ? (Math.sqrt(harmRmsSq) / (mag1 / Math.sqrt(2.0))) * 100.0 : 0.0;
-                    }
-                    if (integrate && iter === 2) {
-                        if (k > st.last_k) {
+                        thd = (k < N) ? 0.0 : (mag1 > 1e-6 ? (Math.sqrt(harmRmsSq) / (mag1 / Math.sqrt(2.0))) * 100.0 : 0.0);
+                        if (integrate && iter === 2) {
+                            st.history[st.idx] = uVal;
+                            st.idx = (st.idx + 1) % N;
                             st.mag = mag; st.phase = phase; st.thd = thd; st.last_k = k;
                         }
                     }
@@ -4930,12 +4924,10 @@ export class CircuitSimulator {
                     const st = cs[b.id];
                     let thd = st.thd;
                     if (k > st.last_k) {
-                        st.history[st.idx] = uVal;
-                        st.idx = (st.idx + 1) % N;
                         let Re1 = 0.0, Im1 = 0.0, totalSq = 0.0;
                         const om1 = 2.0 * Math.PI / N;
                         for (let i = 0; i < N; i++) {
-                            const s = st.history[i];
+                            const s = (i === st.idx) ? uVal : st.history[i];
                             totalSq += s * s;
                             Re1 += s * Math.cos(om1 * i);
                             Im1 += s * Math.sin(om1 * i);
@@ -4944,10 +4936,10 @@ export class CircuitSimulator {
                         const mag1 = Math.sqrt(Re1 * Re1 + Im1 * Im1);
                         const rmsTot = Math.sqrt(totalSq / N);
                         const harmRmsSq = Math.max(0.0, rmsTot * rmsTot - (mag1 * mag1 / 2.0));
-                        thd = mag1 > 1e-6 ? (Math.sqrt(harmRmsSq) / (mag1 / Math.sqrt(2.0))) * 100.0 : 0.0;
-                    }
-                    if (integrate && iter === 2) {
-                        if (k > st.last_k) {
+                        thd = (k < N) ? 0.0 : (mag1 > 1e-6 ? (Math.sqrt(harmRmsSq) / (mag1 / Math.sqrt(2.0))) * 100.0 : 0.0);
+                        if (integrate && iter === 2) {
+                            st.history[st.idx] = uVal;
+                            st.idx = (st.idx + 1) % N;
                             st.thd = thd; st.last_k = k;
                         }
                     }
