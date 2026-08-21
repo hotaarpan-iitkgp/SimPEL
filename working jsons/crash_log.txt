@@ -1,0 +1,14 @@
+[Tue Aug 18 22:09:16 2026
+] 
+========================================================
+CRITICAL ERROR / APPLICATION CRASH DETECTED:
+Unhandled Win32 SEH Exception: 0xC00000FD at Address 0x00007ff7ed35cb71
+========================================================
+
+[Tue Aug 18 22:26:03 2026
+] 
+========================================================
+CRITICAL ERROR / APPLICATION CRASH DETECTED:
+Unhandled Win32 SEH Exception: 0xC00000FD at Address 0x00007ff612aa2bf1
+========================================================
+
