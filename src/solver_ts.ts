@@ -874,18 +874,8 @@ export class CustomScriptBlock {
             }
         }
         
-        let in_step = false;
-        const stepLines: string[] = [];
-        for (const line of lines) {
-            let clean = line.trim();
-            if (clean.includes("void step(")) {
-                in_step = true;
-                continue;
-            }
-            if (in_step) {
-                stepLines.push(line);
-            }
-        }
+        const stepMatch = this.code_str.match(/void\s+step\s*\([^)]*\)\s*\{([\s\S]*?)\}/);
+        const stepLines: string[] = stepMatch ? stepMatch[1].split('\n') : [];
         
         const pos = { pos: 0 };
         this.step_statements = this.parse_block(stepLines, pos);
@@ -2292,7 +2282,7 @@ export class CircuitSimulator {
                 } else if (orig === "LUT_2D") {
                     (b as any)._vx_cache = parseVectorStatic(b.parameters.x ?? "[0, 1]");
                     (b as any)._vy_cache = parseVectorStatic(b.parameters.y ?? "[0, 1]");
-                    (b as any)._mz_cache = parseMatrixStatic(b.parameters.z ?? "[0 0; 0 0]");
+                    (b as any)._mz_cache = parseMatrixStatic(b.parameters.z ?? b.parameters.f_xy ?? "[0 0; 0 0]");
                 } else if (orig === "TRANSFER_FCN") {
                     (b as any)._num_cache = parseVectorStatic(b.parameters.num ?? "[1]");
                     (b as any)._den_cache = parseVectorStatic(b.parameters.den ?? "[1 1]");
@@ -4423,7 +4413,7 @@ export class CircuitSimulator {
                         } else if (orig === "LUT_2D") {
                             const xStr = b.parameters.x ?? "[0, 1]";
                             const yStr = b.parameters.y ?? "[0, 1]";
-                            const zStr = b.parameters.z ?? "[0 0; 0 0]";
+                            const zStr = b.parameters.z ?? b.parameters.f_xy ?? "[0 0; 0 0]";
                             const parseVector = (s: string) => {
                                 let clean = s.replace(/[\[\]]/g, '');
                                 return clean.split(/[\s,;]+/).filter(x => x.trim() !== '').map(x => parseFloat(x) || 0.0);

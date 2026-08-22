@@ -11,21 +11,23 @@
       }
     },
     {
-      "id": "DISP_GAIN1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_GAIN1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": -200,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
-      "id": "C1",
-      "type": "CONST",
-      "x": -200,
+      "id": "SCOPE_DISP_GAIN1_0",
+      "type": "SCOPE",
+      "x": 400,
       "y": -200,
       "rotation": 0,
       "parameters": {
-        "value": "1.2"
+        "channels": "1"
       }
     },
     {
@@ -39,31 +41,23 @@
       }
     },
     {
-      "id": "DISP_PROD1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_PROD1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": -50,
       "rotation": 0,
-      "parameters": {}
-    },
-    {
-      "id": "C2",
-      "type": "CONST",
-      "x": -200,
-      "y": -50,
-      "rotation": 0,
       "parameters": {
-        "value": "3.5"
+        "channels": "1"
       }
     },
     {
-      "id": "C3",
-      "type": "CONST",
-      "x": -300,
-      "y": 0,
+      "id": "SCOPE_DISP_PROD1_0",
+      "type": "SCOPE",
+      "x": 400,
+      "y": -50,
       "rotation": 0,
       "parameters": {
-        "value": "0.5"
+        "channels": "1"
       }
     },
     {
@@ -77,21 +71,23 @@
       }
     },
     {
-      "id": "DISP_TRIG1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_TRIG1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 100,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
-      "id": "C4",
-      "type": "CONST",
-      "x": -200,
+      "id": "SCOPE_DISP_TRIG1_0",
+      "type": "SCOPE",
+      "x": 400,
       "y": 100,
       "rotation": 0,
       "parameters": {
-        "value": "1.5707963"
+        "channels": "1"
       }
     },
     {
@@ -105,21 +101,23 @@
       }
     },
     {
-      "id": "DISP_MATH1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_MATH1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 250,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
-      "id": "C5",
-      "type": "CONST",
-      "x": -200,
+      "id": "SCOPE_DISP_MATH1_0",
+      "type": "SCOPE",
+      "x": 400,
       "y": 250,
       "rotation": 0,
       "parameters": {
-        "value": "16"
+        "channels": "1"
       }
     },
     {
@@ -131,21 +129,23 @@
       "parameters": {}
     },
     {
-      "id": "DISP_ABS1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_ABS1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 400,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
-      "id": "C6",
-      "type": "CONST",
-      "x": -200,
+      "id": "SCOPE_DISP_ABS1_0",
+      "type": "SCOPE",
+      "x": 400,
       "y": 400,
       "rotation": 0,
       "parameters": {
-        "value": "-4.2"
+        "channels": "1"
       }
     },
     {
@@ -157,21 +157,23 @@
       "parameters": {}
     },
     {
-      "id": "DISP_SIGN1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_SIGN1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 550,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
-      "id": "C7",
-      "type": "CONST",
-      "x": -200,
+      "id": "SCOPE_DISP_SIGN1_0",
+      "type": "SCOPE",
+      "x": 400,
       "y": 550,
       "rotation": 0,
       "parameters": {
-        "value": "-8.1"
+        "channels": "1"
       }
     },
     {
@@ -185,21 +187,23 @@
       }
     },
     {
-      "id": "DISP_ROUND1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_ROUND1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 700,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
-      "id": "C8",
-      "type": "CONST",
-      "x": -200,
+      "id": "SCOPE_DISP_ROUND1_0",
+      "type": "SCOPE",
+      "x": 400,
       "y": 700,
       "rotation": 0,
       "parameters": {
-        "value": "3.6"
+        "channels": "1"
       }
     },
     {
@@ -213,31 +217,23 @@
       }
     },
     {
-      "id": "DISP_MINMAX1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_MINMAX1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 850,
       "rotation": 0,
-      "parameters": {}
-    },
-    {
-      "id": "C9",
-      "type": "CONST",
-      "x": -200,
-      "y": 850,
-      "rotation": 0,
       "parameters": {
-        "value": "7.2"
+        "channels": "1"
       }
     },
     {
-      "id": "C10",
-      "type": "CONST",
-      "x": -300,
-      "y": 900,
+      "id": "SCOPE_DISP_MINMAX1_0",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 850,
       "rotation": 0,
       "parameters": {
-        "value": "2.1"
+        "channels": "1"
       }
     },
     {
@@ -252,21 +248,23 @@
       }
     },
     {
-      "id": "DISP_LUT1D1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_LUT1D1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 1000,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
-      "id": "C11",
-      "type": "CONST",
-      "x": -200,
+      "id": "SCOPE_DISP_LUT1D1_0",
+      "type": "SCOPE",
+      "x": 400,
       "y": 1000,
       "rotation": 0,
       "parameters": {
-        "value": "2.5"
+        "channels": "1"
       }
     },
     {
@@ -282,31 +280,23 @@
       }
     },
     {
-      "id": "DISP_LUT2D1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_LUT2D1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 1150,
       "rotation": 0,
-      "parameters": {}
-    },
-    {
-      "id": "C12",
-      "type": "CONST",
-      "x": -200,
-      "y": 1150,
-      "rotation": 0,
       "parameters": {
-        "value": "1.5"
+        "channels": "1"
       }
     },
     {
-      "id": "C13",
-      "type": "CONST",
-      "x": -300,
-      "y": 1200,
+      "id": "SCOPE_DISP_LUT2D1_0",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 1150,
       "rotation": 0,
       "parameters": {
-        "value": "-1.0"
+        "channels": "1"
       }
     },
     {
@@ -318,41 +308,23 @@
       "parameters": {}
     },
     {
-      "id": "DISP_LUT3D1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_LUT3D1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 1300,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
-      "id": "C14",
-      "type": "CONST",
-      "x": -200,
+      "id": "SCOPE_DISP_LUT3D1_0",
+      "type": "SCOPE",
+      "x": 400,
       "y": 1300,
       "rotation": 0,
       "parameters": {
-        "value": "1.1"
-      }
-    },
-    {
-      "id": "C15",
-      "type": "CONST",
-      "x": -300,
-      "y": 1350,
-      "rotation": 0,
-      "parameters": {
-        "value": "2.2"
-      }
-    },
-    {
-      "id": "C16",
-      "type": "CONST",
-      "x": -400,
-      "y": 1400,
-      "rotation": 0,
-      "parameters": {
-        "value": "3.3"
+        "channels": "1"
       }
     },
     {
@@ -367,21 +339,23 @@
       }
     },
     {
-      "id": "DISP_CSCRIPT1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_CSCRIPT1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 1450,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
-      "id": "C17",
-      "type": "CONST",
-      "x": -200,
+      "id": "SCOPE_DISP_CSCRIPT1_0",
+      "type": "SCOPE",
+      "x": 400,
       "y": 1450,
       "rotation": 0,
       "parameters": {
-        "value": "5.0"
+        "channels": "1"
       }
     },
     {
@@ -393,21 +367,23 @@
       "parameters": {}
     },
     {
-      "id": "DISP_DLL1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_DLL1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 1600,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
-      "id": "C18",
-      "type": "CONST",
-      "x": -200,
+      "id": "SCOPE_DISP_DLL1_0",
+      "type": "SCOPE",
+      "x": 400,
       "y": 1600,
       "rotation": 0,
       "parameters": {
-        "value": "1.1"
+        "channels": "1"
       }
     },
     {
@@ -419,21 +395,23 @@
       "parameters": {}
     },
     {
-      "id": "DISP_FMU1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_FMU1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 1750,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
-      "id": "C19",
-      "type": "CONST",
-      "x": -200,
+      "id": "SCOPE_DISP_FMU1_0",
+      "type": "SCOPE",
+      "x": 400,
       "y": 1750,
       "rotation": 0,
       "parameters": {
-        "value": "1.2"
+        "channels": "1"
       }
     },
     {
@@ -445,30 +423,622 @@
       "parameters": {}
     },
     {
-      "id": "DISP_FOURIER1",
-      "type": "DISPLAY_VAL",
+      "id": "SCOPE_FOURIER1_0",
+      "type": "SCOPE",
       "x": 200,
       "y": 1900,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
-      "id": "C20",
-      "type": "CONST",
-      "x": -200,
+      "id": "SCOPE_DISP_FOURIER1_0",
+      "type": "SCOPE",
+      "x": 400,
       "y": 1900,
       "rotation": 0,
       "parameters": {
-        "value": "1.3"
+        "channels": "1"
+      }
+    },
+    {
+      "id": "CONST_1",
+      "type": "CONST",
+      "x": -200,
+      "y": -185,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_2",
+      "type": "CONST",
+      "x": -200,
+      "y": -5,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_3",
+      "type": "CONST",
+      "x": -200,
+      "y": -95,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_4",
+      "type": "CONST",
+      "x": -200,
+      "y": 85,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_5",
+      "type": "CONST",
+      "x": -200,
+      "y": 265,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_6",
+      "type": "CONST",
+      "x": -200,
+      "y": 445,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_7",
+      "type": "CONST",
+      "x": -200,
+      "y": 505,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_8",
+      "type": "CONST",
+      "x": -200,
+      "y": 685,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_9",
+      "type": "CONST",
+      "x": -200,
+      "y": 865,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_10",
+      "type": "CONST",
+      "x": -200,
+      "y": 895,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_11",
+      "type": "CONST",
+      "x": -200,
+      "y": 955,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_12",
+      "type": "CONST",
+      "x": -200,
+      "y": 1135,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_13",
+      "type": "CONST",
+      "x": -200,
+      "y": 1165,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_14",
+      "type": "CONST",
+      "x": -200,
+      "y": 1345,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_15",
+      "type": "CONST",
+      "x": -200,
+      "y": 1255,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_16",
+      "type": "CONST",
+      "x": -200,
+      "y": 1285,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_17",
+      "type": "CONST",
+      "x": -200,
+      "y": 1465,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_18",
+      "type": "CONST",
+      "x": -200,
+      "y": 1645,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_19",
+      "type": "CONST",
+      "x": -200,
+      "y": 1705,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
+      }
+    },
+    {
+      "id": "CONST_20",
+      "type": "CONST",
+      "x": -200,
+      "y": 1885,
+      "rotation": 0,
+      "parameters": {
+        "value": "5.0"
       }
     }
   ],
   "wires": [
     {
-      "id": "W1",
+      "id": "W_1",
       "from": {
         "type": "pin",
-        "compId": "C1",
+        "compId": "GAIN1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_GAIN1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_2",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_GAIN1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_GAIN1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_3",
+      "from": {
+        "type": "pin",
+        "compId": "PROD1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PROD1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_4",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_PROD1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_PROD1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_5",
+      "from": {
+        "type": "pin",
+        "compId": "TRIG1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_TRIG1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_6",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_TRIG1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_TRIG1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_7",
+      "from": {
+        "type": "pin",
+        "compId": "MATH1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_MATH1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_8",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_MATH1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_MATH1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_9",
+      "from": {
+        "type": "pin",
+        "compId": "ABS1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_ABS1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_10",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_ABS1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_ABS1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_11",
+      "from": {
+        "type": "pin",
+        "compId": "SIGN1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_SIGN1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_12",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_SIGN1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_SIGN1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_13",
+      "from": {
+        "type": "pin",
+        "compId": "ROUND1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_ROUND1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_14",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_ROUND1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_ROUND1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_15",
+      "from": {
+        "type": "pin",
+        "compId": "MINMAX1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_MINMAX1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_16",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_MINMAX1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_MINMAX1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_17",
+      "from": {
+        "type": "pin",
+        "compId": "LUT1D1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_LUT1D1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_18",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_LUT1D1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_LUT1D1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_19",
+      "from": {
+        "type": "pin",
+        "compId": "LUT2D1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_LUT2D1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_20",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_LUT2D1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_LUT2D1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_21",
+      "from": {
+        "type": "pin",
+        "compId": "LUT3D1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_LUT3D1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_22",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_LUT3D1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_LUT3D1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_23",
+      "from": {
+        "type": "pin",
+        "compId": "CSCRIPT1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_CSCRIPT1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_24",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_CSCRIPT1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_CSCRIPT1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_25",
+      "from": {
+        "type": "pin",
+        "compId": "DLL1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DLL1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_26",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_DLL1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_DLL1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_27",
+      "from": {
+        "type": "pin",
+        "compId": "FMU1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_FMU1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_28",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_FMU1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_FMU1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_29",
+      "from": {
+        "type": "pin",
+        "compId": "FOURIER1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_FOURIER1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_30",
+      "from": {
+        "type": "pin",
+        "compId": "DISP_FOURIER1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DISP_FOURIER1_0",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "W_31",
+      "from": {
+        "type": "pin",
+        "compId": "CONST_1",
         "terminal": "Out"
       },
       "to": {
@@ -479,7 +1049,7 @@
       "manualPath": null
     },
     {
-      "id": "W2",
+      "id": "W_32",
       "from": {
         "type": "pin",
         "compId": "GAIN1",
@@ -493,10 +1063,10 @@
       "manualPath": null
     },
     {
-      "id": "W3",
+      "id": "W_33",
       "from": {
         "type": "pin",
-        "compId": "C2",
+        "compId": "CONST_2",
         "terminal": "Out"
       },
       "to": {
@@ -507,10 +1077,10 @@
       "manualPath": null
     },
     {
-      "id": "W4",
+      "id": "W_34",
       "from": {
         "type": "pin",
-        "compId": "C3",
+        "compId": "CONST_3",
         "terminal": "Out"
       },
       "to": {
@@ -521,7 +1091,7 @@
       "manualPath": null
     },
     {
-      "id": "W5",
+      "id": "W_35",
       "from": {
         "type": "pin",
         "compId": "PROD1",
@@ -535,10 +1105,10 @@
       "manualPath": null
     },
     {
-      "id": "W6",
+      "id": "W_36",
       "from": {
         "type": "pin",
-        "compId": "C4",
+        "compId": "CONST_4",
         "terminal": "Out"
       },
       "to": {
@@ -549,7 +1119,7 @@
       "manualPath": null
     },
     {
-      "id": "W7",
+      "id": "W_37",
       "from": {
         "type": "pin",
         "compId": "TRIG1",
@@ -563,10 +1133,10 @@
       "manualPath": null
     },
     {
-      "id": "W8",
+      "id": "W_38",
       "from": {
         "type": "pin",
-        "compId": "C5",
+        "compId": "CONST_5",
         "terminal": "Out"
       },
       "to": {
@@ -577,7 +1147,7 @@
       "manualPath": null
     },
     {
-      "id": "W9",
+      "id": "W_39",
       "from": {
         "type": "pin",
         "compId": "MATH1",
@@ -591,10 +1161,10 @@
       "manualPath": null
     },
     {
-      "id": "W10",
+      "id": "W_40",
       "from": {
         "type": "pin",
-        "compId": "C6",
+        "compId": "CONST_6",
         "terminal": "Out"
       },
       "to": {
@@ -605,7 +1175,7 @@
       "manualPath": null
     },
     {
-      "id": "W11",
+      "id": "W_41",
       "from": {
         "type": "pin",
         "compId": "ABS1",
@@ -619,10 +1189,10 @@
       "manualPath": null
     },
     {
-      "id": "W12",
+      "id": "W_42",
       "from": {
         "type": "pin",
-        "compId": "C7",
+        "compId": "CONST_7",
         "terminal": "Out"
       },
       "to": {
@@ -633,7 +1203,7 @@
       "manualPath": null
     },
     {
-      "id": "W13",
+      "id": "W_43",
       "from": {
         "type": "pin",
         "compId": "SIGN1",
@@ -647,10 +1217,10 @@
       "manualPath": null
     },
     {
-      "id": "W14",
+      "id": "W_44",
       "from": {
         "type": "pin",
-        "compId": "C8",
+        "compId": "CONST_8",
         "terminal": "Out"
       },
       "to": {
@@ -661,7 +1231,7 @@
       "manualPath": null
     },
     {
-      "id": "W15",
+      "id": "W_45",
       "from": {
         "type": "pin",
         "compId": "ROUND1",
@@ -675,10 +1245,10 @@
       "manualPath": null
     },
     {
-      "id": "W16",
+      "id": "W_46",
       "from": {
         "type": "pin",
-        "compId": "C9",
+        "compId": "CONST_9",
         "terminal": "Out"
       },
       "to": {
@@ -689,10 +1259,10 @@
       "manualPath": null
     },
     {
-      "id": "W17",
+      "id": "W_47",
       "from": {
         "type": "pin",
-        "compId": "C10",
+        "compId": "CONST_10",
         "terminal": "Out"
       },
       "to": {
@@ -703,7 +1273,7 @@
       "manualPath": null
     },
     {
-      "id": "W18",
+      "id": "W_48",
       "from": {
         "type": "pin",
         "compId": "MINMAX1",
@@ -717,10 +1287,10 @@
       "manualPath": null
     },
     {
-      "id": "W19",
+      "id": "W_49",
       "from": {
         "type": "pin",
-        "compId": "C11",
+        "compId": "CONST_11",
         "terminal": "Out"
       },
       "to": {
@@ -731,7 +1301,7 @@
       "manualPath": null
     },
     {
-      "id": "W20",
+      "id": "W_50",
       "from": {
         "type": "pin",
         "compId": "LUT1D1",
@@ -745,10 +1315,10 @@
       "manualPath": null
     },
     {
-      "id": "W21",
+      "id": "W_51",
       "from": {
         "type": "pin",
-        "compId": "C12",
+        "compId": "CONST_12",
         "terminal": "Out"
       },
       "to": {
@@ -759,10 +1329,10 @@
       "manualPath": null
     },
     {
-      "id": "W22",
+      "id": "W_52",
       "from": {
         "type": "pin",
-        "compId": "C13",
+        "compId": "CONST_13",
         "terminal": "Out"
       },
       "to": {
@@ -773,7 +1343,7 @@
       "manualPath": null
     },
     {
-      "id": "W23",
+      "id": "W_53",
       "from": {
         "type": "pin",
         "compId": "LUT2D1",
@@ -787,10 +1357,10 @@
       "manualPath": null
     },
     {
-      "id": "W24",
+      "id": "W_54",
       "from": {
         "type": "pin",
-        "compId": "C14",
+        "compId": "CONST_14",
         "terminal": "Out"
       },
       "to": {
@@ -801,10 +1371,10 @@
       "manualPath": null
     },
     {
-      "id": "W25",
+      "id": "W_55",
       "from": {
         "type": "pin",
-        "compId": "C15",
+        "compId": "CONST_15",
         "terminal": "Out"
       },
       "to": {
@@ -815,10 +1385,10 @@
       "manualPath": null
     },
     {
-      "id": "W26",
+      "id": "W_56",
       "from": {
         "type": "pin",
-        "compId": "C16",
+        "compId": "CONST_16",
         "terminal": "Out"
       },
       "to": {
@@ -829,7 +1399,7 @@
       "manualPath": null
     },
     {
-      "id": "W27",
+      "id": "W_57",
       "from": {
         "type": "pin",
         "compId": "LUT3D1",
@@ -843,25 +1413,25 @@
       "manualPath": null
     },
     {
-      "id": "W28",
+      "id": "W_58",
       "from": {
         "type": "pin",
-        "compId": "C17",
+        "compId": "CONST_17",
         "terminal": "Out"
       },
       "to": {
         "type": "pin",
         "compId": "CSCRIPT1",
-        "terminal": "In"
+        "terminal": "In1"
       },
       "manualPath": null
     },
     {
-      "id": "W29",
+      "id": "W_59",
       "from": {
         "type": "pin",
         "compId": "CSCRIPT1",
-        "terminal": "Out"
+        "terminal": "Out1"
       },
       "to": {
         "type": "pin",
@@ -871,10 +1441,10 @@
       "manualPath": null
     },
     {
-      "id": "W30",
+      "id": "W_60",
       "from": {
         "type": "pin",
-        "compId": "C18",
+        "compId": "CONST_18",
         "terminal": "Out"
       },
       "to": {
@@ -885,7 +1455,7 @@
       "manualPath": null
     },
     {
-      "id": "W31",
+      "id": "W_61",
       "from": {
         "type": "pin",
         "compId": "DLL1",
@@ -899,10 +1469,10 @@
       "manualPath": null
     },
     {
-      "id": "W32",
+      "id": "W_62",
       "from": {
         "type": "pin",
-        "compId": "C19",
+        "compId": "CONST_19",
         "terminal": "Out"
       },
       "to": {
@@ -913,7 +1483,7 @@
       "manualPath": null
     },
     {
-      "id": "W33",
+      "id": "W_63",
       "from": {
         "type": "pin",
         "compId": "FMU1",
@@ -927,10 +1497,10 @@
       "manualPath": null
     },
     {
-      "id": "W34",
+      "id": "W_64",
       "from": {
         "type": "pin",
-        "compId": "C20",
+        "compId": "CONST_20",
         "terminal": "Out"
       },
       "to": {
@@ -941,7 +1511,7 @@
       "manualPath": null
     },
     {
-      "id": "W35",
+      "id": "W_65",
       "from": {
         "type": "pin",
         "compId": "FOURIER1",
