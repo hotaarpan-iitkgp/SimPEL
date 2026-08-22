@@ -4,11 +4,11 @@ import { exportDualGraphJSON } from './src/schematic/actions.js';
 import { CircuitSimulator } from './src/solver_ts.js';
 
 const testFiles = [
-    'Control_Blocks_Test.json',
-    'Delay_Blocks_Test.json',
-    'Discontinuous_Blocks_Test.json',
-    'Discrete_Blocks_Test.json',
-    'Logical_Blocks_Test.json',
+    'Control_State_Machines_Test.json',
+    'Control_Math_Functions_Test.json',
+    'Control_Filters_Delays_Test.json',
+    'Control_Transforms_Test.json',
+    'Control_Logic_Test.json',
     'Math_Blocks_Test.json',
     'Modulators_Test.json',
     'Transforms_Test.json'
