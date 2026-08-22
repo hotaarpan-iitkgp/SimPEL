@@ -1,0 +1,2861 @@
+{
+  "components": [
+    {
+      "id": "SCOPE_IC_LM78051",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "IC_LM78051",
+      "type": "IC_LM7805",
+      "x": 200,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_IC_LM78051",
+      "type": "GND",
+      "x": 100,
+      "y": 50,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_IC_LM78051",
+      "type": "V",
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "value": "12"
+      }
+    },
+    {
+      "id": "LOAD_IC_LM78051",
+      "type": "R",
+      "x": 400,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_IC_LM78051",
+      "type": "VM",
+      "x": 400,
+      "y": 50,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_IC_LM3171",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 200,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "IC_LM3171",
+      "type": "IC_LM317",
+      "x": 200,
+      "y": 200,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_IC_LM3171",
+      "type": "GND",
+      "x": 100,
+      "y": 250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_IC_LM3171",
+      "type": "V",
+      "x": 0,
+      "y": 200,
+      "rotation": 0,
+      "parameters": {
+        "value": "12"
+      }
+    },
+    {
+      "id": "LOAD_IC_LM3171",
+      "type": "R",
+      "x": 400,
+      "y": 200,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_IC_LM3171",
+      "type": "VM",
+      "x": 400,
+      "y": 250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_IC_PC8171",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 400,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "IC_PC8171",
+      "type": "IC_PC817",
+      "x": 200,
+      "y": 400,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_IC_PC8171",
+      "type": "GND",
+      "x": 100,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_IC_PC8171",
+      "type": "V",
+      "x": 0,
+      "y": 400,
+      "rotation": 0,
+      "parameters": {
+        "value": "5"
+      }
+    },
+    {
+      "id": "V_COLL",
+      "type": "V",
+      "x": 300,
+      "y": 400,
+      "rotation": 0,
+      "parameters": {
+        "value": "12"
+      }
+    },
+    {
+      "id": "LOAD_IC_PC8171",
+      "type": "R",
+      "x": 400,
+      "y": 400,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_IC_PC8171",
+      "type": "VM",
+      "x": 400,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_IC_74001",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "IC_74001",
+      "type": "IC_7400",
+      "x": 200,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_IC_74001",
+      "type": "GND",
+      "x": 100,
+      "y": 650,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_IC_74001",
+      "type": "V",
+      "x": 0,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {
+        "value": "5",
+        "channels": "4"
+      }
+    },
+    {
+      "id": "LOAD_1_IC_74001",
+      "type": "R",
+      "x": 350,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_1_IC_74001",
+      "type": "VM",
+      "x": 350,
+      "y": 650,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_2_IC_74001",
+      "type": "R",
+      "x": 400,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_2_IC_74001",
+      "type": "VM",
+      "x": 400,
+      "y": 650,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_3_IC_74001",
+      "type": "R",
+      "x": 450,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_3_IC_74001",
+      "type": "VM",
+      "x": 450,
+      "y": 650,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_4_IC_74001",
+      "type": "R",
+      "x": 500,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_4_IC_74001",
+      "type": "VM",
+      "x": 500,
+      "y": 650,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_IC_74081",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 800,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "IC_74081",
+      "type": "IC_7408",
+      "x": 200,
+      "y": 800,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_IC_74081",
+      "type": "GND",
+      "x": 100,
+      "y": 850,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_IC_74081",
+      "type": "V",
+      "x": 0,
+      "y": 800,
+      "rotation": 0,
+      "parameters": {
+        "value": "5",
+        "channels": "4"
+      }
+    },
+    {
+      "id": "LOAD_1_IC_74081",
+      "type": "R",
+      "x": 350,
+      "y": 800,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_1_IC_74081",
+      "type": "VM",
+      "x": 350,
+      "y": 850,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_2_IC_74081",
+      "type": "R",
+      "x": 400,
+      "y": 800,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_2_IC_74081",
+      "type": "VM",
+      "x": 400,
+      "y": 850,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_3_IC_74081",
+      "type": "R",
+      "x": 450,
+      "y": 800,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_3_IC_74081",
+      "type": "VM",
+      "x": 450,
+      "y": 850,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_4_IC_74081",
+      "type": "R",
+      "x": 500,
+      "y": 800,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_4_IC_74081",
+      "type": "VM",
+      "x": 500,
+      "y": 850,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_IC_74321",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 1000,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "IC_74321",
+      "type": "IC_7432",
+      "x": 200,
+      "y": 1000,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_IC_74321",
+      "type": "GND",
+      "x": 100,
+      "y": 1050,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_IC_74321",
+      "type": "V",
+      "x": 0,
+      "y": 1000,
+      "rotation": 0,
+      "parameters": {
+        "value": "5",
+        "channels": "4"
+      }
+    },
+    {
+      "id": "LOAD_1_IC_74321",
+      "type": "R",
+      "x": 350,
+      "y": 1000,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_1_IC_74321",
+      "type": "VM",
+      "x": 350,
+      "y": 1050,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_2_IC_74321",
+      "type": "R",
+      "x": 400,
+      "y": 1000,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_2_IC_74321",
+      "type": "VM",
+      "x": 400,
+      "y": 1050,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_3_IC_74321",
+      "type": "R",
+      "x": 450,
+      "y": 1000,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_3_IC_74321",
+      "type": "VM",
+      "x": 450,
+      "y": 1050,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_4_IC_74321",
+      "type": "R",
+      "x": 500,
+      "y": 1000,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_4_IC_74321",
+      "type": "VM",
+      "x": 500,
+      "y": 1050,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_IC_74041",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "IC_74041",
+      "type": "IC_7404",
+      "x": 200,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_IC_74041",
+      "type": "GND",
+      "x": 100,
+      "y": 1250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_IC_74041",
+      "type": "V",
+      "x": 0,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {
+        "value": "5",
+        "channels": "6"
+      }
+    },
+    {
+      "id": "LOAD_1_IC_74041",
+      "type": "R",
+      "x": 350,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_1_IC_74041",
+      "type": "VM",
+      "x": 350,
+      "y": 1250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_2_IC_74041",
+      "type": "R",
+      "x": 400,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_2_IC_74041",
+      "type": "VM",
+      "x": 400,
+      "y": 1250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_3_IC_74041",
+      "type": "R",
+      "x": 450,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_3_IC_74041",
+      "type": "VM",
+      "x": 450,
+      "y": 1250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_4_IC_74041",
+      "type": "R",
+      "x": 500,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_4_IC_74041",
+      "type": "VM",
+      "x": 500,
+      "y": 1250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_5_IC_74041",
+      "type": "R",
+      "x": 550,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_5_IC_74041",
+      "type": "VM",
+      "x": 550,
+      "y": 1250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_6_IC_74041",
+      "type": "R",
+      "x": 600,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_6_IC_74041",
+      "type": "VM",
+      "x": 600,
+      "y": 1250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_IC_5551",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 1400,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "IC_5551",
+      "type": "IC_555",
+      "x": 200,
+      "y": 1400,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_IC_5551",
+      "type": "GND",
+      "x": 100,
+      "y": 1450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_IC_5551",
+      "type": "V",
+      "x": 0,
+      "y": 1400,
+      "rotation": 0,
+      "parameters": {
+        "value": "12"
+      }
+    },
+    {
+      "id": "LOAD_IC_5551",
+      "type": "R",
+      "x": 300,
+      "y": 1400,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_IC_5551",
+      "type": "VM",
+      "x": 300,
+      "y": 1450,
+      "rotation": 0,
+      "parameters": {}
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_LM78051",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_LM78051",
+        "terminal": "IN"
+      }
+    },
+    {
+      "id": "w2",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_LM78051",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_LM78051",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w3",
+      "from": {
+        "type": "pin",
+        "compId": "IC_LM78051",
+        "terminal": "GND"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_LM78051",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w4",
+      "from": {
+        "type": "pin",
+        "compId": "IC_LM78051",
+        "terminal": "OUT"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_IC_LM78051",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w5",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_IC_LM78051",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_LM78051",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w6",
+      "from": {
+        "type": "pin",
+        "compId": "IC_LM78051",
+        "terminal": "OUT"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_IC_LM78051",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w7",
+      "from": {
+        "type": "pin",
+        "compId": "VM_IC_LM78051",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_LM78051",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w8",
+      "from": {
+        "type": "pin",
+        "compId": "VM_IC_LM78051",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_LM78051",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w9",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_LM3171",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_LM3171",
+        "terminal": "IN"
+      }
+    },
+    {
+      "id": "w10",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_LM3171",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_LM3171",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w11",
+      "from": {
+        "type": "pin",
+        "compId": "IC_LM3171",
+        "terminal": "ADJ"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_LM3171",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w12",
+      "from": {
+        "type": "pin",
+        "compId": "IC_LM3171",
+        "terminal": "OUT"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_IC_LM3171",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w13",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_IC_LM3171",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_LM3171",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w14",
+      "from": {
+        "type": "pin",
+        "compId": "IC_LM3171",
+        "terminal": "OUT"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_IC_LM3171",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w15",
+      "from": {
+        "type": "pin",
+        "compId": "VM_IC_LM3171",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_LM3171",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w16",
+      "from": {
+        "type": "pin",
+        "compId": "VM_IC_LM3171",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_LM3171",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w17",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_PC8171",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_PC8171",
+        "terminal": "Anode"
+      }
+    },
+    {
+      "id": "w18",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_PC8171",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_PC8171",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w19",
+      "from": {
+        "type": "pin",
+        "compId": "IC_PC8171",
+        "terminal": "Cathode"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_PC8171",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w20",
+      "from": {
+        "type": "pin",
+        "compId": "V_COLL",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_PC8171",
+        "terminal": "Collector"
+      }
+    },
+    {
+      "id": "w21",
+      "from": {
+        "type": "pin",
+        "compId": "IC_PC8171",
+        "terminal": "Emitter"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_IC_PC8171",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w22",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_IC_PC8171",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_PC8171",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w23",
+      "from": {
+        "type": "pin",
+        "compId": "V_COLL",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_PC8171",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w24",
+      "from": {
+        "type": "pin",
+        "compId": "IC_PC8171",
+        "terminal": "Emitter"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_IC_PC8171",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w25",
+      "from": {
+        "type": "pin",
+        "compId": "VM_IC_PC8171",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_PC8171",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w26",
+      "from": {
+        "type": "pin",
+        "compId": "VM_IC_PC8171",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_PC8171",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w27",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74001",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "VCC"
+      }
+    },
+    {
+      "id": "w28",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74001",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74001",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w29",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "GND"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74001",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w30",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74001",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "1A"
+      }
+    },
+    {
+      "id": "w31",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74001",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "1B"
+      }
+    },
+    {
+      "id": "w32",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "1Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_1_IC_74001",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w33",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_1_IC_74001",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74001",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w34",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "1Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_1_IC_74001",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w35",
+      "from": {
+        "type": "pin",
+        "compId": "VM_1_IC_74001",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74001",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w36",
+      "from": {
+        "type": "pin",
+        "compId": "VM_1_IC_74001",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74001",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w37",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74001",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "2A"
+      }
+    },
+    {
+      "id": "w38",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74001",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "2B"
+      }
+    },
+    {
+      "id": "w39",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "2Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_2_IC_74001",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w40",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_2_IC_74001",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74001",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w41",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "2Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_2_IC_74001",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w42",
+      "from": {
+        "type": "pin",
+        "compId": "VM_2_IC_74001",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74001",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w43",
+      "from": {
+        "type": "pin",
+        "compId": "VM_2_IC_74001",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74001",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w44",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74001",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "3A"
+      }
+    },
+    {
+      "id": "w45",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74001",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "3B"
+      }
+    },
+    {
+      "id": "w46",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "3Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_3_IC_74001",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w47",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_3_IC_74001",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74001",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w48",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "3Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_3_IC_74001",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w49",
+      "from": {
+        "type": "pin",
+        "compId": "VM_3_IC_74001",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74001",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w50",
+      "from": {
+        "type": "pin",
+        "compId": "VM_3_IC_74001",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74001",
+        "terminal": "In3"
+      }
+    },
+    {
+      "id": "w51",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74001",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "4A"
+      }
+    },
+    {
+      "id": "w52",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74001",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "4B"
+      }
+    },
+    {
+      "id": "w53",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "4Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_4_IC_74001",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w54",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_4_IC_74001",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74001",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w55",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74001",
+        "terminal": "4Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_4_IC_74001",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w56",
+      "from": {
+        "type": "pin",
+        "compId": "VM_4_IC_74001",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74001",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w57",
+      "from": {
+        "type": "pin",
+        "compId": "VM_4_IC_74001",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74001",
+        "terminal": "In4"
+      }
+    },
+    {
+      "id": "w58",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74081",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "VCC"
+      }
+    },
+    {
+      "id": "w59",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74081",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74081",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w60",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "GND"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74081",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w61",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74081",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "1A"
+      }
+    },
+    {
+      "id": "w62",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74081",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "1B"
+      }
+    },
+    {
+      "id": "w63",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "1Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_1_IC_74081",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w64",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_1_IC_74081",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74081",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w65",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "1Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_1_IC_74081",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w66",
+      "from": {
+        "type": "pin",
+        "compId": "VM_1_IC_74081",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74081",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w67",
+      "from": {
+        "type": "pin",
+        "compId": "VM_1_IC_74081",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74081",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w68",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74081",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "2A"
+      }
+    },
+    {
+      "id": "w69",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74081",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "2B"
+      }
+    },
+    {
+      "id": "w70",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "2Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_2_IC_74081",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w71",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_2_IC_74081",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74081",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w72",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "2Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_2_IC_74081",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w73",
+      "from": {
+        "type": "pin",
+        "compId": "VM_2_IC_74081",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74081",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w74",
+      "from": {
+        "type": "pin",
+        "compId": "VM_2_IC_74081",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74081",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w75",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74081",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "3A"
+      }
+    },
+    {
+      "id": "w76",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74081",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "3B"
+      }
+    },
+    {
+      "id": "w77",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "3Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_3_IC_74081",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w78",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_3_IC_74081",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74081",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w79",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "3Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_3_IC_74081",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w80",
+      "from": {
+        "type": "pin",
+        "compId": "VM_3_IC_74081",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74081",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w81",
+      "from": {
+        "type": "pin",
+        "compId": "VM_3_IC_74081",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74081",
+        "terminal": "In3"
+      }
+    },
+    {
+      "id": "w82",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74081",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "4A"
+      }
+    },
+    {
+      "id": "w83",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74081",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "4B"
+      }
+    },
+    {
+      "id": "w84",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "4Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_4_IC_74081",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w85",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_4_IC_74081",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74081",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w86",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74081",
+        "terminal": "4Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_4_IC_74081",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w87",
+      "from": {
+        "type": "pin",
+        "compId": "VM_4_IC_74081",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74081",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w88",
+      "from": {
+        "type": "pin",
+        "compId": "VM_4_IC_74081",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74081",
+        "terminal": "In4"
+      }
+    },
+    {
+      "id": "w89",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74321",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "VCC"
+      }
+    },
+    {
+      "id": "w90",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74321",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74321",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w91",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "GND"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74321",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w92",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74321",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "1A"
+      }
+    },
+    {
+      "id": "w93",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74321",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "1B"
+      }
+    },
+    {
+      "id": "w94",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "1Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_1_IC_74321",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w95",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_1_IC_74321",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74321",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w96",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "1Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_1_IC_74321",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w97",
+      "from": {
+        "type": "pin",
+        "compId": "VM_1_IC_74321",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74321",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w98",
+      "from": {
+        "type": "pin",
+        "compId": "VM_1_IC_74321",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74321",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w99",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74321",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "2A"
+      }
+    },
+    {
+      "id": "w100",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74321",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "2B"
+      }
+    },
+    {
+      "id": "w101",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "2Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_2_IC_74321",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w102",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_2_IC_74321",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74321",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w103",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "2Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_2_IC_74321",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w104",
+      "from": {
+        "type": "pin",
+        "compId": "VM_2_IC_74321",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74321",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w105",
+      "from": {
+        "type": "pin",
+        "compId": "VM_2_IC_74321",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74321",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w106",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74321",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "3A"
+      }
+    },
+    {
+      "id": "w107",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74321",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "3B"
+      }
+    },
+    {
+      "id": "w108",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "3Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_3_IC_74321",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w109",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_3_IC_74321",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74321",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w110",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "3Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_3_IC_74321",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w111",
+      "from": {
+        "type": "pin",
+        "compId": "VM_3_IC_74321",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74321",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w112",
+      "from": {
+        "type": "pin",
+        "compId": "VM_3_IC_74321",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74321",
+        "terminal": "In3"
+      }
+    },
+    {
+      "id": "w113",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74321",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "4A"
+      }
+    },
+    {
+      "id": "w114",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74321",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "4B"
+      }
+    },
+    {
+      "id": "w115",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "4Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_4_IC_74321",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w116",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_4_IC_74321",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74321",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w117",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74321",
+        "terminal": "4Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_4_IC_74321",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w118",
+      "from": {
+        "type": "pin",
+        "compId": "VM_4_IC_74321",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74321",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w119",
+      "from": {
+        "type": "pin",
+        "compId": "VM_4_IC_74321",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74321",
+        "terminal": "In4"
+      }
+    },
+    {
+      "id": "w120",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74041",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "VCC"
+      }
+    },
+    {
+      "id": "w121",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74041",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w122",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "GND"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w123",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74041",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "1A"
+      }
+    },
+    {
+      "id": "w124",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "1Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_1_IC_74041",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w125",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_1_IC_74041",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w126",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "1Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_1_IC_74041",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w127",
+      "from": {
+        "type": "pin",
+        "compId": "VM_1_IC_74041",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w128",
+      "from": {
+        "type": "pin",
+        "compId": "VM_1_IC_74041",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74041",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w129",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74041",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "2A"
+      }
+    },
+    {
+      "id": "w130",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "2Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_2_IC_74041",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w131",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_2_IC_74041",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w132",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "2Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_2_IC_74041",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w133",
+      "from": {
+        "type": "pin",
+        "compId": "VM_2_IC_74041",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w134",
+      "from": {
+        "type": "pin",
+        "compId": "VM_2_IC_74041",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74041",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w135",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74041",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "3A"
+      }
+    },
+    {
+      "id": "w136",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "3Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_3_IC_74041",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w137",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_3_IC_74041",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w138",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "3Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_3_IC_74041",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w139",
+      "from": {
+        "type": "pin",
+        "compId": "VM_3_IC_74041",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w140",
+      "from": {
+        "type": "pin",
+        "compId": "VM_3_IC_74041",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74041",
+        "terminal": "In3"
+      }
+    },
+    {
+      "id": "w141",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74041",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "4A"
+      }
+    },
+    {
+      "id": "w142",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "4Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_4_IC_74041",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w143",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_4_IC_74041",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w144",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "4Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_4_IC_74041",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w145",
+      "from": {
+        "type": "pin",
+        "compId": "VM_4_IC_74041",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w146",
+      "from": {
+        "type": "pin",
+        "compId": "VM_4_IC_74041",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74041",
+        "terminal": "In4"
+      }
+    },
+    {
+      "id": "w147",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74041",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "5A"
+      }
+    },
+    {
+      "id": "w148",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "5Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_5_IC_74041",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w149",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_5_IC_74041",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w150",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "5Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_5_IC_74041",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w151",
+      "from": {
+        "type": "pin",
+        "compId": "VM_5_IC_74041",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w152",
+      "from": {
+        "type": "pin",
+        "compId": "VM_5_IC_74041",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74041",
+        "terminal": "In5"
+      }
+    },
+    {
+      "id": "w153",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_74041",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "6A"
+      }
+    },
+    {
+      "id": "w154",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "6Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_6_IC_74041",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w155",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_6_IC_74041",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w156",
+      "from": {
+        "type": "pin",
+        "compId": "IC_74041",
+        "terminal": "6Y"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_6_IC_74041",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w157",
+      "from": {
+        "type": "pin",
+        "compId": "VM_6_IC_74041",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_74041",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w158",
+      "from": {
+        "type": "pin",
+        "compId": "VM_6_IC_74041",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_74041",
+        "terminal": "In6"
+      }
+    },
+    {
+      "id": "w159",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_5551",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_5551",
+        "terminal": "VCC"
+      }
+    },
+    {
+      "id": "w160",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_5551",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_5551",
+        "terminal": "RESET"
+      }
+    },
+    {
+      "id": "w161",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_5551",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_5551",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w162",
+      "from": {
+        "type": "pin",
+        "compId": "IC_5551",
+        "terminal": "GND"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_5551",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w163",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_5551",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_5551",
+        "terminal": "TRIG"
+      }
+    },
+    {
+      "id": "w164",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_IC_5551",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "IC_5551",
+        "terminal": "THR"
+      }
+    },
+    {
+      "id": "w165",
+      "from": {
+        "type": "pin",
+        "compId": "IC_5551",
+        "terminal": "OUT"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_IC_5551",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w166",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_IC_5551",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_5551",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w167",
+      "from": {
+        "type": "pin",
+        "compId": "IC_5551",
+        "terminal": "OUT"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_IC_5551",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w168",
+      "from": {
+        "type": "pin",
+        "compId": "VM_IC_5551",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_IC_5551",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w169",
+      "from": {
+        "type": "pin",
+        "compId": "VM_IC_5551",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_IC_5551",
+        "terminal": "In1"
+      }
+    }
+  ],
+  "plotConfiguration": {
+    "plots": []
+  },
+  "description": "Test Electrical_Integrated_Circuits"
+}

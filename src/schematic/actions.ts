@@ -1422,10 +1422,12 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
         physical_stage.voltage_sources.push({
           id: comp.id,
           nodes: resolveNodes(comp.id, 2, ['A', 'B']),
-          amplitude: p.amplitude || 12.0,
-          frequency: p.frequency || 50.0,
-          phase: p.phase || 0.0,
-          type: 'ac'
+          type: 'ACVoltageSource',
+          parameters: {
+            amplitude: String(p.amplitude || 12.0),
+            frequency: String(p.frequency || 50.0),
+            phase: String(p.phase || 0.0)
+          }
         });
         break;
       case 'V_3PH': {
@@ -1443,51 +1445,39 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           physical_stage.voltage_sources.push({
             id: `${comp.id}_AB`,
             nodes: [nodeA, nodeB],
-            amplitude: amp,
-            frequency: freq,
-            phase: phase,
-            type: 'ac'
+            type: 'ACVoltageSource',
+            parameters: { amplitude: String(amp), frequency: String(freq), phase: String(phase) }
           });
           physical_stage.voltage_sources.push({
             id: `${comp.id}_BC`,
             nodes: [nodeB, nodeC],
-            amplitude: amp,
-            frequency: freq,
-            phase: phase - 120.0,
-            type: 'ac'
+            type: 'ACVoltageSource',
+            parameters: { amplitude: String(amp), frequency: String(freq), phase: String(phase - 120.0) }
           });
           physical_stage.voltage_sources.push({
             id: `${comp.id}_CA`,
             nodes: [nodeC, nodeA],
-            amplitude: amp,
-            frequency: freq,
-            phase: phase + 120.0,
-            type: 'ac'
+            type: 'ACVoltageSource',
+            parameters: { amplitude: String(amp), frequency: String(freq), phase: String(phase + 120.0) }
           });
         } else {
           physical_stage.voltage_sources.push({
             id: `${comp.id}_A`,
             nodes: [nodeA, nodeN],
-            amplitude: amp,
-            frequency: freq,
-            phase: phase,
-            type: 'ac'
+            type: 'ACVoltageSource',
+            parameters: { amplitude: String(amp), frequency: String(freq), phase: String(phase) }
           });
           physical_stage.voltage_sources.push({
             id: `${comp.id}_B`,
             nodes: [nodeB, nodeN],
-            amplitude: amp,
-            frequency: freq,
-            phase: phase - 120.0,
-            type: 'ac'
+            type: 'ACVoltageSource',
+            parameters: { amplitude: String(amp), frequency: String(freq), phase: String(phase - 120.0) }
           });
           physical_stage.voltage_sources.push({
             id: `${comp.id}_C`,
             nodes: [nodeC, nodeN],
-            amplitude: amp,
-            frequency: freq,
-            phase: phase + 120.0,
-            type: 'ac'
+            type: 'ACVoltageSource',
+            parameters: { amplitude: String(amp), frequency: String(freq), phase: String(phase + 120.0) }
           });
         }
         break;
@@ -1497,17 +1487,20 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           id: comp.id,
           nodes: resolveNodes(comp.id, 2, ['A', 'B']),
           value: p.value !== undefined ? p.value : 1.0,
-          src_type: 'dc'
+          src_type: 'dc',
+          type: 'CurrentSource'
         });
         break;
       case 'AC_I':
         physical_stage.current_sources.push({
           id: comp.id,
           nodes: resolveNodes(comp.id, 2, ['A', 'B']),
-          amplitude: p.amplitude !== undefined ? p.amplitude : 1.0,
-          frequency: p.frequency !== undefined ? p.frequency : 50.0,
-          phase: p.phase !== undefined ? p.phase : 0.0,
-          src_type: 'ac'
+          type: 'ACCurrentSource',
+          parameters: {
+            amplitude: String(p.amplitude !== undefined ? p.amplitude : 1.0),
+            frequency: String(p.frequency !== undefined ? p.frequency : 50.0),
+            phase: String(p.phase !== undefined ? p.phase : 0.0)
+          }
         });
         break;
       case 'CTRL_I':
@@ -1516,7 +1509,8 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           nodes: resolveNodes(comp.id, 2, ['A', 'B']),
           value: p.value !== undefined ? p.value : 1.0,
           control_signal: getIncomingControlTerminal(comp.id, 'Ctrl'),
-          src_type: 'controlled'
+          src_type: 'controlled',
+          type: 'ControlledCurrentSource'
         });
         break;
       case 'I_3PH': {
@@ -1531,34 +1525,40 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           physical_stage.current_sources.push({
             id: `${comp.id}_AB`,
             nodes: [nodeA, nodeB],
-            value: amp
+            type: 'ACCurrentSource',
+            parameters: { amplitude: String(amp), frequency: String(freq), phase: String(phase) }
           });
           physical_stage.current_sources.push({
             id: `${comp.id}_BC`,
             nodes: [nodeB, nodeC],
-            value: amp
+            type: 'ACCurrentSource',
+            parameters: { amplitude: String(amp), frequency: String(freq), phase: String(phase - 120.0) }
           });
           physical_stage.current_sources.push({
             id: `${comp.id}_CA`,
             nodes: [nodeC, nodeA],
-            value: amp
+            type: 'ACCurrentSource',
+            parameters: { amplitude: String(amp), frequency: String(freq), phase: String(phase + 120.0) }
           });
         } else {
           const neutralNode = `${comp.id}_N`;
           physical_stage.current_sources.push({
             id: `${comp.id}_A`,
             nodes: [nodeA, neutralNode],
-            value: amp
+            type: 'ACCurrentSource',
+            parameters: { amplitude: String(amp), frequency: String(freq), phase: String(phase) }
           });
           physical_stage.current_sources.push({
             id: `${comp.id}_B`,
             nodes: [nodeB, neutralNode],
-            value: amp
+            type: 'ACCurrentSource',
+            parameters: { amplitude: String(amp), frequency: String(freq), phase: String(phase - 120.0) }
           });
           physical_stage.current_sources.push({
             id: `${comp.id}_C`,
             nodes: [nodeC, neutralNode],
-            value: amp
+            type: 'ACCurrentSource',
+            parameters: { amplitude: String(amp), frequency: String(freq), phase: String(phase + 120.0) }
           });
         }
         break;
@@ -1791,52 +1791,167 @@ export function exportDualGraphJSON(fastMode: boolean = false): any {
           src_type: comp.type.toLowerCase()
         });
         break;
-      case 'IC_LM7805':
+      case 'IC_LM7805': {
+        const in_node = pinToNodeMap[`${comp.id}.IN`] || "node_0";
+        const out_node = pinToNodeMap[`${comp.id}.OUT`] || "node_0";
+        const gnd_node = pinToNodeMap[`${comp.id}.GND`] || "node_0";
+        
+        // Voltage-controlled voltage source model: Output 5V if input is high enough.
+        physical_stage.voltmeters.push({ id: `${comp.id}_Vin`, nodes: [in_node, gnd_node] });
+        control_loops.logic_gates.push({
+          id: `${comp.id}_ctrl`, type: 'COMPARE_TO_CONSTANT', original_type: 'COMPARE_TO_CONSTANT',
+          operator: '>=', constant: '5', input: `V_${comp.id}_Vin`, output: `${comp.id}_en`
+        });
+        control_loops.gains.push({
+          id: `${comp.id}_gain`, type: 'Gain', original_type: 'Gain',
+          gain: '5.0', input: `${comp.id}_en`, output: `${comp.id}_outV`
+        });
         physical_stage.voltage_sources.push({
           id: comp.id,
-          nodes: [pinToNodeMap[`${comp.id}.OUT`] || "node_0", pinToNodeMap[`${comp.id}.GND`] || "node_0"],
-          value: 5.0,
-          src_type: 'dc'
+          nodes: [out_node, gnd_node],
+          value: 1.0,
+          src_type: 'controlled',
+          control_signal: `${comp.id}_outV`
         });
         break;
-      case 'IC_LM317':
+      }
+      case 'IC_LM317': {
+        const out_node = pinToNodeMap[`${comp.id}.OUT`] || "node_0";
+        const adj_node = pinToNodeMap[`${comp.id}.ADJ`] || "node_0";
         physical_stage.voltage_sources.push({
           id: comp.id,
-          nodes: [pinToNodeMap[`${comp.id}.OUT`] || "node_0", pinToNodeMap[`${comp.id}.ADJ`] || "node_0"],
+          nodes: [out_node, adj_node],
           value: 1.25,
           src_type: 'dc'
         });
         break;
-      case 'IC_PC817':
+      }
+      case 'IC_PC817': {
+        const anode = pinToNodeMap[`${comp.id}.Anode`] || "node_0";
+        const cathode = pinToNodeMap[`${comp.id}.Cathode`] || "node_0";
+        const collector = pinToNodeMap[`${comp.id}.Collector`] || "node_0";
+        const emitter = pinToNodeMap[`${comp.id}.Emitter`] || "node_0";
         physical_stage.diodes.push({
           id: `${comp.id}_LED`,
-          nodes: [pinToNodeMap[`${comp.id}.Anode`] || "node_0", pinToNodeMap[`${comp.id}.Cathode`] || "node_0"],
-          Vd: 1.2,
-          Ron: 1.0,
-          Roff: 1e6
+          nodes: [anode, cathode],
+          Vd: 1.2, Ron: 1.0, Roff: 1e6
         });
-        physical_stage.resistors.push({
+        // Macro-model the phototransistor as a switch controlled by the LED current (estimated by voltage)
+        physical_stage.voltmeters.push({ id: `${comp.id}_VLED`, nodes: [anode, cathode] });
+        control_loops.logic_gates.push({
+          id: `${comp.id}_CTRL`, type: 'COMPARE_TO_CONSTANT', original_type: 'COMPARE_TO_CONSTANT',
+          operator: '>=', constant: '1.2', input: `V_${comp.id}_VLED`, output: `${comp.id}_ON`
+        });
+        physical_stage.switches.push({
           id: `${comp.id}_TR`,
-          nodes: [pinToNodeMap[`${comp.id}.Collector`] || "node_0", pinToNodeMap[`${comp.id}.Emitter`] || "node_0"],
-          value: 100.0,
-          esr: 0.0
+          nodes: [collector, emitter],
+          Ron: 1.0, Roff: 1e6,
+          control_signal: `${comp.id}_ON`
         });
         break;
-      case 'IC_555':
+      }
       case 'IC_7400':
       case 'IC_7408':
       case 'IC_7432':
       case 'IC_7404': {
-        const pinNames = getDetailedComponentPins(comp.type);
-        const keys = Object.keys(pinNames || {});
-        const node1 = pinToNodeMap[`${comp.id}.${keys[0]}`] || "node_0";
-        const node2 = pinToNodeMap[`${comp.id}.${keys[1]}`] || "node_0";
-        physical_stage.resistors.push({
-          id: comp.id,
-          nodes: [node1, node2],
-          value: 1e3,
-          esr: 0.0
-        });
+        let gate_type = "NAND";
+        if (comp.type === "IC_7408") gate_type = "AND";
+        if (comp.type === "IC_7432") gate_type = "OR";
+        if (comp.type === "IC_7404") gate_type = "NOT";
+        
+        const gnd_node = pinToNodeMap[`${comp.id}.GND`] || "node_0";
+        const vcc_node = pinToNodeMap[`${comp.id}.VCC`] || "node_0";
+        
+        physical_stage.voltmeters.push({ id: `${comp.id}_VCC_sens`, nodes: [vcc_node, gnd_node] });
+        
+        const isNot = gate_type === "NOT";
+        const num_gates = isNot ? 6 : 4;
+        
+        for (let i = 1; i <= num_gates; i++) {
+           const out_pin = `${i}Y`;
+           const in1_pin = `${i}A`;
+           const in2_pin = isNot ? null : `${i}B`;
+           
+           const out_node = pinToNodeMap[`${comp.id}.${out_pin}`] || "node_0";
+           const in1_node = pinToNodeMap[`${comp.id}.${in1_pin}`] || "node_0";
+           
+           physical_stage.voltmeters.push({ id: `${comp.id}_in${i}A`, nodes: [in1_node, gnd_node] });
+           
+           // Convert analog voltage input to digital boolean
+           control_loops.product_blocks.push({
+             id: `${comp.id}_dig_in${i}A`, type: 'Product', original_type: 'RELATIONAL_OPERATOR',
+             operator: '>=', constant: '2.5', input1: `V_${comp.id}_in${i}A`, output: `${comp.id}_din${i}A`
+           });
+
+           if (isNot) {
+             control_loops.product_blocks.push({
+               id: `${comp.id}_gate${i}`, type: 'Product', original_type: 'LOGIC_OP', operator: 'NOT',
+               inputs: [`${comp.id}_din${i}A`], output: `${comp.id}_y${i}_raw`
+             });
+           } else {
+             const in2_node = pinToNodeMap[`${comp.id}.${in2_pin}`] || "node_0";
+             physical_stage.voltmeters.push({ id: `${comp.id}_in${i}B`, nodes: [in2_node, gnd_node] });
+             control_loops.product_blocks.push({
+               id: `${comp.id}_dig_in${i}B`, type: 'Product', original_type: 'RELATIONAL_OPERATOR',
+               operator: '>=', constant: '2.5', input1: `V_${comp.id}_in${i}B`, output: `${comp.id}_din${i}B`
+             });
+             control_loops.product_blocks.push({
+               id: `${comp.id}_gate${i}`, type: 'Product', original_type: 'LOGIC_OP', operator: gate_type,
+               inputs: [`${comp.id}_din${i}A`, `${comp.id}_din${i}B`], output: `${comp.id}_y${i}_raw`
+             });
+           }
+           
+           // Map raw boolean output to VCC logic level
+           control_loops.gains.push({
+             id: `${comp.id}_gain${i}`, type: 'PRODUCT_RECT', original_type: 'PRODUCT_RECT',
+             input1: `${comp.id}_y${i}_raw`, input2: `V_${comp.id}_VCC_sens`, output: `${comp.id}_y${i}`
+           });
+           
+           physical_stage.voltage_sources.push({
+             id: `${comp.id}_Y${i}`,
+             nodes: [out_node, gnd_node],
+             value: 1.0,
+             src_type: 'controlled',
+             control_signal: `${comp.id}_y${i}`
+           });
+        }
+        break;
+      }
+      case 'IC_555': {
+        const gnd = pinToNodeMap[`${comp.id}.GND`] || "node_0";
+        const trig = pinToNodeMap[`${comp.id}.TRIG`] || "node_0";
+        const out = pinToNodeMap[`${comp.id}.OUT`] || "node_0";
+        const res = pinToNodeMap[`${comp.id}.RESET`] || "node_0";
+        const cont = pinToNodeMap[`${comp.id}.CTRL`] || "node_0";
+        const thres = pinToNodeMap[`${comp.id}.THR`] || "node_0";
+        const disch = pinToNodeMap[`${comp.id}.DIS`] || "node_0";
+        const vcc = pinToNodeMap[`${comp.id}.VCC`] || "node_0";
+        
+        physical_stage.resistors.push({ id: `${comp.id}_r1`, nodes: [vcc, cont], value: 5000, esr: 0 });
+        physical_stage.resistors.push({ id: `${comp.id}_r2`, nodes: [cont, trig], value: 5000, esr: 0 });
+        physical_stage.resistors.push({ id: `${comp.id}_r3`, nodes: [trig, gnd], value: 5000, esr: 0 });
+        
+        physical_stage.voltmeters.push({ id: `${comp.id}_vtrig`, nodes: [trig, gnd] });
+        physical_stage.voltmeters.push({ id: `${comp.id}_vthres`, nodes: [thres, gnd] });
+        physical_stage.voltmeters.push({ id: `${comp.id}_vcont`, nodes: [cont, gnd] });
+        
+        // THRES > CONT
+        control_loops.logic_gates.push({ id: `${comp.id}_c1`, type: 'COMPARE', original_type: 'COMPARE', operator: '>', input_a: `V_${comp.id}_vthres`, input_b: `V_${comp.id}_vcont`, output: `${comp.id}_R` });
+        
+        // TRIG < CONT/2
+        control_loops.gains.push({ id: `${comp.id}_half`, type: 'Gain', original_type: 'Gain', gain: '0.5', input: `V_${comp.id}_vcont`, output: `${comp.id}_cont_half` });
+        control_loops.logic_gates.push({ id: `${comp.id}_c2`, type: 'COMPARE', original_type: 'COMPARE', operator: '<', input_a: `V_${comp.id}_vtrig`, input_b: `${comp.id}_cont_half`, output: `${comp.id}_S` });
+        
+        // SR Flip-flop
+        control_loops.gains.push({ id: `${comp.id}_ff`, type: 'SR_FLIP_FLOP', original_type: 'SR_FLIP_FLOP', input_s: `${comp.id}_S`, input_r: `${comp.id}_R`, output: `${comp.id}_Q`, output_bar: `${comp.id}_Qbar` });
+        
+        // OUT = Q * VCC
+        physical_stage.voltmeters.push({ id: `${comp.id}_VCC_sens`, nodes: [vcc, gnd] });
+        control_loops.gains.push({ id: `${comp.id}_out_mult`, type: 'PRODUCT_RECT', original_type: 'PRODUCT_RECT', input1: `${comp.id}_Q`, input2: `V_${comp.id}_VCC_sens`, output: `${comp.id}_out_sig` });
+        
+        physical_stage.voltage_sources.push({ id: `${comp.id}_outsrc`, nodes: [out, gnd], value: 1.0, src_type: 'controlled', control_signal: `${comp.id}_out_sig` });
+        physical_stage.switches.push({ id: `${comp.id}_dischsw`, nodes: [disch, gnd], Ron: 5.0, Roff: 1e6, control_signal: `${comp.id}_Qbar` });
+        
         break;
       }
       case 'GEN_EBLOCK': {

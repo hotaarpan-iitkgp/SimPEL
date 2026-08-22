@@ -1,0 +1,372 @@
+{
+  "components": [
+    {
+      "id": "SCOPE_INDUCTION_MOTOR1",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "INDUCTION_MOTOR1",
+      "type": "INDUCTION_MOTOR",
+      "x": 200,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_INDUCTION_MOTOR1",
+      "type": "GND",
+      "x": 100,
+      "y": 50,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_INDUCTION_MOTOR1",
+      "type": "V",
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "value": "400"
+      }
+    },
+    {
+      "id": "CTRL_INDUCTION_MOTOR1",
+      "type": "CONST",
+      "x": 200,
+      "y": -50,
+      "rotation": 0,
+      "parameters": {
+        "value": "10"
+      }
+    },
+    {
+      "id": "SRC_V3PH_INDUCTION_MOTOR",
+      "type": "V_3PH",
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_DC_MOTOR1",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 200,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "DC_MOTOR1",
+      "type": "DC_MOTOR",
+      "x": 200,
+      "y": 200,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_DC_MOTOR1",
+      "type": "GND",
+      "x": 100,
+      "y": 250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_DC_MOTOR1",
+      "type": "V",
+      "x": 0,
+      "y": 200,
+      "rotation": 0,
+      "parameters": {
+        "value": "400"
+      }
+    },
+    {
+      "id": "CTRL_DC_MOTOR1",
+      "type": "CONST",
+      "x": 200,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {
+        "value": "10"
+      }
+    },
+    {
+      "id": "SCOPE_PMSM1",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 400,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "PMSM1",
+      "type": "PMSM",
+      "x": 200,
+      "y": 400,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_PMSM1",
+      "type": "GND",
+      "x": 100,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_PMSM1",
+      "type": "V",
+      "x": 0,
+      "y": 400,
+      "rotation": 0,
+      "parameters": {
+        "value": "400"
+      }
+    },
+    {
+      "id": "CTRL_PMSM1",
+      "type": "CONST",
+      "x": 200,
+      "y": 350,
+      "rotation": 0,
+      "parameters": {
+        "value": "10"
+      }
+    },
+    {
+      "id": "SRC_V3PH_PMSM",
+      "type": "V_3PH",
+      "x": 0,
+      "y": 400,
+      "rotation": 0,
+      "parameters": {}
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_V3PH_INDUCTION_MOTOR",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "INDUCTION_MOTOR1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w2",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_V3PH_INDUCTION_MOTOR",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "INDUCTION_MOTOR1",
+        "terminal": "B"
+      }
+    },
+    {
+      "id": "w3",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_V3PH_INDUCTION_MOTOR",
+        "terminal": "C"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "INDUCTION_MOTOR1",
+        "terminal": "C"
+      }
+    },
+    {
+      "id": "w4",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_V3PH_INDUCTION_MOTOR",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_INDUCTION_MOTOR1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w5",
+      "from": {
+        "type": "pin",
+        "compId": "CTRL_INDUCTION_MOTOR1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "INDUCTION_MOTOR1",
+        "terminal": "TL"
+      }
+    },
+    {
+      "id": "w6",
+      "from": {
+        "type": "pin",
+        "compId": "INDUCTION_MOTOR1",
+        "terminal": "m"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_INDUCTION_MOTOR1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w7",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_DC_MOTOR1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "DC_MOTOR1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w8",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_DC_MOTOR1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "DC_MOTOR1",
+        "terminal": "B"
+      }
+    },
+    {
+      "id": "w9",
+      "from": {
+        "type": "pin",
+        "compId": "CTRL_DC_MOTOR1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "DC_MOTOR1",
+        "terminal": "TL"
+      }
+    },
+    {
+      "id": "w10",
+      "from": {
+        "type": "pin",
+        "compId": "DC_MOTOR1",
+        "terminal": "m"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DC_MOTOR1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w11",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_V3PH_PMSM",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PMSM1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w12",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_V3PH_PMSM",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PMSM1",
+        "terminal": "B"
+      }
+    },
+    {
+      "id": "w13",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_V3PH_PMSM",
+        "terminal": "C"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PMSM1",
+        "terminal": "C"
+      }
+    },
+    {
+      "id": "w14",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_V3PH_PMSM",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_PMSM1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w15",
+      "from": {
+        "type": "pin",
+        "compId": "CTRL_PMSM1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PMSM1",
+        "terminal": "TL"
+      }
+    },
+    {
+      "id": "w16",
+      "from": {
+        "type": "pin",
+        "compId": "PMSM1",
+        "terminal": "m"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PMSM1",
+        "terminal": "In1"
+      }
+    }
+  ],
+  "plotConfiguration": {
+    "plots": []
+  },
+  "description": "Test Electrical_Machines"
+}

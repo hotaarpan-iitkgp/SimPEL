@@ -4398,8 +4398,12 @@ export class CircuitSimulator {
                         } else if (orig === "LOGIC_OP") {
                             const op = b.parameters.operator ?? "AND";
                             if (op === "AND") signals[out] = (val1 > 0.5 && val2 > 0.5) ? 1.0 : 0.0;
+                            else if (op === "NAND") signals[out] = (val1 > 0.5 && val2 > 0.5) ? 0.0 : 1.0;
                             else if (op === "OR") signals[out] = (val1 > 0.5 || val2 > 0.5) ? 1.0 : 0.0;
+                            else if (op === "NOR") signals[out] = (val1 > 0.5 || val2 > 0.5) ? 0.0 : 1.0;
                             else if (op === "XOR") signals[out] = ((val1 > 0.5) !== (val2 > 0.5)) ? 1.0 : 0.0;
+                            else if (op === "XNOR") signals[out] = ((val1 > 0.5) === (val2 > 0.5)) ? 1.0 : 0.0;
+                            else if (op === "NOT") signals[out] = (val1 < 0.5) ? 1.0 : 0.0;
                             else signals[out] = 0.0;
                         } else if (orig === "RELATIONAL_OPERATOR") {
                             const op = b.parameters.operator ?? "==";
@@ -4645,8 +4649,11 @@ export class CircuitSimulator {
                     const v2 = Math.floor(signals[b.channels.In2] ?? 0.0);
                     let res = 0;
                     if (op === "AND") res = v1 & v2;
+                    else if (op === "NAND") res = ~(v1 & v2);
                     else if (op === "OR") res = v1 | v2;
+                    else if (op === "NOR") res = ~(v1 | v2);
                     else if (op === "XOR") res = v1 ^ v2;
+                    else if (op === "XNOR") res = ~(v1 ^ v2);
                     else if (op === "NOT") res = ~v1;
                     else if (op === "SHIFT_LEFT" || op === "SHL") res = v1 << v2;
                     else if (op === "SHIFT_RIGHT" || op === "SHR") res = v1 >> v2;

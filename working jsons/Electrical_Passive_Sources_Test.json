@@ -1,23 +1,14 @@
 {
   "components": [
     {
-      "id": "SRC_V1",
-      "type": "V",
-      "x": 0,
+      "id": "SCOPE_V1",
+      "type": "SCOPE",
+      "x": 600,
       "y": 0,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "channels": "1"
       }
-    },
-    {
-      "id": "AM_V1",
-      "type": "AM",
-      "x": 100,
-      "y": 0,
-      "rotation": 0,
-      "parameters": {}
     },
     {
       "id": "V1",
@@ -25,37 +16,41 @@
       "x": 200,
       "y": 0,
       "rotation": 0,
-      "parameters": {
-        "value": "24",
-        "amplitude": "10"
-      }
+      "parameters": {}
     },
     {
       "id": "GND_V1",
       "type": "GND",
-      "x": 300,
+      "x": 100,
+      "y": 50,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_V1",
+      "type": "R",
+      "x": 400,
       "y": 0,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "SRC_I1",
-      "type": "V",
-      "x": 0,
+      "id": "VM_V1",
+      "type": "VM",
+      "x": 400,
+      "y": 50,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_I1",
+      "type": "SCOPE",
+      "x": 600,
       "y": 200,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "channels": "1"
       }
-    },
-    {
-      "id": "AM_I1",
-      "type": "AM",
-      "x": 100,
-      "y": 200,
-      "rotation": 0,
-      "parameters": {}
     },
     {
       "id": "I1",
@@ -68,29 +63,36 @@
     {
       "id": "GND_I1",
       "type": "GND",
-      "x": 300,
+      "x": 100,
+      "y": 250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_I1",
+      "type": "R",
+      "x": 400,
       "y": 200,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "SRC_AC_V1",
-      "type": "V",
-      "x": 0,
+      "id": "VM_I1",
+      "type": "VM",
+      "x": 400,
+      "y": 250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_AC_V1",
+      "type": "SCOPE",
+      "x": 600,
       "y": 400,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "channels": "1"
       }
-    },
-    {
-      "id": "AM_AC_V1",
-      "type": "AM",
-      "x": 100,
-      "y": 400,
-      "rotation": 0,
-      "parameters": {}
     },
     {
       "id": "AC_V1",
@@ -98,37 +100,41 @@
       "x": 200,
       "y": 400,
       "rotation": 0,
-      "parameters": {
-        "value": "24",
-        "amplitude": "10"
-      }
+      "parameters": {}
     },
     {
       "id": "GND_AC_V1",
       "type": "GND",
-      "x": 300,
+      "x": 100,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_AC_V1",
+      "type": "R",
+      "x": 400,
       "y": 400,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "SRC_AC_I1",
-      "type": "V",
-      "x": 0,
+      "id": "VM_AC_V1",
+      "type": "VM",
+      "x": 400,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_AC_I1",
+      "type": "SCOPE",
+      "x": 600,
       "y": 600,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "channels": "1"
       }
-    },
-    {
-      "id": "AM_AC_I1",
-      "type": "AM",
-      "x": 100,
-      "y": 600,
-      "rotation": 0,
-      "parameters": {}
     },
     {
       "id": "AC_I1",
@@ -141,29 +147,36 @@
     {
       "id": "GND_AC_I1",
       "type": "GND",
-      "x": 300,
+      "x": 100,
+      "y": 650,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_AC_I1",
+      "type": "R",
+      "x": 400,
       "y": 600,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "SRC_CTRL_V1",
-      "type": "V",
-      "x": 0,
+      "id": "VM_AC_I1",
+      "type": "VM",
+      "x": 400,
+      "y": 650,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_CTRL_V1",
+      "type": "SCOPE",
+      "x": 600,
       "y": 800,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "channels": "1"
       }
-    },
-    {
-      "id": "AM_CTRL_V1",
-      "type": "AM",
-      "x": 100,
-      "y": 800,
-      "rotation": 0,
-      "parameters": {}
     },
     {
       "id": "CTRL_V1",
@@ -176,39 +189,46 @@
     {
       "id": "GND_CTRL_V1",
       "type": "GND",
-      "x": 300,
+      "x": 100,
+      "y": 850,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_CTRL_V1",
+      "type": "R",
+      "x": 400,
       "y": 800,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_CTRL_V1",
+      "type": "VM",
+      "x": 400,
+      "y": 850,
       "rotation": 0,
       "parameters": {}
     },
     {
       "id": "CTRL_CTRL_V1",
       "type": "CONST",
-      "x": 200,
-      "y": 750,
+      "x": 0,
+      "y": 800,
       "rotation": 0,
       "parameters": {
         "value": "5"
       }
     },
     {
-      "id": "SRC_CTRL_I1",
-      "type": "V",
-      "x": 0,
+      "id": "SCOPE_CTRL_I1",
+      "type": "SCOPE",
+      "x": 600,
       "y": 1000,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "channels": "1"
       }
-    },
-    {
-      "id": "AM_CTRL_I1",
-      "type": "AM",
-      "x": 100,
-      "y": 1000,
-      "rotation": 0,
-      "parameters": {}
     },
     {
       "id": "CTRL_I1",
@@ -221,20 +241,62 @@
     {
       "id": "GND_CTRL_I1",
       "type": "GND",
-      "x": 300,
+      "x": 100,
+      "y": 1050,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "LOAD_CTRL_I1",
+      "type": "R",
+      "x": 400,
       "y": 1000,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "VM_CTRL_I1",
+      "type": "VM",
+      "x": 400,
+      "y": 1050,
       "rotation": 0,
       "parameters": {}
     },
     {
       "id": "CTRL_CTRL_I1",
       "type": "CONST",
-      "x": 200,
-      "y": 950,
+      "x": 0,
+      "y": 1000,
       "rotation": 0,
       "parameters": {
         "value": "5"
       }
+    },
+    {
+      "id": "SCOPE_R1",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "R1",
+      "type": "R",
+      "x": 200,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_R1",
+      "type": "GND",
+      "x": 100,
+      "y": 1250,
+      "rotation": 0,
+      "parameters": {}
     },
     {
       "id": "SRC_R1",
@@ -243,33 +305,48 @@
       "y": 1200,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "value": "12"
       }
     },
     {
-      "id": "AM_R1",
-      "type": "AM",
-      "x": 100,
+      "id": "LOAD_R1",
+      "type": "R",
+      "x": 400,
       "y": 1200,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "R1",
-      "type": "R",
-      "x": 200,
-      "y": 1200,
+      "id": "VM_R1",
+      "type": "VM",
+      "x": 400,
+      "y": 1250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_L1",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 1400,
       "rotation": 0,
       "parameters": {
-        "value": "10"
+        "channels": "1"
       }
     },
     {
-      "id": "GND_R1",
+      "id": "L1",
+      "type": "L",
+      "x": 200,
+      "y": 1400,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_L1",
       "type": "GND",
-      "x": 300,
-      "y": 1200,
+      "x": 100,
+      "y": 1450,
       "rotation": 0,
       "parameters": {}
     },
@@ -280,33 +357,48 @@
       "y": 1400,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "value": "12"
       }
     },
     {
-      "id": "AM_L1",
-      "type": "AM",
-      "x": 100,
+      "id": "LOAD_L1",
+      "type": "R",
+      "x": 400,
       "y": 1400,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "L1",
-      "type": "L",
-      "x": 200,
-      "y": 1400,
+      "id": "VM_L1",
+      "type": "VM",
+      "x": 400,
+      "y": 1450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_C1",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 1600,
       "rotation": 0,
       "parameters": {
-        "L": "10m"
+        "channels": "1"
       }
     },
     {
-      "id": "GND_L1",
+      "id": "C1",
+      "type": "C",
+      "x": 200,
+      "y": 1600,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "GND_C1",
       "type": "GND",
-      "x": 300,
-      "y": 1400,
+      "x": 100,
+      "y": 1650,
       "rotation": 0,
       "parameters": {}
     },
@@ -317,54 +409,34 @@
       "y": 1600,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "value": "12"
       }
     },
     {
-      "id": "AM_C1",
-      "type": "AM",
-      "x": 100,
+      "id": "LOAD_C1",
+      "type": "R",
+      "x": 400,
       "y": 1600,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "C1",
-      "type": "C",
-      "x": 200,
-      "y": 1600,
-      "rotation": 0,
-      "parameters": {
-        "C": "100u"
-      }
-    },
-    {
-      "id": "GND_C1",
-      "type": "GND",
-      "x": 300,
-      "y": 1600,
+      "id": "VM_C1",
+      "type": "VM",
+      "x": 400,
+      "y": 1650,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "SRC_VAR_R1",
-      "type": "V",
-      "x": 0,
+      "id": "SCOPE_VAR_R1",
+      "type": "SCOPE",
+      "x": 600,
       "y": 1800,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "channels": "1"
       }
-    },
-    {
-      "id": "AM_VAR_R1",
-      "type": "AM",
-      "x": 100,
-      "y": 1800,
-      "rotation": 0,
-      "parameters": {}
     },
     {
       "id": "VAR_R1",
@@ -377,29 +449,56 @@
     {
       "id": "GND_VAR_R1",
       "type": "GND",
-      "x": 300,
+      "x": 100,
+      "y": 1850,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_VAR_R1",
+      "type": "V",
+      "x": 0,
+      "y": 1800,
+      "rotation": 0,
+      "parameters": {
+        "value": "12"
+      }
+    },
+    {
+      "id": "LOAD_VAR_R1",
+      "type": "R",
+      "x": 400,
       "y": 1800,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "SRC_VAR_L1",
-      "type": "V",
+      "id": "VM_VAR_R1",
+      "type": "VM",
+      "x": 400,
+      "y": 1850,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "CTRL_VAR_R1",
+      "type": "CONST",
       "x": 0,
-      "y": 2000,
+      "y": 1750,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "value": "1"
       }
     },
     {
-      "id": "AM_VAR_L1",
-      "type": "AM",
-      "x": 100,
+      "id": "SCOPE_VAR_L1",
+      "type": "SCOPE",
+      "x": 600,
       "y": 2000,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
       "id": "VAR_L1",
@@ -412,29 +511,56 @@
     {
       "id": "GND_VAR_L1",
       "type": "GND",
-      "x": 300,
+      "x": 100,
+      "y": 2050,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_VAR_L1",
+      "type": "V",
+      "x": 0,
+      "y": 2000,
+      "rotation": 0,
+      "parameters": {
+        "value": "12"
+      }
+    },
+    {
+      "id": "LOAD_VAR_L1",
+      "type": "R",
+      "x": 400,
       "y": 2000,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "SRC_VAR_C1",
-      "type": "V",
+      "id": "VM_VAR_L1",
+      "type": "VM",
+      "x": 400,
+      "y": 2050,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "CTRL_VAR_L1",
+      "type": "CONST",
       "x": 0,
-      "y": 2200,
+      "y": 1950,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "value": "1"
       }
     },
     {
-      "id": "AM_VAR_C1",
-      "type": "AM",
-      "x": 100,
+      "id": "SCOPE_VAR_C1",
+      "type": "SCOPE",
+      "x": 600,
       "y": 2200,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
       "id": "VAR_C1",
@@ -447,29 +573,56 @@
     {
       "id": "GND_VAR_C1",
       "type": "GND",
-      "x": 300,
+      "x": 100,
+      "y": 2250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_VAR_C1",
+      "type": "V",
+      "x": 0,
+      "y": 2200,
+      "rotation": 0,
+      "parameters": {
+        "value": "12"
+      }
+    },
+    {
+      "id": "LOAD_VAR_C1",
+      "type": "R",
+      "x": 400,
       "y": 2200,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "SRC_SAT_L1",
-      "type": "V",
+      "id": "VM_VAR_C1",
+      "type": "VM",
+      "x": 400,
+      "y": 2250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "CTRL_VAR_C1",
+      "type": "CONST",
       "x": 0,
-      "y": 2400,
+      "y": 2150,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "value": "1"
       }
     },
     {
-      "id": "AM_SAT_L1",
-      "type": "AM",
-      "x": 100,
+      "id": "SCOPE_SAT_L1",
+      "type": "SCOPE",
+      "x": 600,
       "y": 2400,
       "rotation": 0,
-      "parameters": {}
+      "parameters": {
+        "channels": "1"
+      }
     },
     {
       "id": "SAT_L1",
@@ -482,29 +635,46 @@
     {
       "id": "GND_SAT_L1",
       "type": "GND",
-      "x": 300,
+      "x": 100,
+      "y": 2450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_SAT_L1",
+      "type": "V",
+      "x": 0,
+      "y": 2400,
+      "rotation": 0,
+      "parameters": {
+        "value": "12"
+      }
+    },
+    {
+      "id": "LOAD_SAT_L1",
+      "type": "R",
+      "x": 400,
       "y": 2400,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "SRC_SAT_C1",
-      "type": "V",
-      "x": 0,
+      "id": "VM_SAT_L1",
+      "type": "VM",
+      "x": 400,
+      "y": 2450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_SAT_C1",
+      "type": "SCOPE",
+      "x": 600,
       "y": 2600,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "channels": "1"
       }
-    },
-    {
-      "id": "AM_SAT_C1",
-      "type": "AM",
-      "x": 100,
-      "y": 2600,
-      "rotation": 0,
-      "parameters": {}
     },
     {
       "id": "SAT_C1",
@@ -517,29 +687,46 @@
     {
       "id": "GND_SAT_C1",
       "type": "GND",
-      "x": 300,
+      "x": 100,
+      "y": 2650,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_SAT_C1",
+      "type": "V",
+      "x": 0,
+      "y": 2600,
+      "rotation": 0,
+      "parameters": {
+        "value": "12"
+      }
+    },
+    {
+      "id": "LOAD_SAT_C1",
+      "type": "R",
+      "x": 400,
       "y": 2600,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "SRC_PWL_R1",
-      "type": "V",
-      "x": 0,
+      "id": "VM_SAT_C1",
+      "type": "VM",
+      "x": 400,
+      "y": 2650,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_PWL_R1",
+      "type": "SCOPE",
+      "x": 600,
       "y": 2800,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "channels": "1"
       }
-    },
-    {
-      "id": "AM_PWL_R1",
-      "type": "AM",
-      "x": 100,
-      "y": 2800,
-      "rotation": 0,
-      "parameters": {}
     },
     {
       "id": "PWL_R1",
@@ -552,43 +739,60 @@
     {
       "id": "GND_PWL_R1",
       "type": "GND",
-      "x": 300,
+      "x": 100,
+      "y": 2850,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_PWL_R1",
+      "type": "V",
+      "x": 0,
+      "y": 2800,
+      "rotation": 0,
+      "parameters": {
+        "value": "12"
+      }
+    },
+    {
+      "id": "LOAD_PWL_R1",
+      "type": "R",
+      "x": 400,
       "y": 2800,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "SRC_E_ALGEBRAIC1",
-      "type": "V",
-      "x": 0,
-      "y": 3000,
-      "rotation": 0,
-      "parameters": {
-        "value": "24",
-        "amplitude": "10"
-      }
-    },
-    {
-      "id": "AM_E_ALGEBRAIC1",
-      "type": "AM",
-      "x": 100,
-      "y": 3000,
+      "id": "VM_PWL_R1",
+      "type": "VM",
+      "x": 400,
+      "y": 2850,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "E_ALGEBRAIC1",
-      "type": "E_ALGEBRAIC",
+      "id": "SCOPE_PI_SECTION1",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 3000,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "PI_SECTION1",
+      "type": "PI_SECTION",
       "x": 200,
       "y": 3000,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "GND_E_ALGEBRAIC1",
+      "id": "GND_PI_SECTION1",
       "type": "GND",
-      "x": 300,
-      "y": 3000,
+      "x": 100,
+      "y": 3050,
       "rotation": 0,
       "parameters": {}
     },
@@ -596,164 +800,77 @@
       "id": "SRC_PI_SECTION1",
       "type": "V",
       "x": 0,
-      "y": 3200,
+      "y": 3000,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "value": "12"
       }
     },
     {
-      "id": "AM_PI_SECTION1",
-      "type": "AM",
-      "x": 100,
-      "y": 3200,
+      "id": "LOAD_PI_SECTION1",
+      "type": "R",
+      "x": 400,
+      "y": 3000,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "PI_SECTION1",
-      "type": "PI_SECTION",
-      "x": 200,
-      "y": 3200,
-      "rotation": 0,
-      "parameters": {}
-    },
-    {
-      "id": "GND_PI_SECTION1",
-      "type": "GND",
-      "x": 300,
-      "y": 3200,
-      "rotation": 0,
-      "parameters": {}
-    },
-    {
-      "id": "SRC_VM1",
-      "type": "V",
-      "x": 0,
-      "y": 3400,
-      "rotation": 0,
-      "parameters": {
-        "value": "24",
-        "amplitude": "10"
-      }
-    },
-    {
-      "id": "VM1",
+      "id": "VM_PI_SECTION1",
       "type": "VM",
-      "x": 100,
-      "y": 3400,
+      "x": 400,
+      "y": 3050,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "LOAD_VM",
-      "type": "R",
-      "x": 200,
-      "y": 3400,
+      "id": "SCOPE_E_ALGEBRAIC1",
+      "type": "SCOPE",
+      "x": 600,
+      "y": 3200,
       "rotation": 0,
       "parameters": {
-        "value": "10"
+        "channels": "1"
       }
     },
     {
-      "id": "GND_VM1",
-      "type": "GND",
-      "x": 300,
-      "y": 3400,
+      "id": "E_ALGEBRAIC1",
+      "type": "E_ALGEBRAIC",
+      "x": 200,
+      "y": 3200,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "SRC_AM1",
+      "id": "GND_E_ALGEBRAIC1",
+      "type": "GND",
+      "x": 100,
+      "y": 3250,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_E_ALGEBRAIC1",
       "type": "V",
       "x": 0,
-      "y": 3600,
+      "y": 3200,
       "rotation": 0,
       "parameters": {
-        "value": "24",
-        "amplitude": "10"
+        "value": "12"
       }
     },
     {
-      "id": "AM1",
-      "type": "AM",
-      "x": 100,
-      "y": 3600,
-      "rotation": 0,
-      "parameters": {}
-    },
-    {
-      "id": "LOAD_AM",
+      "id": "LOAD_E_ALGEBRAIC1",
       "type": "R",
-      "x": 200,
-      "y": 3600,
-      "rotation": 0,
-      "parameters": {
-        "value": "10"
-      }
-    },
-    {
-      "id": "GND_AM1",
-      "type": "GND",
-      "x": 300,
-      "y": 3600,
+      "x": 400,
+      "y": 3200,
       "rotation": 0,
       "parameters": {}
     },
     {
-      "id": "V_3PH1",
-      "type": "V_3PH",
-      "x": 100,
-      "y": 3800,
-      "rotation": 0,
-      "parameters": {}
-    },
-    {
-      "id": "GND_V_3PH1",
-      "type": "GND",
-      "x": 200,
-      "y": 3800,
-      "rotation": 0,
-      "parameters": {}
-    },
-    {
-      "id": "I_3PH1",
-      "type": "I_3PH",
-      "x": 100,
-      "y": 4000,
-      "rotation": 0,
-      "parameters": {}
-    },
-    {
-      "id": "GND_I_3PH1",
-      "type": "GND",
-      "x": 200,
-      "y": 4000,
-      "rotation": 0,
-      "parameters": {}
-    },
-    {
-      "id": "LINE_3PH1",
-      "type": "LINE_3PH",
-      "x": 100,
-      "y": 4200,
-      "rotation": 0,
-      "parameters": {}
-    },
-    {
-      "id": "GND_LINE_3PH1",
-      "type": "GND",
-      "x": 200,
-      "y": 4200,
-      "rotation": 0,
-      "parameters": {}
-    },
-    {
-      "id": "SRC_LINE_3PH1",
-      "type": "V_3PH",
-      "x": 0,
-      "y": 4200,
+      "id": "VM_E_ALGEBRAIC1",
+      "type": "VM",
+      "x": 400,
+      "y": 3250,
       "rotation": 0,
       "parameters": {}
     }
@@ -763,12 +880,12 @@
       "id": "w1",
       "from": {
         "type": "pin",
-        "compId": "SRC_V1",
+        "compId": "V1",
         "terminal": "A"
       },
       "to": {
         "type": "pin",
-        "compId": "AM_V1",
+        "compId": "LOAD_V1",
         "terminal": "A"
       }
     },
@@ -776,13 +893,13 @@
       "id": "w2",
       "from": {
         "type": "pin",
-        "compId": "AM_V1",
+        "compId": "LOAD_V1",
         "terminal": "B"
       },
       "to": {
         "type": "pin",
-        "compId": "V1",
-        "terminal": "A"
+        "compId": "GND_V1",
+        "terminal": "Gnd"
       }
     },
     {
@@ -802,8 +919,21 @@
       "id": "w4",
       "from": {
         "type": "pin",
-        "compId": "SRC_V1",
-        "terminal": "B"
+        "compId": "V1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_V1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w5",
+      "from": {
+        "type": "pin",
+        "compId": "VM_V1",
+        "terminal": "N"
       },
       "to": {
         "type": "pin",
@@ -812,29 +942,16 @@
       }
     },
     {
-      "id": "w5",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_I1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM_I1",
-        "terminal": "A"
-      }
-    },
-    {
       "id": "w6",
       "from": {
         "type": "pin",
-        "compId": "AM_I1",
-        "terminal": "B"
+        "compId": "VM_V1",
+        "terminal": "Out"
       },
       "to": {
         "type": "pin",
-        "compId": "I1",
-        "terminal": "A"
+        "compId": "SCOPE_V1",
+        "terminal": "In1"
       }
     },
     {
@@ -842,19 +959,19 @@
       "from": {
         "type": "pin",
         "compId": "I1",
-        "terminal": "B"
+        "terminal": "A"
       },
       "to": {
         "type": "pin",
-        "compId": "GND_I1",
-        "terminal": "Gnd"
+        "compId": "LOAD_I1",
+        "terminal": "A"
       }
     },
     {
       "id": "w8",
       "from": {
         "type": "pin",
-        "compId": "SRC_I1",
+        "compId": "LOAD_I1",
         "terminal": "B"
       },
       "to": {
@@ -867,38 +984,38 @@
       "id": "w9",
       "from": {
         "type": "pin",
-        "compId": "SRC_AC_V1",
-        "terminal": "A"
+        "compId": "I1",
+        "terminal": "B"
       },
       "to": {
         "type": "pin",
-        "compId": "AM_AC_V1",
-        "terminal": "A"
+        "compId": "GND_I1",
+        "terminal": "Gnd"
       }
     },
     {
       "id": "w10",
       "from": {
         "type": "pin",
-        "compId": "AM_AC_V1",
-        "terminal": "B"
+        "compId": "I1",
+        "terminal": "A"
       },
       "to": {
         "type": "pin",
-        "compId": "AC_V1",
-        "terminal": "A"
+        "compId": "VM_I1",
+        "terminal": "P"
       }
     },
     {
       "id": "w11",
       "from": {
         "type": "pin",
-        "compId": "AC_V1",
-        "terminal": "B"
+        "compId": "VM_I1",
+        "terminal": "N"
       },
       "to": {
         "type": "pin",
-        "compId": "GND_AC_V1",
+        "compId": "GND_I1",
         "terminal": "Gnd"
       }
     },
@@ -906,7 +1023,33 @@
       "id": "w12",
       "from": {
         "type": "pin",
-        "compId": "SRC_AC_V1",
+        "compId": "VM_I1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_I1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w13",
+      "from": {
+        "type": "pin",
+        "compId": "AC_V1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_AC_V1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w14",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_AC_V1",
         "terminal": "B"
       },
       "to": {
@@ -916,41 +1059,15 @@
       }
     },
     {
-      "id": "w13",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_AC_I1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM_AC_I1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w14",
-      "from": {
-        "type": "pin",
-        "compId": "AM_AC_I1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AC_I1",
-        "terminal": "A"
-      }
-    },
-    {
       "id": "w15",
       "from": {
         "type": "pin",
-        "compId": "AC_I1",
+        "compId": "AC_V1",
         "terminal": "B"
       },
       "to": {
         "type": "pin",
-        "compId": "GND_AC_I1",
+        "compId": "GND_AC_V1",
         "terminal": "Gnd"
       }
     },
@@ -958,7 +1075,59 @@
       "id": "w16",
       "from": {
         "type": "pin",
-        "compId": "SRC_AC_I1",
+        "compId": "AC_V1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_AC_V1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w17",
+      "from": {
+        "type": "pin",
+        "compId": "VM_AC_V1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_AC_V1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w18",
+      "from": {
+        "type": "pin",
+        "compId": "VM_AC_V1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_AC_V1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w19",
+      "from": {
+        "type": "pin",
+        "compId": "AC_I1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_AC_I1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w20",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_AC_I1",
         "terminal": "B"
       },
       "to": {
@@ -968,59 +1137,137 @@
       }
     },
     {
-      "id": "w17",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_CTRL_V1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM_CTRL_V1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w18",
-      "from": {
-        "type": "pin",
-        "compId": "AM_CTRL_V1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "CTRL_V1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w19",
-      "from": {
-        "type": "pin",
-        "compId": "CTRL_V1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_CTRL_V1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w20",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_CTRL_V1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_CTRL_V1",
-        "terminal": "Gnd"
-      }
-    },
-    {
       "id": "w21",
+      "from": {
+        "type": "pin",
+        "compId": "AC_I1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_AC_I1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w22",
+      "from": {
+        "type": "pin",
+        "compId": "AC_I1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_AC_I1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w23",
+      "from": {
+        "type": "pin",
+        "compId": "VM_AC_I1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_AC_I1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w24",
+      "from": {
+        "type": "pin",
+        "compId": "VM_AC_I1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_AC_I1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w25",
+      "from": {
+        "type": "pin",
+        "compId": "CTRL_V1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_CTRL_V1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w26",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_CTRL_V1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_CTRL_V1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w27",
+      "from": {
+        "type": "pin",
+        "compId": "CTRL_V1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_CTRL_V1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w28",
+      "from": {
+        "type": "pin",
+        "compId": "CTRL_V1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_CTRL_V1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w29",
+      "from": {
+        "type": "pin",
+        "compId": "VM_CTRL_V1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_CTRL_V1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w30",
+      "from": {
+        "type": "pin",
+        "compId": "VM_CTRL_V1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_CTRL_V1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w31",
       "from": {
         "type": "pin",
         "compId": "CTRL_CTRL_V1",
@@ -1033,33 +1280,33 @@
       }
     },
     {
-      "id": "w22",
+      "id": "w32",
       "from": {
         "type": "pin",
-        "compId": "SRC_CTRL_I1",
+        "compId": "CTRL_I1",
         "terminal": "A"
       },
       "to": {
         "type": "pin",
-        "compId": "AM_CTRL_I1",
+        "compId": "LOAD_CTRL_I1",
         "terminal": "A"
       }
     },
     {
-      "id": "w23",
+      "id": "w33",
       "from": {
         "type": "pin",
-        "compId": "AM_CTRL_I1",
+        "compId": "LOAD_CTRL_I1",
         "terminal": "B"
       },
       "to": {
         "type": "pin",
-        "compId": "CTRL_I1",
-        "terminal": "A"
+        "compId": "GND_CTRL_I1",
+        "terminal": "Gnd"
       }
     },
     {
-      "id": "w24",
+      "id": "w34",
       "from": {
         "type": "pin",
         "compId": "CTRL_I1",
@@ -1072,11 +1319,24 @@
       }
     },
     {
-      "id": "w25",
+      "id": "w35",
       "from": {
         "type": "pin",
-        "compId": "SRC_CTRL_I1",
-        "terminal": "B"
+        "compId": "CTRL_I1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_CTRL_I1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w36",
+      "from": {
+        "type": "pin",
+        "compId": "VM_CTRL_I1",
+        "terminal": "N"
       },
       "to": {
         "type": "pin",
@@ -1085,7 +1345,20 @@
       }
     },
     {
-      "id": "w26",
+      "id": "w37",
+      "from": {
+        "type": "pin",
+        "compId": "VM_CTRL_I1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_CTRL_I1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w38",
       "from": {
         "type": "pin",
         "compId": "CTRL_CTRL_I1",
@@ -1098,171 +1371,15 @@
       }
     },
     {
-      "id": "w27",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_R1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM_R1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w28",
-      "from": {
-        "type": "pin",
-        "compId": "AM_R1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "R1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w29",
-      "from": {
-        "type": "pin",
-        "compId": "R1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_R1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w30",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_R1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_R1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w31",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_L1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM_L1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w32",
-      "from": {
-        "type": "pin",
-        "compId": "AM_L1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "L1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w33",
-      "from": {
-        "type": "pin",
-        "compId": "L1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_L1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w34",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_L1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_L1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w35",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_C1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM_C1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w36",
-      "from": {
-        "type": "pin",
-        "compId": "AM_C1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "C1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w37",
-      "from": {
-        "type": "pin",
-        "compId": "C1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_C1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w38",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_C1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_C1",
-        "terminal": "Gnd"
-      }
-    },
-    {
       "id": "w39",
       "from": {
         "type": "pin",
-        "compId": "SRC_VAR_R1",
+        "compId": "SRC_R1",
         "terminal": "A"
       },
       "to": {
         "type": "pin",
-        "compId": "AM_VAR_R1",
+        "compId": "R1",
         "terminal": "A"
       }
     },
@@ -1270,8 +1387,268 @@
       "id": "w40",
       "from": {
         "type": "pin",
-        "compId": "AM_VAR_R1",
+        "compId": "SRC_R1",
         "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_R1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w41",
+      "from": {
+        "type": "pin",
+        "compId": "R1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_R1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w42",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_R1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_R1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w43",
+      "from": {
+        "type": "pin",
+        "compId": "R1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_R1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w44",
+      "from": {
+        "type": "pin",
+        "compId": "VM_R1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_R1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w45",
+      "from": {
+        "type": "pin",
+        "compId": "VM_R1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_R1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w46",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_L1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "L1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w47",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_L1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_L1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w48",
+      "from": {
+        "type": "pin",
+        "compId": "L1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_L1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w49",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_L1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_L1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w50",
+      "from": {
+        "type": "pin",
+        "compId": "L1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_L1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w51",
+      "from": {
+        "type": "pin",
+        "compId": "VM_L1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_L1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w52",
+      "from": {
+        "type": "pin",
+        "compId": "VM_L1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_L1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w53",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_C1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "C1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w54",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_C1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_C1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w55",
+      "from": {
+        "type": "pin",
+        "compId": "C1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_C1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w56",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_C1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_C1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w57",
+      "from": {
+        "type": "pin",
+        "compId": "C1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_C1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w58",
+      "from": {
+        "type": "pin",
+        "compId": "VM_C1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_C1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w59",
+      "from": {
+        "type": "pin",
+        "compId": "VM_C1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_C1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w60",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_VAR_R1",
+        "terminal": "A"
       },
       "to": {
         "type": "pin",
@@ -1280,20 +1657,7 @@
       }
     },
     {
-      "id": "w41",
-      "from": {
-        "type": "pin",
-        "compId": "VAR_R1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_VAR_R1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w42",
+      "id": "w61",
       "from": {
         "type": "pin",
         "compId": "SRC_VAR_R1",
@@ -1306,301 +1670,54 @@
       }
     },
     {
-      "id": "w43",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_VAR_L1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM_VAR_L1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w44",
-      "from": {
-        "type": "pin",
-        "compId": "AM_VAR_L1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "VAR_L1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w45",
-      "from": {
-        "type": "pin",
-        "compId": "VAR_L1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_VAR_L1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w46",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_VAR_L1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_VAR_L1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w47",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_VAR_C1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM_VAR_C1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w48",
-      "from": {
-        "type": "pin",
-        "compId": "AM_VAR_C1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "VAR_C1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w49",
-      "from": {
-        "type": "pin",
-        "compId": "VAR_C1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_VAR_C1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w50",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_VAR_C1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_VAR_C1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w51",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_SAT_L1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM_SAT_L1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w52",
-      "from": {
-        "type": "pin",
-        "compId": "AM_SAT_L1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "SAT_L1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w53",
-      "from": {
-        "type": "pin",
-        "compId": "SAT_L1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_SAT_L1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w54",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_SAT_L1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_SAT_L1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w55",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_SAT_C1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM_SAT_C1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w56",
-      "from": {
-        "type": "pin",
-        "compId": "AM_SAT_C1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "SAT_C1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w57",
-      "from": {
-        "type": "pin",
-        "compId": "SAT_C1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_SAT_C1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w58",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_SAT_C1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_SAT_C1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w59",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_PWL_R1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM_PWL_R1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w60",
-      "from": {
-        "type": "pin",
-        "compId": "AM_PWL_R1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "PWL_R1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w61",
-      "from": {
-        "type": "pin",
-        "compId": "PWL_R1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_PWL_R1",
-        "terminal": "Gnd"
-      }
-    },
-    {
       "id": "w62",
       "from": {
         "type": "pin",
-        "compId": "SRC_PWL_R1",
+        "compId": "VAR_R1",
         "terminal": "B"
       },
       "to": {
         "type": "pin",
-        "compId": "GND_PWL_R1",
-        "terminal": "Gnd"
+        "compId": "LOAD_VAR_R1",
+        "terminal": "A"
       }
     },
     {
       "id": "w63",
       "from": {
         "type": "pin",
-        "compId": "SRC_E_ALGEBRAIC1",
-        "terminal": "A"
+        "compId": "LOAD_VAR_R1",
+        "terminal": "B"
       },
       "to": {
         "type": "pin",
-        "compId": "AM_E_ALGEBRAIC1",
-        "terminal": "A"
+        "compId": "GND_VAR_R1",
+        "terminal": "Gnd"
       }
     },
     {
       "id": "w64",
       "from": {
         "type": "pin",
-        "compId": "AM_E_ALGEBRAIC1",
+        "compId": "VAR_R1",
         "terminal": "B"
       },
       "to": {
         "type": "pin",
-        "compId": "E_ALGEBRAIC1",
-        "terminal": "A"
+        "compId": "VM_VAR_R1",
+        "terminal": "P"
       }
     },
     {
       "id": "w65",
       "from": {
         "type": "pin",
-        "compId": "E_ALGEBRAIC1",
-        "terminal": "B"
+        "compId": "VM_VAR_R1",
+        "terminal": "N"
       },
       "to": {
         "type": "pin",
-        "compId": "GND_E_ALGEBRAIC1",
+        "compId": "GND_VAR_R1",
         "terminal": "Gnd"
       }
     },
@@ -1608,6 +1725,630 @@
       "id": "w66",
       "from": {
         "type": "pin",
+        "compId": "VM_VAR_R1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_VAR_R1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w67",
+      "from": {
+        "type": "pin",
+        "compId": "CTRL_VAR_R1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VAR_R1",
+        "terminal": "Ctrl"
+      }
+    },
+    {
+      "id": "w68",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_VAR_L1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VAR_L1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w69",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_VAR_L1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_VAR_L1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w70",
+      "from": {
+        "type": "pin",
+        "compId": "VAR_L1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_VAR_L1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w71",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_VAR_L1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_VAR_L1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w72",
+      "from": {
+        "type": "pin",
+        "compId": "VAR_L1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_VAR_L1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w73",
+      "from": {
+        "type": "pin",
+        "compId": "VM_VAR_L1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_VAR_L1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w74",
+      "from": {
+        "type": "pin",
+        "compId": "VM_VAR_L1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_VAR_L1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w75",
+      "from": {
+        "type": "pin",
+        "compId": "CTRL_VAR_L1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VAR_L1",
+        "terminal": "Ctrl"
+      }
+    },
+    {
+      "id": "w76",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_VAR_C1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VAR_C1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w77",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_VAR_C1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_VAR_C1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w78",
+      "from": {
+        "type": "pin",
+        "compId": "VAR_C1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_VAR_C1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w79",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_VAR_C1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_VAR_C1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w80",
+      "from": {
+        "type": "pin",
+        "compId": "VAR_C1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_VAR_C1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w81",
+      "from": {
+        "type": "pin",
+        "compId": "VM_VAR_C1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_VAR_C1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w82",
+      "from": {
+        "type": "pin",
+        "compId": "VM_VAR_C1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_VAR_C1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w83",
+      "from": {
+        "type": "pin",
+        "compId": "CTRL_VAR_C1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VAR_C1",
+        "terminal": "Ctrl"
+      }
+    },
+    {
+      "id": "w84",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_SAT_L1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SAT_L1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w85",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_SAT_L1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_SAT_L1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w86",
+      "from": {
+        "type": "pin",
+        "compId": "SAT_L1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_SAT_L1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w87",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_SAT_L1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_SAT_L1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w88",
+      "from": {
+        "type": "pin",
+        "compId": "SAT_L1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_SAT_L1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w89",
+      "from": {
+        "type": "pin",
+        "compId": "VM_SAT_L1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_SAT_L1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w90",
+      "from": {
+        "type": "pin",
+        "compId": "VM_SAT_L1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_SAT_L1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w91",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_SAT_C1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SAT_C1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w92",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_SAT_C1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_SAT_C1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w93",
+      "from": {
+        "type": "pin",
+        "compId": "SAT_C1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_SAT_C1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w94",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_SAT_C1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_SAT_C1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w95",
+      "from": {
+        "type": "pin",
+        "compId": "SAT_C1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_SAT_C1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w96",
+      "from": {
+        "type": "pin",
+        "compId": "VM_SAT_C1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_SAT_C1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w97",
+      "from": {
+        "type": "pin",
+        "compId": "VM_SAT_C1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_SAT_C1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w98",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PWL_R1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PWL_R1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w99",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PWL_R1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_PWL_R1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w100",
+      "from": {
+        "type": "pin",
+        "compId": "PWL_R1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_PWL_R1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w101",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_PWL_R1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_PWL_R1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w102",
+      "from": {
+        "type": "pin",
+        "compId": "PWL_R1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_PWL_R1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w103",
+      "from": {
+        "type": "pin",
+        "compId": "VM_PWL_R1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_PWL_R1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w104",
+      "from": {
+        "type": "pin",
+        "compId": "VM_PWL_R1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PWL_R1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w105",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PI_SECTION1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PI_SECTION1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w106",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PI_SECTION1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_PI_SECTION1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w107",
+      "from": {
+        "type": "pin",
+        "compId": "PI_SECTION1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LOAD_PI_SECTION1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w108",
+      "from": {
+        "type": "pin",
+        "compId": "LOAD_PI_SECTION1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_PI_SECTION1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w109",
+      "from": {
+        "type": "pin",
+        "compId": "PI_SECTION1",
+        "terminal": "Gnd"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_PI_SECTION1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w110",
+      "from": {
+        "type": "pin",
+        "compId": "PI_SECTION1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "VM_PI_SECTION1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w111",
+      "from": {
+        "type": "pin",
+        "compId": "VM_PI_SECTION1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_PI_SECTION1",
+        "terminal": "Gnd"
+      }
+    },
+    {
+      "id": "w112",
+      "from": {
+        "type": "pin",
+        "compId": "VM_PI_SECTION1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PI_SECTION1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w113",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_E_ALGEBRAIC1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "E_ALGEBRAIC1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w114",
+      "from": {
+        "type": "pin",
         "compId": "SRC_E_ALGEBRAIC1",
         "terminal": "B"
       },
@@ -1618,333 +2359,73 @@
       }
     },
     {
-      "id": "w67",
+      "id": "w115",
       "from": {
         "type": "pin",
-        "compId": "SRC_PI_SECTION1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM_PI_SECTION1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w68",
-      "from": {
-        "type": "pin",
-        "compId": "AM_PI_SECTION1",
+        "compId": "E_ALGEBRAIC1",
         "terminal": "B"
       },
       "to": {
         "type": "pin",
-        "compId": "PI_SECTION1",
+        "compId": "LOAD_E_ALGEBRAIC1",
         "terminal": "A"
       }
     },
     {
-      "id": "w69",
+      "id": "w116",
       "from": {
         "type": "pin",
-        "compId": "PI_SECTION1",
+        "compId": "LOAD_E_ALGEBRAIC1",
         "terminal": "B"
       },
       "to": {
         "type": "pin",
-        "compId": "GND_PI_SECTION1",
+        "compId": "GND_E_ALGEBRAIC1",
         "terminal": "Gnd"
       }
     },
     {
-      "id": "w70",
+      "id": "w117",
       "from": {
         "type": "pin",
-        "compId": "SRC_PI_SECTION1",
+        "compId": "E_ALGEBRAIC1",
         "terminal": "B"
       },
       "to": {
         "type": "pin",
-        "compId": "GND_PI_SECTION1",
+        "compId": "VM_E_ALGEBRAIC1",
+        "terminal": "P"
+      }
+    },
+    {
+      "id": "w118",
+      "from": {
+        "type": "pin",
+        "compId": "VM_E_ALGEBRAIC1",
+        "terminal": "N"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "GND_E_ALGEBRAIC1",
         "terminal": "Gnd"
       }
     },
     {
-      "id": "w71",
+      "id": "w119",
       "from": {
         "type": "pin",
-        "compId": "SRC_VM1",
-        "terminal": "A"
+        "compId": "VM_E_ALGEBRAIC1",
+        "terminal": "Out"
       },
       "to": {
         "type": "pin",
-        "compId": "LOAD_VM",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w72",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_VM1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "VM1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w73",
-      "from": {
-        "type": "pin",
-        "compId": "LOAD_VM",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "VM1",
-        "terminal": "B"
-      }
-    },
-    {
-      "id": "w74",
-      "from": {
-        "type": "pin",
-        "compId": "LOAD_VM",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_VM1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w75",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_VM1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_VM1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w76",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_AM1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "AM1",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w77",
-      "from": {
-        "type": "pin",
-        "compId": "AM1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "LOAD_AM",
-        "terminal": "A"
-      }
-    },
-    {
-      "id": "w78",
-      "from": {
-        "type": "pin",
-        "compId": "LOAD_AM",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_AM1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w79",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_AM1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_AM1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w80",
-      "from": {
-        "type": "pin",
-        "compId": "V_3PH1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_V_3PH1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w81",
-      "from": {
-        "type": "pin",
-        "compId": "V_3PH1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_V_3PH1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w82",
-      "from": {
-        "type": "pin",
-        "compId": "V_3PH1",
-        "terminal": "C"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_V_3PH1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w83",
-      "from": {
-        "type": "pin",
-        "compId": "I_3PH1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_I_3PH1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w84",
-      "from": {
-        "type": "pin",
-        "compId": "I_3PH1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_I_3PH1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w85",
-      "from": {
-        "type": "pin",
-        "compId": "I_3PH1",
-        "terminal": "C"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_I_3PH1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w86",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_LINE_3PH1",
-        "terminal": "A"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "LINE_3PH1",
-        "terminal": "A1"
-      }
-    },
-    {
-      "id": "w87",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_LINE_3PH1",
-        "terminal": "B"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "LINE_3PH1",
-        "terminal": "B1"
-      }
-    },
-    {
-      "id": "w88",
-      "from": {
-        "type": "pin",
-        "compId": "SRC_LINE_3PH1",
-        "terminal": "C"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "LINE_3PH1",
-        "terminal": "C1"
-      }
-    },
-    {
-      "id": "w89",
-      "from": {
-        "type": "pin",
-        "compId": "LINE_3PH1",
-        "terminal": "A2"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_LINE_3PH1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w90",
-      "from": {
-        "type": "pin",
-        "compId": "LINE_3PH1",
-        "terminal": "B2"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_LINE_3PH1",
-        "terminal": "Gnd"
-      }
-    },
-    {
-      "id": "w91",
-      "from": {
-        "type": "pin",
-        "compId": "LINE_3PH1",
-        "terminal": "C2"
-      },
-      "to": {
-        "type": "pin",
-        "compId": "GND_LINE_3PH1",
-        "terminal": "Gnd"
+        "compId": "SCOPE_E_ALGEBRAIC1",
+        "terminal": "In1"
       }
     }
   ],
   "plotConfiguration": {
     "plots": []
   },
-  "description": "Test Passives and Sources"
+  "description": "Test Electrical_Passive_Sources"
 }
