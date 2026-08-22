@@ -3,7 +3,7 @@ import { state } from './src/schematic/state.js';
 import { exportDualGraphJSON } from './src/schematic/actions.js';
 import { CircuitSimulator } from './src/solver_ts.js';
 
-const TEST_FILES = [
+const TEST_FILES = ["Electrical_Complex_Switches_Test.json", "Electrical_Complex_Transformers_Machines_Test.json", "Electrical_ICs_Electronics_Test.json", 
     "Electrical_Passive_Sources_Test.json",
     "Electrical_Semiconductors_Test.json",
     "Electrical_Machines_Transformers_Test.json"
