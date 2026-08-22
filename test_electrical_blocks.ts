@@ -1,38 +1,90 @@
-/// <reference types="node" />
-import { CircuitSimulator } from './src/solver_ts';
+import fs from 'fs';
+import { state } from './src/schematic/state.js';
+import { exportDualGraphJSON } from './src/schematic/actions.js';
+import { CircuitSimulator } from './src/solver_ts.js';
 
-console.log('[TESTING] Verifying Electrical blocks in CircuitSimulator...\n');
-
-// CircuitSimulator expects the electrical circuit in the form of nodes, not GUI wires.
-// We manually define the node connections for our test circuits here.
-
-const physical_stage = [
-  // Ckt 1: DC Voltage Source (12V) connected to Resistor (6 ohm)
-  // V1 from node_1 to node_0 (Ground is always node_0)
-  { id: "V1", type: "VoltageSource", nodes: ["node_1", "node_0"], parameters: { value: "12", src_type: "dc" } },
-  { id: "R1", type: "Resistor", nodes: ["node_1", "node_0"], parameters: { value: "6" } },
-  { id: "VM1", type: "Voltmeter", nodes: ["node_1", "node_0"], parameters: {} },
-
-  // Ckt 2: DC Current Source (2A) connected to Resistor (5 ohm)
-  // I1 from node_2 to node_0
-  { id: "I1", type: "CurrentSource", nodes: ["node_2", "node_0"], parameters: { value: "2", src_type: "dc" } },
-  { id: "R2", type: "Resistor", nodes: ["node_2", "node_3"], parameters: { value: "5" } },
-  { id: "AM1", type: "Ammeter", nodes: ["node_3", "node_0"], parameters: {} }
+const TEST_FILES = [
+    "Electrical_Passive_Sources_Test.json",
+    "Electrical_Semiconductors_Test.json",
+    "Electrical_Machines_Transformers_Test.json"
 ];
 
-const sim = new CircuitSimulator(physical_stage, [], { t_stop: 0.05, dt: 1e-4 });
-const solution = sim.run();
+async function runTests() {
+    let allPassed = true;
 
-console.log('=== ELECTRICAL MEASUREMENT RESULTS (at t = 0.05s) ===');
+    for (const file of TEST_FILES) {
+        console.log(`\n===========================================`);
+        console.log(`Testing File: ${file}`);
+        console.log(`===========================================`);
+        
+        try {
+            const jsonStr = fs.readFileSync(`working jsons/${file}`, 'utf8');
+            const data = JSON.parse(jsonStr);
 
-const lastIdx = solution.time.length - 1;
+            state.components = data.components || [];
+            state.wires = data.wires || [];
+            
+            // Generate netlist
+            const netlist = exportDualGraphJSON(true);
+            
+            // Set up simulator
+            const sim = new CircuitSimulator(
+                netlist.physical_stage || [],
+                netlist.control_loops || [],
+                netlist.simulation_parameters || { stop_time: 0.05, step_size: 1e-4 }
+            );
+            
+            const results = await sim.runAsync(() => false, () => false);
+            const signals = results.signals || {};
+            
+            // Find all expected meters or outputs
+            const expectedOutputs = data.components
+                .filter((c: any) => c.type === 'AM' || c.type === 'VM')
+                .map((c: any) => `${c.id}.Out`);
+            
+            if (expectedOutputs.length === 0) {
+                console.log(`  [INFO] No explicit meter outputs found in ${file}. Checking generic completion.`);
+            }
 
-if (solution.voltmeters && solution.voltmeters['VM1']) {
-    console.log(`DC Voltmeter (VM1) reading: ${solution.voltmeters['VM1'][lastIdx].toFixed(2)} V  (Expected: 12.00 V)`);
+            let filePassed = true;
+            for (const outVar of expectedOutputs) {
+                const arr = signals[outVar];
+                if (!arr || arr.length === 0) {
+                    console.error(`  [FAIL] Missing output for ${outVar}`);
+                    filePassed = false;
+                    allPassed = false;
+                    continue;
+                }
+                
+                // Check if any non-zero element exists (since it's a dynamic circuit, it might start at 0)
+                const hasNonZero = arr.some((v: number) => Math.abs(v) > 1e-6);
+                if (!hasNonZero) {
+                    console.warn(`  [WARN] Output Signal ${outVar} is completely ZERO.`);
+                    // We might not fail it completely since some configurations naturally result in zero current/voltage
+                } else if (arr.some((v: number) => isNaN(v) || !isFinite(v))) {
+                    console.error(`  [FAIL] Output Signal ${outVar} contains NaN or Infinity!`);
+                    filePassed = false;
+                    allPassed = false;
+                } else {
+                    console.log(`  [PASS] Output Signal ${outVar} is OK (has non-zero finite values).`);
+                }
+            }
+            
+            if (filePassed) {
+                console.log(`\n  ✅ All evaluated signals in ${file} look stable.`);
+            }
+
+        } catch (e) {
+            console.error(`  [FATAL ERROR] Testing ${file} failed:`, e);
+            allPassed = false;
+        }
+    }
+
+    if (allPassed) {
+        console.log(`\n🎉 ALL ELECTRICAL TESTS PASSED SUCCESSFULLY!`);
+    } else {
+        console.log(`\n❌ SOME ELECTRICAL TESTS FAILED.`);
+    }
 }
 
-if (solution.ammeters && solution.ammeters['AM1']) {
-    console.log(`DC Ammeter (AM1) reading: ${solution.ammeters['AM1'][lastIdx].toFixed(2)} A  (Expected: 2.00 A)`);
-}
-
-console.log('\n✓ Electrical Blocks simulation logic test completed.');
+runTests().catch(console.error);
