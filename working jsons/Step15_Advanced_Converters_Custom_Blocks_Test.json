@@ -1,0 +1,210 @@
+{
+  "description": "Step 15: Advanced Power Electronics Converters, Custom E-Blocks & Integrated System Test Schematic",
+  "components": [
+    {
+      "id": "AC_V_OPAMP",
+      "type": "AC_V",
+      "x": -600.0,
+      "y": -600.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "1.0", "frequency": "1000.0", "phase": "0.0" },
+      "label": "AC_V_OPAMP"
+    },
+    {
+      "id": "OPAMP1",
+      "type": "OPAMP",
+      "x": -450.0,
+      "y": -600.0,
+      "rotation": 0,
+      "parameters": { "Aol": "100000.0" },
+      "label": "OPAMP1"
+    },
+    {
+      "id": "RF_OPAMP",
+      "type": "R",
+      "x": -300.0,
+      "y": -680.0,
+      "rotation": 0,
+      "parameters": { "resistance": "9000.0" },
+      "label": "RF_OPAMP"
+    },
+    {
+      "id": "RIN_OPAMP",
+      "type": "R",
+      "x": -300.0,
+      "y": -520.0,
+      "rotation": 0,
+      "parameters": { "resistance": "1000.0" },
+      "label": "RIN_OPAMP"
+    },
+    {
+      "id": "VM_OPAMP_IN",
+      "type": "VM",
+      "x": -450.0,
+      "y": -480.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_OPAMP_IN"
+    },
+    {
+      "id": "VM_OPAMP_OUT",
+      "type": "VM",
+      "x": -150.0,
+      "y": -600.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_OPAMP_OUT"
+    },
+    {
+      "id": "GND_OPAMP",
+      "type": "GND",
+      "x": -300.0,
+      "y": -440.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND_OPAMP"
+    },
+    {
+      "id": "SCOPE_OPAMP",
+      "type": "SCOPE",
+      "x": 0.0,
+      "y": -600.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_OPAMP"
+    },
+
+    {
+      "id": "DC_V_BUCK",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": -200.0,
+      "rotation": 0,
+      "parameters": { "value": "48.0" },
+      "label": "DC_V_BUCK"
+    },
+    {
+      "id": "PULSE_BUCK",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": -70.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "15.0", "frequency": "100000.0", "duty": "0.25" },
+      "label": "PULSE_BUCK"
+    },
+    {
+      "id": "MOS_BUCK",
+      "type": "MOSFET",
+      "x": -450.0,
+      "y": -200.0,
+      "rotation": 0,
+      "parameters": { "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "MOS_BUCK"
+    },
+    {
+      "id": "D_BUCK",
+      "type": "D",
+      "x": -350.0,
+      "y": -100.0,
+      "rotation": 90,
+      "parameters": { "Vd": "0.7", "Ron": "0.001", "Roff": "1000000.0" },
+      "label": "D_BUCK"
+    },
+    {
+      "id": "L_BUCK",
+      "type": "L",
+      "x": -250.0,
+      "y": -200.0,
+      "rotation": 0,
+      "parameters": { "inductance": "0.0001" },
+      "label": "L_BUCK"
+    },
+    {
+      "id": "AM_L_BUCK",
+      "type": "AM",
+      "x": -150.0,
+      "y": -240.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_L_BUCK"
+    },
+    {
+      "id": "C_BUCK",
+      "type": "C",
+      "x": -50.0,
+      "y": -100.0,
+      "rotation": 0,
+      "parameters": { "capacitance": "0.00047" },
+      "label": "C_BUCK"
+    },
+    {
+      "id": "R_BUCK",
+      "type": "R",
+      "x": 50.0,
+      "y": -200.0,
+      "rotation": 0,
+      "parameters": { "resistance": "5.0" },
+      "label": "R_BUCK"
+    },
+    {
+      "id": "VM_BUCK",
+      "type": "VM",
+      "x": 150.0,
+      "y": -200.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_BUCK"
+    },
+    {
+      "id": "GND_BUCK",
+      "type": "GND",
+      "x": -250.0,
+      "y": 0.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND_BUCK"
+    },
+    {
+      "id": "SCOPE_BUCK",
+      "type": "SCOPE",
+      "x": 300.0,
+      "y": -200.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_BUCK"
+    }
+  ],
+  "wires": [
+    { "id": "w1_a", "from": { "compId": "AC_V_OPAMP", "terminal": "A", "type": "pin" }, "to": { "compId": "OPAMP1", "terminal": "Plus", "type": "pin" } },
+    { "id": "w1_b", "from": { "compId": "AC_V_OPAMP", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_OPAMP", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w1_c", "from": { "compId": "OPAMP1", "terminal": "Out", "type": "pin" }, "to": { "compId": "RF_OPAMP", "terminal": "A", "type": "pin" } },
+    { "id": "w1_d", "from": { "compId": "RF_OPAMP", "terminal": "B", "type": "pin" }, "to": { "compId": "OPAMP1", "terminal": "Minus", "type": "pin" } },
+    { "id": "w1_e", "from": { "compId": "OPAMP1", "terminal": "Minus", "type": "pin" }, "to": { "compId": "RIN_OPAMP", "terminal": "A", "type": "pin" } },
+    { "id": "w1_f", "from": { "compId": "RIN_OPAMP", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_OPAMP", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w1_vma", "from": { "compId": "AC_V_OPAMP", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_OPAMP_IN", "terminal": "A", "type": "pin" } },
+    { "id": "w1_vmb", "from": { "compId": "AC_V_OPAMP", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_OPAMP_IN", "terminal": "B", "type": "pin" } },
+    { "id": "w1_vmoa", "from": { "compId": "OPAMP1", "terminal": "Out", "type": "pin" }, "to": { "compId": "VM_OPAMP_OUT", "terminal": "A", "type": "pin" } },
+    { "id": "w1_vmob", "from": { "compId": "GND_OPAMP", "terminal": "Gnd", "type": "pin" }, "to": { "compId": "VM_OPAMP_OUT", "terminal": "B", "type": "pin" } },
+    { "id": "w1_ch1", "from": { "compId": "VM_OPAMP_IN", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_OPAMP", "terminal": "In1", "type": "pin" } },
+    { "id": "w1_ch2", "from": { "compId": "VM_OPAMP_OUT", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_OPAMP", "terminal": "In2", "type": "pin" } },
+    { "id": "w1_ch3", "from": { "compId": "RF_OPAMP", "terminal": "B", "type": "pin" }, "to": { "compId": "SCOPE_OPAMP", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w2_a", "from": { "compId": "DC_V_BUCK", "terminal": "A", "type": "pin" }, "to": { "compId": "MOS_BUCK", "terminal": "D", "type": "pin" } },
+    { "id": "w2_g", "from": { "compId": "PULSE_BUCK", "terminal": "Out", "type": "pin" }, "to": { "compId": "MOS_BUCK", "terminal": "G", "type": "pin" } },
+    { "id": "w2_b", "from": { "compId": "MOS_BUCK", "terminal": "S", "type": "pin" }, "to": { "compId": "D_BUCK", "terminal": "K", "type": "pin" } },
+    { "id": "w2_c", "from": { "compId": "MOS_BUCK", "terminal": "S", "type": "pin" }, "to": { "compId": "L_BUCK", "terminal": "A", "type": "pin" } },
+    { "id": "w2_d", "from": { "compId": "D_BUCK", "terminal": "A", "type": "pin" }, "to": { "compId": "GND_BUCK", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_e", "from": { "compId": "DC_V_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_BUCK", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_f", "from": { "compId": "L_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_L_BUCK", "terminal": "A", "type": "pin" } },
+    { "id": "w2_h", "from": { "compId": "AM_L_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "C_BUCK", "terminal": "A", "type": "pin" } },
+    { "id": "w2_i", "from": { "compId": "AM_L_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "R_BUCK", "terminal": "A", "type": "pin" } },
+    { "id": "w2_j", "from": { "compId": "C_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_BUCK", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_k", "from": { "compId": "R_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_BUCK", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_vma", "from": { "compId": "R_BUCK", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_BUCK", "terminal": "A", "type": "pin" } },
+    { "id": "w2_vmb", "from": { "compId": "R_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_BUCK", "terminal": "B", "type": "pin" } },
+    { "id": "w2_ch1", "from": { "compId": "VM_BUCK", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_BUCK", "terminal": "In1", "type": "pin" } },
+    { "id": "w2_ch2", "from": { "compId": "AM_L_BUCK", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_BUCK", "terminal": "In2", "type": "pin" } },
+    { "id": "w2_ch3", "from": { "compId": "PULSE_BUCK", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_BUCK", "terminal": "In3", "type": "pin" } },
+    { "id": "w2_ch4", "from": { "compId": "DC_V_BUCK", "terminal": "A", "type": "pin" }, "to": { "compId": "SCOPE_BUCK", "terminal": "In4", "type": "pin" } }
+  ]
+}

@@ -1,0 +1,1184 @@
+{
+  "description": "Step 13: Power Semiconductors & Switches Sub-Library Comprehensive Test Schematic",
+  "components": [
+    {
+      "id": "AC_V_D",
+      "type": "AC_V",
+      "x": -600.0,
+      "y": -600.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "50.0", "frequency": "50.0", "phase": "0.0" },
+      "label": "AC_V_D"
+    },
+    {
+      "id": "D1",
+      "type": "D",
+      "x": -450.0,
+      "y": -640.0,
+      "rotation": 90,
+      "parameters": { "Vd": "0.7", "Ron": "0.001", "Roff": "1000000.0" },
+      "label": "D1"
+    },
+    {
+      "id": "AM_D",
+      "type": "AM",
+      "x": -300.0,
+      "y": -640.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_D"
+    },
+    {
+      "id": "R_D",
+      "type": "R",
+      "x": -150.0,
+      "y": -600.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_D"
+    },
+    {
+      "id": "VM_D",
+      "type": "VM",
+      "x": 0.0,
+      "y": -600.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_D"
+    },
+    {
+      "id": "GND1",
+      "type": "GND",
+      "x": -150.0,
+      "y": -500.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND1"
+    },
+    {
+      "id": "SCOPE_D",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": -600.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_D"
+    },
+
+    {
+      "id": "DC_V_MOS",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": -350.0,
+      "rotation": 0,
+      "parameters": { "value": "50.0" },
+      "label": "DC_V_MOS"
+    },
+    {
+      "id": "PULSE_MOS",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": -220.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "15.0", "frequency": "10000.0", "duty": "0.5" },
+      "label": "PULSE_MOS"
+    },
+    {
+      "id": "MOS1",
+      "type": "MOSFET",
+      "x": -450.0,
+      "y": -350.0,
+      "rotation": 0,
+      "parameters": { "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "MOS1"
+    },
+    {
+      "id": "AM_MOS",
+      "type": "AM",
+      "x": -300.0,
+      "y": -390.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_MOS"
+    },
+    {
+      "id": "R_MOS",
+      "type": "R",
+      "x": -150.0,
+      "y": -350.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_MOS"
+    },
+    {
+      "id": "VM_MOS",
+      "type": "VM",
+      "x": 0.0,
+      "y": -350.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_MOS"
+    },
+    {
+      "id": "GND2",
+      "type": "GND",
+      "x": -150.0,
+      "y": -250.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND2"
+    },
+    {
+      "id": "SCOPE_MOS",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": -350.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_MOS"
+    },
+
+    {
+      "id": "DC_V_VGFET",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": -100.0,
+      "rotation": 0,
+      "parameters": { "value": "50.0" },
+      "label": "DC_V_VGFET"
+    },
+    {
+      "id": "PULSE_VGFET",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": 30.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "15.0", "frequency": "10000.0", "duty": "0.5" },
+      "label": "PULSE_VGFET"
+    },
+    {
+      "id": "VGFET1",
+      "type": "VGFET",
+      "x": -450.0,
+      "y": -100.0,
+      "rotation": 0,
+      "parameters": { "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "VGFET1"
+    },
+    {
+      "id": "AM_VGFET",
+      "type": "AM",
+      "x": -300.0,
+      "y": -140.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_VGFET"
+    },
+    {
+      "id": "R_VGFET",
+      "type": "R",
+      "x": -150.0,
+      "y": -100.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_VGFET"
+    },
+    {
+      "id": "VM_VGFET",
+      "type": "VM",
+      "x": 0.0,
+      "y": -100.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_VGFET"
+    },
+    {
+      "id": "GND3",
+      "type": "GND",
+      "x": -150.0,
+      "y": 0.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND3"
+    },
+    {
+      "id": "SCOPE_VGFET",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": -100.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_VGFET"
+    },
+
+    {
+      "id": "DC_V_IGBT",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": 150.0,
+      "rotation": 0,
+      "parameters": { "value": "100.0" },
+      "label": "DC_V_IGBT"
+    },
+    {
+      "id": "PULSE_IGBT",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": 280.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "15.0", "frequency": "10000.0", "duty": "0.5" },
+      "label": "PULSE_IGBT"
+    },
+    {
+      "id": "IGBT1",
+      "type": "IGBT_DIODE",
+      "x": -450.0,
+      "y": 150.0,
+      "rotation": 0,
+      "parameters": { "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "IGBT1"
+    },
+    {
+      "id": "AM_IGBT",
+      "type": "AM",
+      "x": -300.0,
+      "y": 110.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_IGBT"
+    },
+    {
+      "id": "R_IGBT",
+      "type": "R",
+      "x": -150.0,
+      "y": 150.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_IGBT"
+    },
+    {
+      "id": "VM_IGBT",
+      "type": "VM",
+      "x": 0.0,
+      "y": 150.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_IGBT"
+    },
+    {
+      "id": "GND4",
+      "type": "GND",
+      "x": -150.0,
+      "y": 250.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND4"
+    },
+    {
+      "id": "SCOPE_IGBT",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 150.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_IGBT"
+    },
+
+    {
+      "id": "AC_V_SCR",
+      "type": "AC_V",
+      "x": -600.0,
+      "y": 400.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "100.0", "frequency": "50.0", "phase": "0.0" },
+      "label": "AC_V_SCR"
+    },
+    {
+      "id": "PULSE_SCR",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": 530.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "5.0", "frequency": "50.0", "duty": "0.05", "delay": "0.0025" },
+      "label": "PULSE_SCR"
+    },
+    {
+      "id": "SCR1",
+      "type": "THYRISTOR",
+      "x": -450.0,
+      "y": 400.0,
+      "rotation": 0,
+      "parameters": { "Vd": "0.8", "Ron": "0.01", "Roff": "1000000.0", "Iholding": "0.01" },
+      "label": "SCR1"
+    },
+    {
+      "id": "AM_SCR",
+      "type": "AM",
+      "x": -300.0,
+      "y": 360.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_SCR"
+    },
+    {
+      "id": "R_SCR",
+      "type": "R",
+      "x": -150.0,
+      "y": 400.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_SCR"
+    },
+    {
+      "id": "VM_SCR",
+      "type": "VM",
+      "x": 0.0,
+      "y": 400.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_SCR"
+    },
+    {
+      "id": "GND5",
+      "type": "GND",
+      "x": -150.0,
+      "y": 500.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND5"
+    },
+    {
+      "id": "SCOPE_SCR",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 400.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_SCR"
+    },
+
+    {
+      "id": "DC_V_GTO",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": 650.0,
+      "rotation": 0,
+      "parameters": { "value": "100.0" },
+      "label": "DC_V_GTO"
+    },
+    {
+      "id": "PULSE_GTO",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": 780.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "5.0", "frequency": "50.0", "duty": "0.5" },
+      "label": "PULSE_GTO"
+    },
+    {
+      "id": "GTO1",
+      "type": "GTO",
+      "x": -450.0,
+      "y": 650.0,
+      "rotation": 0,
+      "parameters": { "Vd": "0.8", "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "GTO1"
+    },
+    {
+      "id": "AM_GTO",
+      "type": "AM",
+      "x": -300.0,
+      "y": 610.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_GTO"
+    },
+    {
+      "id": "R_GTO",
+      "type": "R",
+      "x": -150.0,
+      "y": 650.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_GTO"
+    },
+    {
+      "id": "VM_GTO",
+      "type": "VM",
+      "x": 0.0,
+      "y": 650.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_GTO"
+    },
+    {
+      "id": "GND6",
+      "type": "GND",
+      "x": -150.0,
+      "y": 750.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND6"
+    },
+    {
+      "id": "SCOPE_GTO",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 650.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_GTO"
+    },
+
+    {
+      "id": "DC_V_IGCT",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": 900.0,
+      "rotation": 0,
+      "parameters": { "value": "200.0" },
+      "label": "DC_V_IGCT"
+    },
+    {
+      "id": "PULSE_IGCT",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": 1030.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "5.0", "frequency": "100.0", "duty": "0.5" },
+      "label": "PULSE_IGCT"
+    },
+    {
+      "id": "IGCT1",
+      "type": "IGCT",
+      "x": -450.0,
+      "y": 900.0,
+      "rotation": 0,
+      "parameters": { "Vd": "0.8", "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "IGCT1"
+    },
+    {
+      "id": "AM_IGCT",
+      "type": "AM",
+      "x": -300.0,
+      "y": 860.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_IGCT"
+    },
+    {
+      "id": "R_IGCT",
+      "type": "R",
+      "x": -150.0,
+      "y": 900.0,
+      "rotation": 0,
+      "parameters": { "resistance": "20.0" },
+      "label": "R_IGCT"
+    },
+    {
+      "id": "VM_IGCT",
+      "type": "VM",
+      "x": 0.0,
+      "y": 900.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_IGCT"
+    },
+    {
+      "id": "GND7",
+      "type": "GND",
+      "x": -150.0,
+      "y": 1000.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND7"
+    },
+    {
+      "id": "SCOPE_IGCT",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 900.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_IGCT"
+    },
+
+    {
+      "id": "DC_V_BJT",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": 1150.0,
+      "rotation": 0,
+      "parameters": { "value": "24.0" },
+      "label": "DC_V_BJT"
+    },
+    {
+      "id": "PULSE_BJT",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": 1280.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "0.01", "frequency": "100.0", "duty": "0.5" },
+      "label": "PULSE_BJT"
+    },
+    {
+      "id": "BJT1",
+      "type": "BJT",
+      "x": -450.0,
+      "y": 1150.0,
+      "rotation": 0,
+      "parameters": { "beta": "100.0", "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "BJT1"
+    },
+    {
+      "id": "AM_BJT",
+      "type": "AM",
+      "x": -300.0,
+      "y": 1110.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_BJT"
+    },
+    {
+      "id": "R_BJT",
+      "type": "R",
+      "x": -150.0,
+      "y": 1150.0,
+      "rotation": 0,
+      "parameters": { "resistance": "100.0" },
+      "label": "R_BJT"
+    },
+    {
+      "id": "VM_BJT",
+      "type": "VM",
+      "x": 0.0,
+      "y": 1150.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_BJT"
+    },
+    {
+      "id": "GND8",
+      "type": "GND",
+      "x": -150.0,
+      "y": 1250.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND8"
+    },
+    {
+      "id": "SCOPE_BJT",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 1150.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_BJT"
+    },
+
+    {
+      "id": "DC_V_JFET",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": 1400.0,
+      "rotation": 0,
+      "parameters": { "value": "24.0" },
+      "label": "DC_V_JFET"
+    },
+    {
+      "id": "PULSE_JFET",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": 1530.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "-4.0", "frequency": "100.0", "duty": "0.5" },
+      "label": "PULSE_JFET"
+    },
+    {
+      "id": "JFET1",
+      "type": "JFET",
+      "x": -450.0,
+      "y": 1400.0,
+      "rotation": 0,
+      "parameters": { "Vp": "-4.0", "Idss": "0.01", "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "JFET1"
+    },
+    {
+      "id": "AM_JFET",
+      "type": "AM",
+      "x": -300.0,
+      "y": 1360.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_JFET"
+    },
+    {
+      "id": "R_JFET",
+      "type": "R",
+      "x": -150.0,
+      "y": 1400.0,
+      "rotation": 0,
+      "parameters": { "resistance": "100.0" },
+      "label": "R_JFET"
+    },
+    {
+      "id": "VM_JFET",
+      "type": "VM",
+      "x": 0.0,
+      "y": 1400.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_JFET"
+    },
+    {
+      "id": "GND9",
+      "type": "GND",
+      "x": -150.0,
+      "y": 1500.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND9"
+    },
+    {
+      "id": "SCOPE_JFET",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 1400.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_JFET"
+    },
+
+    {
+      "id": "DC_V_SW",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": 1650.0,
+      "rotation": 0,
+      "parameters": { "value": "24.0" },
+      "label": "DC_V_SW"
+    },
+    {
+      "id": "PULSE_SW",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": 1780.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "1.0", "frequency": "25.0", "duty": "0.5" },
+      "label": "PULSE_SW"
+    },
+    {
+      "id": "SW1",
+      "type": "S",
+      "x": -450.0,
+      "y": 1650.0,
+      "rotation": 0,
+      "parameters": { "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "SW1"
+    },
+    {
+      "id": "AM_SW",
+      "type": "AM",
+      "x": -300.0,
+      "y": 1610.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_SW"
+    },
+    {
+      "id": "R_SW",
+      "type": "R",
+      "x": -150.0,
+      "y": 1650.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_SW"
+    },
+    {
+      "id": "VM_SW",
+      "type": "VM",
+      "x": 0.0,
+      "y": 1650.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_SW"
+    },
+    {
+      "id": "GND10",
+      "type": "GND",
+      "x": -150.0,
+      "y": 1750.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND10"
+    },
+    {
+      "id": "SCOPE_SW",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 1650.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_SW"
+    },
+
+    {
+      "id": "AC_V_BRK",
+      "type": "AC_V",
+      "x": -600.0,
+      "y": 1900.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "325.27", "frequency": "50.0", "phase": "0.0" },
+      "label": "AC_V_BRK"
+    },
+    {
+      "id": "PULSE_BRK",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": 2030.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "1.0", "frequency": "50.0", "duty": "0.5", "delay": "0.02" },
+      "label": "PULSE_BRK"
+    },
+    {
+      "id": "BRK1",
+      "type": "BREAKER",
+      "x": -450.0,
+      "y": 1900.0,
+      "rotation": 0,
+      "parameters": { "initial_state": "closed", "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "BRK1"
+    },
+    {
+      "id": "AM_BRK",
+      "type": "AM",
+      "x": -300.0,
+      "y": 1860.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_BRK"
+    },
+    {
+      "id": "R_BRK",
+      "type": "R",
+      "x": -150.0,
+      "y": 1900.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_BRK"
+    },
+    {
+      "id": "VM_BRK",
+      "type": "VM",
+      "x": 0.0,
+      "y": 1900.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_BRK"
+    },
+    {
+      "id": "GND11",
+      "type": "GND",
+      "x": -150.0,
+      "y": 2000.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND11"
+    },
+    {
+      "id": "SCOPE_BRK",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 1900.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_BRK"
+    },
+
+    {
+      "id": "DC_V_DBL",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": 2150.0,
+      "rotation": 0,
+      "parameters": { "value": "15.0" },
+      "label": "DC_V_DBL"
+    },
+    {
+      "id": "PULSE_DBL",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": 2280.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "1.0", "frequency": "25.0", "duty": "0.5" },
+      "label": "PULSE_DBL"
+    },
+    {
+      "id": "DBL_SW1",
+      "type": "DBL_SWITCH",
+      "x": -450.0,
+      "y": 2150.0,
+      "rotation": 0,
+      "parameters": { "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "DBL_SW1"
+    },
+    {
+      "id": "AM_DBL",
+      "type": "AM",
+      "x": -300.0,
+      "y": 2110.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_DBL"
+    },
+    {
+      "id": "R_DBL",
+      "type": "R",
+      "x": -150.0,
+      "y": 2150.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_DBL"
+    },
+    {
+      "id": "VM_DBL",
+      "type": "VM",
+      "x": 0.0,
+      "y": 2150.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_DBL"
+    },
+    {
+      "id": "GND12",
+      "type": "GND",
+      "x": -150.0,
+      "y": 2250.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND12"
+    },
+    {
+      "id": "SCOPE_DBL",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 2150.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_DBL"
+    },
+
+    {
+      "id": "DC_V_MAN",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": 2400.0,
+      "rotation": 0,
+      "parameters": { "value": "12.0" },
+      "label": "DC_V_MAN"
+    },
+    {
+      "id": "MAN_SW1",
+      "type": "MAN_SWITCH",
+      "x": -450.0,
+      "y": 2400.0,
+      "rotation": 0,
+      "parameters": { "state": "closed" },
+      "label": "MAN_SW1"
+    },
+    {
+      "id": "AM_MAN",
+      "type": "AM",
+      "x": -300.0,
+      "y": 2360.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_MAN"
+    },
+    {
+      "id": "R_MAN",
+      "type": "R",
+      "x": -150.0,
+      "y": 2400.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_MAN"
+    },
+    {
+      "id": "VM_MAN",
+      "type": "VM",
+      "x": 0.0,
+      "y": 2400.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_MAN"
+    },
+    {
+      "id": "GND13",
+      "type": "GND",
+      "x": -150.0,
+      "y": 2500.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND13"
+    },
+    {
+      "id": "SCOPE_MAN",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 2400.0,
+      "rotation": 0,
+      "parameters": { "channels": "2" },
+      "label": "SCOPE_MAN"
+    },
+
+    {
+      "id": "DC_V_SR",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": 2650.0,
+      "rotation": 0,
+      "parameters": { "value": "24.0" },
+      "label": "DC_V_SR"
+    },
+    {
+      "id": "PULSE_SET",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": 2750.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "1.0", "frequency": "50.0", "duty": "0.1", "delay": "0.01" },
+      "label": "PULSE_SET"
+    },
+    {
+      "id": "PULSE_RESET",
+      "type": "PULSE_GEN",
+      "x": -600.0,
+      "y": 2850.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "1.0", "frequency": "50.0", "duty": "0.1", "delay": "0.03" },
+      "label": "PULSE_RESET"
+    },
+    {
+      "id": "SR_SW1",
+      "type": "SR_SWITCH",
+      "x": -450.0,
+      "y": 2650.0,
+      "rotation": 0,
+      "parameters": { "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "SR_SW1"
+    },
+    {
+      "id": "AM_SR",
+      "type": "AM",
+      "x": -300.0,
+      "y": 2610.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_SR"
+    },
+    {
+      "id": "R_SR",
+      "type": "R",
+      "x": -150.0,
+      "y": 2650.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_SR"
+    },
+    {
+      "id": "VM_SR",
+      "type": "VM",
+      "x": 0.0,
+      "y": 2650.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_SR"
+    },
+    {
+      "id": "GND14",
+      "type": "GND",
+      "x": -150.0,
+      "y": 2750.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND14"
+    },
+    {
+      "id": "SCOPE_SR",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 2650.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_SR"
+    }
+  ],
+  "wires": [
+    { "id": "w1_a", "from": { "compId": "AC_V_D", "terminal": "A", "type": "pin" }, "to": { "compId": "D1", "terminal": "A", "type": "pin" } },
+    { "id": "w1_b", "from": { "compId": "D1", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_D", "terminal": "A", "type": "pin" } },
+    { "id": "w1_c", "from": { "compId": "AM_D", "terminal": "B", "type": "pin" }, "to": { "compId": "R_D", "terminal": "A", "type": "pin" } },
+    { "id": "w1_d", "from": { "compId": "R_D", "terminal": "B", "type": "pin" }, "to": { "compId": "AC_V_D", "terminal": "B", "type": "pin" } },
+    { "id": "w1_gnd", "from": { "compId": "R_D", "terminal": "B", "type": "pin" }, "to": { "compId": "GND1", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w1_vma", "from": { "compId": "R_D", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_D", "terminal": "A", "type": "pin" } },
+    { "id": "w1_vmb", "from": { "compId": "R_D", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_D", "terminal": "B", "type": "pin" } },
+    { "id": "w1_ch1", "from": { "compId": "AC_V_D", "terminal": "A", "type": "pin" }, "to": { "compId": "SCOPE_D", "terminal": "In1", "type": "pin" } },
+    { "id": "w1_ch2", "from": { "compId": "VM_D", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_D", "terminal": "In2", "type": "pin" } },
+    { "id": "w1_ch3", "from": { "compId": "AM_D", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_D", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w2_a", "from": { "compId": "DC_V_MOS", "terminal": "A", "type": "pin" }, "to": { "compId": "AM_MOS", "terminal": "A", "type": "pin" } },
+    { "id": "w2_b", "from": { "compId": "AM_MOS", "terminal": "B", "type": "pin" }, "to": { "compId": "R_MOS", "terminal": "A", "type": "pin" } },
+    { "id": "w2_c", "from": { "compId": "R_MOS", "terminal": "B", "type": "pin" }, "to": { "compId": "MOS1", "terminal": "D", "type": "pin" } },
+    { "id": "w2_d", "from": { "compId": "MOS1", "terminal": "S", "type": "pin" }, "to": { "compId": "DC_V_MOS", "terminal": "B", "type": "pin" } },
+    { "id": "w2_gnd", "from": { "compId": "MOS1", "terminal": "S", "type": "pin" }, "to": { "compId": "GND2", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_g", "from": { "compId": "PULSE_MOS", "terminal": "Out", "type": "pin" }, "to": { "compId": "MOS1", "terminal": "G", "type": "pin" } },
+    { "id": "w2_vma", "from": { "compId": "MOS1", "terminal": "D", "type": "pin" }, "to": { "compId": "VM_MOS", "terminal": "A", "type": "pin" } },
+    { "id": "w2_vmb", "from": { "compId": "MOS1", "terminal": "S", "type": "pin" }, "to": { "compId": "VM_MOS", "terminal": "B", "type": "pin" } },
+    { "id": "w2_ch1", "from": { "compId": "PULSE_MOS", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_MOS", "terminal": "In1", "type": "pin" } },
+    { "id": "w2_ch2", "from": { "compId": "VM_MOS", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_MOS", "terminal": "In2", "type": "pin" } },
+    { "id": "w2_ch3", "from": { "compId": "AM_MOS", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_MOS", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w3_a", "from": { "compId": "DC_V_VGFET", "terminal": "A", "type": "pin" }, "to": { "compId": "AM_VGFET", "terminal": "A", "type": "pin" } },
+    { "id": "w3_b", "from": { "compId": "AM_VGFET", "terminal": "B", "type": "pin" }, "to": { "compId": "R_VGFET", "terminal": "A", "type": "pin" } },
+    { "id": "w3_c", "from": { "compId": "R_VGFET", "terminal": "B", "type": "pin" }, "to": { "compId": "VGFET1", "terminal": "D", "type": "pin" } },
+    { "id": "w3_d", "from": { "compId": "VGFET1", "terminal": "S", "type": "pin" }, "to": { "compId": "DC_V_VGFET", "terminal": "B", "type": "pin" } },
+    { "id": "w3_gnd", "from": { "compId": "VGFET1", "terminal": "S", "type": "pin" }, "to": { "compId": "GND3", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w3_g", "from": { "compId": "PULSE_VGFET", "terminal": "Out", "type": "pin" }, "to": { "compId": "VGFET1", "terminal": "G", "type": "pin" } },
+    { "id": "w3_vma", "from": { "compId": "VGFET1", "terminal": "D", "type": "pin" }, "to": { "compId": "VM_VGFET", "terminal": "A", "type": "pin" } },
+    { "id": "w3_vmb", "from": { "compId": "VGFET1", "terminal": "S", "type": "pin" }, "to": { "compId": "VM_VGFET", "terminal": "B", "type": "pin" } },
+    { "id": "w3_ch1", "from": { "compId": "PULSE_VGFET", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_VGFET", "terminal": "In1", "type": "pin" } },
+    { "id": "w3_ch2", "from": { "compId": "VM_VGFET", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_VGFET", "terminal": "In2", "type": "pin" } },
+    { "id": "w3_ch3", "from": { "compId": "AM_VGFET", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_VGFET", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w4_a", "from": { "compId": "DC_V_IGBT", "terminal": "A", "type": "pin" }, "to": { "compId": "AM_IGBT", "terminal": "A", "type": "pin" } },
+    { "id": "w4_b", "from": { "compId": "AM_IGBT", "terminal": "B", "type": "pin" }, "to": { "compId": "R_IGBT", "terminal": "A", "type": "pin" } },
+    { "id": "w4_c", "from": { "compId": "R_IGBT", "terminal": "B", "type": "pin" }, "to": { "compId": "IGBT1", "terminal": "D", "type": "pin" } },
+    { "id": "w4_d", "from": { "compId": "IGBT1", "terminal": "S", "type": "pin" }, "to": { "compId": "DC_V_IGBT", "terminal": "B", "type": "pin" } },
+    { "id": "w4_gnd", "from": { "compId": "IGBT1", "terminal": "S", "type": "pin" }, "to": { "compId": "GND4", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w4_g", "from": { "compId": "PULSE_IGBT", "terminal": "Out", "type": "pin" }, "to": { "compId": "IGBT1", "terminal": "G", "type": "pin" } },
+    { "id": "w4_vma", "from": { "compId": "IGBT1", "terminal": "D", "type": "pin" }, "to": { "compId": "VM_IGBT", "terminal": "A", "type": "pin" } },
+    { "id": "w4_vmb", "from": { "compId": "IGBT1", "terminal": "S", "type": "pin" }, "to": { "compId": "VM_IGBT", "terminal": "B", "type": "pin" } },
+    { "id": "w4_ch1", "from": { "compId": "PULSE_IGBT", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_IGBT", "terminal": "In1", "type": "pin" } },
+    { "id": "w4_ch2", "from": { "compId": "VM_IGBT", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_IGBT", "terminal": "In2", "type": "pin" } },
+    { "id": "w4_ch3", "from": { "compId": "AM_IGBT", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_IGBT", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w5_a", "from": { "compId": "AC_V_SCR", "terminal": "A", "type": "pin" }, "to": { "compId": "SCR1", "terminal": "A", "type": "pin" } },
+    { "id": "w5_b", "from": { "compId": "SCR1", "terminal": "K", "type": "pin" }, "to": { "compId": "AM_SCR", "terminal": "A", "type": "pin" } },
+    { "id": "w5_c", "from": { "compId": "AM_SCR", "terminal": "B", "type": "pin" }, "to": { "compId": "R_SCR", "terminal": "A", "type": "pin" } },
+    { "id": "w5_d", "from": { "compId": "R_SCR", "terminal": "B", "type": "pin" }, "to": { "compId": "AC_V_SCR", "terminal": "B", "type": "pin" } },
+    { "id": "w5_gnd", "from": { "compId": "R_SCR", "terminal": "B", "type": "pin" }, "to": { "compId": "GND5", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w5_g", "from": { "compId": "PULSE_SCR", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCR1", "terminal": "G", "type": "pin" } },
+    { "id": "w5_vma", "from": { "compId": "R_SCR", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_SCR", "terminal": "A", "type": "pin" } },
+    { "id": "w5_vmb", "from": { "compId": "R_SCR", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_SCR", "terminal": "B", "type": "pin" } },
+    { "id": "w5_ch1", "from": { "compId": "AC_V_SCR", "terminal": "A", "type": "pin" }, "to": { "compId": "SCOPE_SCR", "terminal": "In1", "type": "pin" } },
+    { "id": "w5_ch2", "from": { "compId": "PULSE_SCR", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_SCR", "terminal": "In2", "type": "pin" } },
+    { "id": "w5_ch3", "from": { "compId": "VM_SCR", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_SCR", "terminal": "In3", "type": "pin" } },
+    { "id": "w5_ch4", "from": { "compId": "AM_SCR", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_SCR", "terminal": "In4", "type": "pin" } },
+
+    { "id": "w6_a", "from": { "compId": "DC_V_GTO", "terminal": "A", "type": "pin" }, "to": { "compId": "GTO1", "terminal": "A", "type": "pin" } },
+    { "id": "w6_b", "from": { "compId": "GTO1", "terminal": "K", "type": "pin" }, "to": { "compId": "AM_GTO", "terminal": "A", "type": "pin" } },
+    { "id": "w6_c", "from": { "compId": "AM_GTO", "terminal": "B", "type": "pin" }, "to": { "compId": "R_GTO", "terminal": "A", "type": "pin" } },
+    { "id": "w6_d", "from": { "compId": "R_GTO", "terminal": "B", "type": "pin" }, "to": { "compId": "DC_V_GTO", "terminal": "B", "type": "pin" } },
+    { "id": "w6_gnd", "from": { "compId": "R_GTO", "terminal": "B", "type": "pin" }, "to": { "compId": "GND6", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w6_g", "from": { "compId": "PULSE_GTO", "terminal": "Out", "type": "pin" }, "to": { "compId": "GTO1", "terminal": "G", "type": "pin" } },
+    { "id": "w6_vma", "from": { "compId": "R_GTO", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_GTO", "terminal": "A", "type": "pin" } },
+    { "id": "w6_vmb", "from": { "compId": "R_GTO", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_GTO", "terminal": "B", "type": "pin" } },
+    { "id": "w6_ch1", "from": { "compId": "PULSE_GTO", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_GTO", "terminal": "In1", "type": "pin" } },
+    { "id": "w6_ch2", "from": { "compId": "VM_GTO", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_GTO", "terminal": "In2", "type": "pin" } },
+    { "id": "w6_ch3", "from": { "compId": "AM_GTO", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_GTO", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w7_a", "from": { "compId": "DC_V_IGCT", "terminal": "A", "type": "pin" }, "to": { "compId": "IGCT1", "terminal": "A", "type": "pin" } },
+    { "id": "w7_b", "from": { "compId": "IGCT1", "terminal": "K", "type": "pin" }, "to": { "compId": "AM_IGCT", "terminal": "A", "type": "pin" } },
+    { "id": "w7_c", "from": { "compId": "AM_IGCT", "terminal": "B", "type": "pin" }, "to": { "compId": "R_IGCT", "terminal": "A", "type": "pin" } },
+    { "id": "w7_d", "from": { "compId": "R_IGCT", "terminal": "B", "type": "pin" }, "to": { "compId": "DC_V_IGCT", "terminal": "B", "type": "pin" } },
+    { "id": "w7_gnd", "from": { "compId": "R_IGCT", "terminal": "B", "type": "pin" }, "to": { "compId": "GND7", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w7_g", "from": { "compId": "PULSE_IGCT", "terminal": "Out", "type": "pin" }, "to": { "compId": "IGCT1", "terminal": "G", "type": "pin" } },
+    { "id": "w7_vma", "from": { "compId": "R_IGCT", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_IGCT", "terminal": "A", "type": "pin" } },
+    { "id": "w7_vmb", "from": { "compId": "R_IGCT", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_IGCT", "terminal": "B", "type": "pin" } },
+    { "id": "w7_ch1", "from": { "compId": "PULSE_IGCT", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_IGCT", "terminal": "In1", "type": "pin" } },
+    { "id": "w7_ch2", "from": { "compId": "VM_IGCT", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_IGCT", "terminal": "In2", "type": "pin" } },
+    { "id": "w7_ch3", "from": { "compId": "AM_IGCT", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_IGCT", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w8_a", "from": { "compId": "DC_V_BJT", "terminal": "A", "type": "pin" }, "to": { "compId": "AM_BJT", "terminal": "A", "type": "pin" } },
+    { "id": "w8_b", "from": { "compId": "AM_BJT", "terminal": "B", "type": "pin" }, "to": { "compId": "R_BJT", "terminal": "A", "type": "pin" } },
+    { "id": "w8_c", "from": { "compId": "R_BJT", "terminal": "B", "type": "pin" }, "to": { "compId": "BJT1", "terminal": "C", "type": "pin" } },
+    { "id": "w8_d", "from": { "compId": "BJT1", "terminal": "E", "type": "pin" }, "to": { "compId": "DC_V_BJT", "terminal": "B", "type": "pin" } },
+    { "id": "w8_gnd", "from": { "compId": "BJT1", "terminal": "E", "type": "pin" }, "to": { "compId": "GND8", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w8_g", "from": { "compId": "PULSE_BJT", "terminal": "Out", "type": "pin" }, "to": { "compId": "BJT1", "terminal": "B", "type": "pin" } },
+    { "id": "w8_vma", "from": { "compId": "BJT1", "terminal": "C", "type": "pin" }, "to": { "compId": "VM_BJT", "terminal": "A", "type": "pin" } },
+    { "id": "w8_vmb", "from": { "compId": "BJT1", "terminal": "E", "type": "pin" }, "to": { "compId": "VM_BJT", "terminal": "B", "type": "pin" } },
+    { "id": "w8_ch1", "from": { "compId": "PULSE_BJT", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_BJT", "terminal": "In1", "type": "pin" } },
+    { "id": "w8_ch2", "from": { "compId": "VM_BJT", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_BJT", "terminal": "In2", "type": "pin" } },
+    { "id": "w8_ch3", "from": { "compId": "AM_BJT", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_BJT", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w9_a", "from": { "compId": "DC_V_JFET", "terminal": "A", "type": "pin" }, "to": { "compId": "AM_JFET", "terminal": "A", "type": "pin" } },
+    { "id": "w9_b", "from": { "compId": "AM_JFET", "terminal": "B", "type": "pin" }, "to": { "compId": "R_JFET", "terminal": "A", "type": "pin" } },
+    { "id": "w9_c", "from": { "compId": "R_JFET", "terminal": "B", "type": "pin" }, "to": { "compId": "JFET1", "terminal": "D", "type": "pin" } },
+    { "id": "w9_d", "from": { "compId": "JFET1", "terminal": "S", "type": "pin" }, "to": { "compId": "DC_V_JFET", "terminal": "B", "type": "pin" } },
+    { "id": "w9_gnd", "from": { "compId": "JFET1", "terminal": "S", "type": "pin" }, "to": { "compId": "GND9", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w9_g", "from": { "compId": "PULSE_JFET", "terminal": "Out", "type": "pin" }, "to": { "compId": "JFET1", "terminal": "G", "type": "pin" } },
+    { "id": "w9_vma", "from": { "compId": "JFET1", "terminal": "D", "type": "pin" }, "to": { "compId": "VM_JFET", "terminal": "A", "type": "pin" } },
+    { "id": "w9_vmb", "from": { "compId": "JFET1", "terminal": "S", "type": "pin" }, "to": { "compId": "VM_JFET", "terminal": "B", "type": "pin" } },
+    { "id": "w9_ch1", "from": { "compId": "PULSE_JFET", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_JFET", "terminal": "In1", "type": "pin" } },
+    { "id": "w9_ch2", "from": { "compId": "VM_JFET", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_JFET", "terminal": "In2", "type": "pin" } },
+    { "id": "w9_ch3", "from": { "compId": "AM_JFET", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_JFET", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w10_a", "from": { "compId": "DC_V_SW", "terminal": "A", "type": "pin" }, "to": { "compId": "SW1", "terminal": "A", "type": "pin" } },
+    { "id": "w10_b", "from": { "compId": "SW1", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_SW", "terminal": "A", "type": "pin" } },
+    { "id": "w10_c", "from": { "compId": "AM_SW", "terminal": "B", "type": "pin" }, "to": { "compId": "R_SW", "terminal": "A", "type": "pin" } },
+    { "id": "w10_d", "from": { "compId": "R_SW", "terminal": "B", "type": "pin" }, "to": { "compId": "DC_V_SW", "terminal": "B", "type": "pin" } },
+    { "id": "w10_gnd", "from": { "compId": "R_SW", "terminal": "B", "type": "pin" }, "to": { "compId": "GND10", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w10_g", "from": { "compId": "PULSE_SW", "terminal": "Out", "type": "pin" }, "to": { "compId": "SW1", "terminal": "Ctrl", "type": "pin" } },
+    { "id": "w10_vma", "from": { "compId": "R_SW", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_SW", "terminal": "A", "type": "pin" } },
+    { "id": "w10_vmb", "from": { "compId": "R_SW", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_SW", "terminal": "B", "type": "pin" } },
+    { "id": "w10_ch1", "from": { "compId": "PULSE_SW", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_SW", "terminal": "In1", "type": "pin" } },
+    { "id": "w10_ch2", "from": { "compId": "VM_SW", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_SW", "terminal": "In2", "type": "pin" } },
+    { "id": "w10_ch3", "from": { "compId": "AM_SW", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_SW", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w11_a", "from": { "compId": "AC_V_BRK", "terminal": "A", "type": "pin" }, "to": { "compId": "BRK1", "terminal": "A", "type": "pin" } },
+    { "id": "w11_b", "from": { "compId": "BRK1", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_BRK", "terminal": "A", "type": "pin" } },
+    { "id": "w11_c", "from": { "compId": "AM_BRK", "terminal": "B", "type": "pin" }, "to": { "compId": "R_BRK", "terminal": "A", "type": "pin" } },
+    { "id": "w11_d", "from": { "compId": "R_BRK", "terminal": "B", "type": "pin" }, "to": { "compId": "AC_V_BRK", "terminal": "B", "type": "pin" } },
+    { "id": "w11_gnd", "from": { "compId": "R_BRK", "terminal": "B", "type": "pin" }, "to": { "compId": "GND11", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w11_g", "from": { "compId": "PULSE_BRK", "terminal": "Out", "type": "pin" }, "to": { "compId": "BRK1", "terminal": "Ctrl", "type": "pin" } },
+    { "id": "w11_vma", "from": { "compId": "R_BRK", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_BRK", "terminal": "A", "type": "pin" } },
+    { "id": "w11_vmb", "from": { "compId": "R_BRK", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_BRK", "terminal": "B", "type": "pin" } },
+    { "id": "w11_ch1", "from": { "compId": "PULSE_BRK", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_BRK", "terminal": "In1", "type": "pin" } },
+    { "id": "w11_ch2", "from": { "compId": "VM_BRK", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_BRK", "terminal": "In2", "type": "pin" } },
+    { "id": "w11_ch3", "from": { "compId": "AM_BRK", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_BRK", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w12_a", "from": { "compId": "DC_V_DBL", "terminal": "A", "type": "pin" }, "to": { "compId": "DBL_SW1", "terminal": "A", "type": "pin" } },
+    { "id": "w12_b", "from": { "compId": "DBL_SW1", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_DBL", "terminal": "A", "type": "pin" } },
+    { "id": "w12_c", "from": { "compId": "AM_DBL", "terminal": "B", "type": "pin" }, "to": { "compId": "R_DBL", "terminal": "A", "type": "pin" } },
+    { "id": "w12_d", "from": { "compId": "R_DBL", "terminal": "B", "type": "pin" }, "to": { "compId": "DC_V_DBL", "terminal": "B", "type": "pin" } },
+    { "id": "w12_gnd", "from": { "compId": "R_DBL", "terminal": "B", "type": "pin" }, "to": { "compId": "GND12", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w12_g", "from": { "compId": "PULSE_DBL", "terminal": "Out", "type": "pin" }, "to": { "compId": "DBL_SW1", "terminal": "Ctrl", "type": "pin" } },
+    { "id": "w12_vma", "from": { "compId": "R_DBL", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_DBL", "terminal": "A", "type": "pin" } },
+    { "id": "w12_vmb", "from": { "compId": "R_DBL", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_DBL", "terminal": "B", "type": "pin" } },
+    { "id": "w12_ch1", "from": { "compId": "PULSE_DBL", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_DBL", "terminal": "In1", "type": "pin" } },
+    { "id": "w12_ch2", "from": { "compId": "VM_DBL", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_DBL", "terminal": "In2", "type": "pin" } },
+    { "id": "w12_ch3", "from": { "compId": "AM_DBL", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_DBL", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w13_a", "from": { "compId": "DC_V_MAN", "terminal": "A", "type": "pin" }, "to": { "compId": "MAN_SW1", "terminal": "A", "type": "pin" } },
+    { "id": "w13_b", "from": { "compId": "MAN_SW1", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_MAN", "terminal": "A", "type": "pin" } },
+    { "id": "w13_c", "from": { "compId": "AM_MAN", "terminal": "B", "type": "pin" }, "to": { "compId": "R_MAN", "terminal": "A", "type": "pin" } },
+    { "id": "w13_d", "from": { "compId": "R_MAN", "terminal": "B", "type": "pin" }, "to": { "compId": "DC_V_MAN", "terminal": "B", "type": "pin" } },
+    { "id": "w13_gnd", "from": { "compId": "R_MAN", "terminal": "B", "type": "pin" }, "to": { "compId": "GND13", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w13_vma", "from": { "compId": "R_MAN", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_MAN", "terminal": "A", "type": "pin" } },
+    { "id": "w13_vmb", "from": { "compId": "R_MAN", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_MAN", "terminal": "B", "type": "pin" } },
+    { "id": "w13_ch1", "from": { "compId": "VM_MAN", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_MAN", "terminal": "In1", "type": "pin" } },
+    { "id": "w13_ch2", "from": { "compId": "AM_MAN", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_MAN", "terminal": "In2", "type": "pin" } },
+
+    { "id": "w14_a", "from": { "compId": "DC_V_SR", "terminal": "A", "type": "pin" }, "to": { "compId": "SR_SW1", "terminal": "A", "type": "pin" } },
+    { "id": "w14_b", "from": { "compId": "SR_SW1", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_SR", "terminal": "A", "type": "pin" } },
+    { "id": "w14_c", "from": { "compId": "AM_SR", "terminal": "B", "type": "pin" }, "to": { "compId": "R_SR", "terminal": "A", "type": "pin" } },
+    { "id": "w14_d", "from": { "compId": "R_SR", "terminal": "B", "type": "pin" }, "to": { "compId": "DC_V_SR", "terminal": "B", "type": "pin" } },
+    { "id": "w14_gnd", "from": { "compId": "R_SR", "terminal": "B", "type": "pin" }, "to": { "compId": "GND14", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w14_vma", "from": { "compId": "R_SR", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_SR", "terminal": "A", "type": "pin" } },
+    { "id": "w14_vmb", "from": { "compId": "R_SR", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_SR", "terminal": "B", "type": "pin" } },
+    { "id": "w14_ch1", "from": { "compId": "PULSE_SET", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_SR", "terminal": "In1", "type": "pin" } },
+    { "id": "w14_ch2", "from": { "compId": "PULSE_RESET", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_SR", "terminal": "In2", "type": "pin" } },
+    { "id": "w14_ch3", "from": { "compId": "VM_SR", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_SR", "terminal": "In3", "type": "pin" } },
+    { "id": "w14_ch4", "from": { "compId": "AM_SR", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_SR", "terminal": "In4", "type": "pin" } }
+  ]
+}

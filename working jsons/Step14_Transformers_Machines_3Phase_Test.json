@@ -1,0 +1,255 @@
+{
+  "description": "Step 14: Transformers, Electric Machines & 3-Phase Sub-Library Test Schematic",
+  "components": [
+    {
+      "id": "AC_V_XFMR1",
+      "type": "AC_V",
+      "x": -600.0,
+      "y": -600.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "325.27", "frequency": "50.0", "phase": "0.0" },
+      "label": "AC_V_XFMR1"
+    },
+    {
+      "id": "AM_P1",
+      "type": "AM",
+      "x": -450.0,
+      "y": -640.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_P1"
+    },
+    {
+      "id": "XFMR1",
+      "type": "IDEAL_XFMR",
+      "x": -300.0,
+      "y": -600.0,
+      "rotation": 0,
+      "parameters": { "N1": "2.0", "N2": "1.0" },
+      "label": "XFMR1"
+    },
+    {
+      "id": "AM_S1",
+      "type": "AM",
+      "x": -150.0,
+      "y": -640.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_S1"
+    },
+    {
+      "id": "R_S1",
+      "type": "R",
+      "x": 0.0,
+      "y": -600.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_S1"
+    },
+    {
+      "id": "VM_P1",
+      "type": "VM",
+      "x": -450.0,
+      "y": -500.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_P1"
+    },
+    {
+      "id": "VM_S1",
+      "type": "VM",
+      "x": 0.0,
+      "y": -500.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_S1"
+    },
+    {
+      "id": "GND1_P",
+      "type": "GND",
+      "x": -600.0,
+      "y": -500.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND1_P"
+    },
+    {
+      "id": "GND1_S",
+      "type": "GND",
+      "x": -150.0,
+      "y": -500.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND1_S"
+    },
+    {
+      "id": "SCOPE_XFMR1",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": -600.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_XFMR1"
+    },
+
+    {
+      "id": "V_3PH1",
+      "type": "V_3PH",
+      "x": -600.0,
+      "y": -250.0,
+      "rotation": 0,
+      "parameters": { "magnitude": "400.0", "frequency": "50.0", "connection": "Y" },
+      "label": "V_3PH1"
+    },
+    {
+      "id": "AM_3PH1",
+      "type": "AM_3PH",
+      "x": -350.0,
+      "y": -250.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_3PH1"
+    },
+    {
+      "id": "R_3PH_A",
+      "type": "R",
+      "x": -150.0,
+      "y": -330.0,
+      "rotation": 0,
+      "parameters": { "resistance": "20.0" },
+      "label": "R_3PH_A"
+    },
+    {
+      "id": "R_3PH_B",
+      "type": "R",
+      "x": -150.0,
+      "y": -250.0,
+      "rotation": 0,
+      "parameters": { "resistance": "20.0" },
+      "label": "R_3PH_B"
+    },
+    {
+      "id": "R_3PH_C",
+      "type": "R",
+      "x": -150.0,
+      "y": -170.0,
+      "rotation": 0,
+      "parameters": { "resistance": "20.0" },
+      "label": "R_3PH_C"
+    },
+    {
+      "id": "VM_3PH1",
+      "type": "VM_3PH",
+      "x": -350.0,
+      "y": -120.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_3PH1"
+    },
+    {
+      "id": "GND_3PH",
+      "type": "GND",
+      "x": 0.0,
+      "y": -250.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND_3PH"
+    },
+    {
+      "id": "SCOPE_V3PH",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": -250.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_V3PH"
+    },
+
+    {
+      "id": "V_3PH_MOT",
+      "type": "V_3PH",
+      "x": -600.0,
+      "y": 150.0,
+      "rotation": 0,
+      "parameters": { "magnitude": "400.0", "frequency": "50.0", "connection": "Y" },
+      "label": "V_3PH_MOT"
+    },
+    {
+      "id": "IND_MOTOR1",
+      "type": "INDUCTION_MOTOR",
+      "x": -300.0,
+      "y": 150.0,
+      "rotation": 0,
+      "parameters": { "poles": "4", "power": "5000.0" },
+      "label": "IND_MOTOR1"
+    },
+    {
+      "id": "CONST_TL",
+      "type": "CONSTANT",
+      "x": -450.0,
+      "y": 280.0,
+      "rotation": 0,
+      "parameters": { "value": "10.0" },
+      "label": "CONST_TL"
+    },
+    {
+      "id": "SCOPE_MOTOR",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 150.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_MOTOR"
+    }
+  ],
+  "wires": [
+    { "id": "w1_a", "from": { "compId": "AC_V_XFMR1", "terminal": "A", "type": "pin" }, "to": { "compId": "AM_P1", "terminal": "A", "type": "pin" } },
+    { "id": "w1_b", "from": { "compId": "AM_P1", "terminal": "B", "type": "pin" }, "to": { "compId": "XFMR1", "terminal": "P1", "type": "pin" } },
+    { "id": "w1_c", "from": { "compId": "XFMR1", "terminal": "P2", "type": "pin" }, "to": { "compId": "AC_V_XFMR1", "terminal": "B", "type": "pin" } },
+    { "id": "w1_gnd_p", "from": { "compId": "AC_V_XFMR1", "terminal": "B", "type": "pin" }, "to": { "compId": "GND1_P", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w1_vp_a", "from": { "compId": "AM_P1", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_P1", "terminal": "A", "type": "pin" } },
+    { "id": "w1_vp_b", "from": { "compId": "AC_V_XFMR1", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_P1", "terminal": "B", "type": "pin" } },
+
+    { "id": "w1_d", "from": { "compId": "XFMR1", "terminal": "S1", "type": "pin" }, "to": { "compId": "AM_S1", "terminal": "A", "type": "pin" } },
+    { "id": "w1_e", "from": { "compId": "AM_S1", "terminal": "B", "type": "pin" }, "to": { "compId": "R_S1", "terminal": "A", "type": "pin" } },
+    { "id": "w1_f", "from": { "compId": "R_S1", "terminal": "B", "type": "pin" }, "to": { "compId": "XFMR1", "terminal": "S2", "type": "pin" } },
+    { "id": "w1_gnd_s", "from": { "compId": "XFMR1", "terminal": "S2", "type": "pin" }, "to": { "compId": "GND1_S", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w1_vs_a", "from": { "compId": "R_S1", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_S1", "terminal": "A", "type": "pin" } },
+    { "id": "w1_vs_b", "from": { "compId": "R_S1", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_S1", "terminal": "B", "type": "pin" } },
+
+    { "id": "w1_ch1", "from": { "compId": "VM_P1", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_XFMR1", "terminal": "In1", "type": "pin" } },
+    { "id": "w1_ch2", "from": { "compId": "AM_P1", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_XFMR1", "terminal": "In2", "type": "pin" } },
+    { "id": "w1_ch3", "from": { "compId": "VM_S1", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_XFMR1", "terminal": "In3", "type": "pin" } },
+    { "id": "w1_ch4", "from": { "compId": "AM_S1", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_XFMR1", "terminal": "In4", "type": "pin" } },
+
+    { "id": "w2_va", "from": { "compId": "V_3PH1", "terminal": "A", "type": "pin" }, "to": { "compId": "AM_3PH1", "terminal": "A_In", "type": "pin" } },
+    { "id": "w2_vb", "from": { "compId": "V_3PH1", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_3PH1", "terminal": "B_In", "type": "pin" } },
+    { "id": "w2_vc", "from": { "compId": "V_3PH1", "terminal": "C", "type": "pin" }, "to": { "compId": "AM_3PH1", "terminal": "C_In", "type": "pin" } },
+
+    { "id": "w2_ra", "from": { "compId": "AM_3PH1", "terminal": "A_Out", "type": "pin" }, "to": { "compId": "R_3PH_A", "terminal": "A", "type": "pin" } },
+    { "id": "w2_rb", "from": { "compId": "AM_3PH1", "terminal": "B_Out", "type": "pin" }, "to": { "compId": "R_3PH_B", "terminal": "A", "type": "pin" } },
+    { "id": "w2_rc", "from": { "compId": "AM_3PH1", "terminal": "C_Out", "type": "pin" }, "to": { "compId": "R_3PH_C", "terminal": "A", "type": "pin" } },
+
+    { "id": "w2_n_a", "from": { "compId": "R_3PH_A", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_3PH", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_n_b", "from": { "compId": "R_3PH_B", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_3PH", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_n_c", "from": { "compId": "R_3PH_C", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_3PH", "terminal": "Gnd", "type": "pin" } },
+
+    { "id": "w2_vma", "from": { "compId": "R_3PH_A", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_3PH1", "terminal": "A", "type": "pin" } },
+    { "id": "w2_vmb", "from": { "compId": "R_3PH_B", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_3PH1", "terminal": "B", "type": "pin" } },
+    { "id": "w2_vmc", "from": { "compId": "R_3PH_C", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_3PH1", "terminal": "C", "type": "pin" } },
+
+    { "id": "w2_ch1", "from": { "compId": "AM_3PH1", "terminal": "OutA", "type": "pin" }, "to": { "compId": "SCOPE_V3PH", "terminal": "In1", "type": "pin" } },
+    { "id": "w2_ch2", "from": { "compId": "AM_3PH1", "terminal": "OutB", "type": "pin" }, "to": { "compId": "SCOPE_V3PH", "terminal": "In2", "type": "pin" } },
+    { "id": "w2_ch3", "from": { "compId": "AM_3PH1", "terminal": "OutC", "type": "pin" }, "to": { "compId": "SCOPE_V3PH", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w3_ma", "from": { "compId": "V_3PH_MOT", "terminal": "A", "type": "pin" }, "to": { "compId": "IND_MOTOR1", "terminal": "A", "type": "pin" } },
+    { "id": "w3_mb", "from": { "compId": "V_3PH_MOT", "terminal": "B", "type": "pin" }, "to": { "compId": "IND_MOTOR1", "terminal": "B", "type": "pin" } },
+    { "id": "w3_mc", "from": { "compId": "V_3PH_MOT", "terminal": "C", "type": "pin" }, "to": { "compId": "IND_MOTOR1", "terminal": "C", "type": "pin" } },
+    { "id": "w3_tl", "from": { "compId": "CONST_TL", "terminal": "Out", "type": "pin" }, "to": { "compId": "IND_MOTOR1", "terminal": "Tl", "type": "pin" } },
+
+    { "id": "w3_ch1", "from": { "compId": "IND_MOTOR1", "terminal": "Speed", "type": "pin" }, "to": { "compId": "SCOPE_MOTOR", "terminal": "In1", "type": "pin" } },
+    { "id": "w3_ch2", "from": { "compId": "IND_MOTOR1", "terminal": "Torque", "type": "pin" }, "to": { "compId": "SCOPE_MOTOR", "terminal": "In2", "type": "pin" } },
+    { "id": "w3_ch3", "from": { "compId": "IND_MOTOR1", "terminal": "Ia", "type": "pin" }, "to": { "compId": "SCOPE_MOTOR", "terminal": "In3", "type": "pin" } },
+    { "id": "w3_ch4", "from": { "compId": "V_3PH_MOT", "terminal": "A", "type": "pin" }, "to": { "compId": "SCOPE_MOTOR", "terminal": "In4", "type": "pin" } }
+  ]
+}
