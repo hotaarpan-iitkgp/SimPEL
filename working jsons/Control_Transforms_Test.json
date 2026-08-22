@@ -1,0 +1,773 @@
+{
+  "components": [
+    {
+      "id": "CLARKE1",
+      "type": "CLARKE",
+      "x": 200,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_CLARKE_A",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SRC_CLARKE_B",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 20,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "120"
+      }
+    },
+    {
+      "id": "SRC_CLARKE_C",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 40,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "240"
+      }
+    },
+    {
+      "id": "SCOPE_CLARKE",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "channels": "2"
+      }
+    },
+    {
+      "id": "PARK1",
+      "type": "PARK",
+      "x": 200,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_PARK_Alpha",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SRC_PARK_Beta",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 170,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "120"
+      }
+    },
+    {
+      "id": "SRC_PARK_Theta",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 190,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "240"
+      }
+    },
+    {
+      "id": "SCOPE_PARK",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {
+        "channels": "2"
+      }
+    },
+    {
+      "id": "INV_CLARKE1",
+      "type": "INV_CLARKE",
+      "x": 200,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_INV_CLARKE_Alpha",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SRC_INV_CLARKE_Beta",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 320,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "120"
+      }
+    },
+    {
+      "id": "SCOPE_INV_CLARKE",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {
+        "channels": "3"
+      }
+    },
+    {
+      "id": "INV_PARK1",
+      "type": "INV_PARK",
+      "x": 200,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_INV_PARK_d",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SRC_INV_PARK_q",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 470,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "120"
+      }
+    },
+    {
+      "id": "SRC_INV_PARK_Theta",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 490,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "240"
+      }
+    },
+    {
+      "id": "SCOPE_INV_PARK",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {
+        "channels": "2"
+      }
+    },
+    {
+      "id": "PLL_1PH1",
+      "type": "PLL_1PH",
+      "x": 200,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_PLL_1PH_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_PLL_1PH",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {
+        "channels": "4"
+      }
+    },
+    {
+      "id": "PLL_3PH1",
+      "type": "PLL_3PH",
+      "x": 200,
+      "y": 750,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_PLL_3PH_Va",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 750,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SRC_PLL_3PH_Vb",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 770,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "120"
+      }
+    },
+    {
+      "id": "SRC_PLL_3PH_Vc",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 790,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "240"
+      }
+    },
+    {
+      "id": "SCOPE_PLL_3PH",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 750,
+      "rotation": 0,
+      "parameters": {
+        "channels": "4"
+      }
+    },
+    {
+      "id": "FOURIER_TRANS1",
+      "type": "FOURIER_TRANS",
+      "x": 200,
+      "y": 900,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_FOURIER_TRANS_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 900,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_FOURIER_TRANS",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 900,
+      "rotation": 0,
+      "parameters": {
+        "channels": "2"
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_CLARKE_A",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "CLARKE1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w2",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_CLARKE_B",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "CLARKE1",
+        "terminal": "B"
+      }
+    },
+    {
+      "id": "w3",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_CLARKE_C",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "CLARKE1",
+        "terminal": "C"
+      }
+    },
+    {
+      "id": "w4",
+      "from": {
+        "type": "pin",
+        "compId": "CLARKE1",
+        "terminal": "Alpha"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_CLARKE",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w5",
+      "from": {
+        "type": "pin",
+        "compId": "CLARKE1",
+        "terminal": "Beta"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_CLARKE",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w6",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PARK_Alpha",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PARK1",
+        "terminal": "Alpha"
+      }
+    },
+    {
+      "id": "w7",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PARK_Beta",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PARK1",
+        "terminal": "Beta"
+      }
+    },
+    {
+      "id": "w8",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PARK_Theta",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PARK1",
+        "terminal": "Theta"
+      }
+    },
+    {
+      "id": "w9",
+      "from": {
+        "type": "pin",
+        "compId": "PARK1",
+        "terminal": "d"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PARK",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w10",
+      "from": {
+        "type": "pin",
+        "compId": "PARK1",
+        "terminal": "q"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PARK",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w11",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_INV_CLARKE_Alpha",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "INV_CLARKE1",
+        "terminal": "Alpha"
+      }
+    },
+    {
+      "id": "w12",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_INV_CLARKE_Beta",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "INV_CLARKE1",
+        "terminal": "Beta"
+      }
+    },
+    {
+      "id": "w13",
+      "from": {
+        "type": "pin",
+        "compId": "INV_CLARKE1",
+        "terminal": "A"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_INV_CLARKE",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w14",
+      "from": {
+        "type": "pin",
+        "compId": "INV_CLARKE1",
+        "terminal": "B"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_INV_CLARKE",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w15",
+      "from": {
+        "type": "pin",
+        "compId": "INV_CLARKE1",
+        "terminal": "C"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_INV_CLARKE",
+        "terminal": "In3"
+      }
+    },
+    {
+      "id": "w16",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_INV_PARK_d",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "INV_PARK1",
+        "terminal": "d"
+      }
+    },
+    {
+      "id": "w17",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_INV_PARK_q",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "INV_PARK1",
+        "terminal": "q"
+      }
+    },
+    {
+      "id": "w18",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_INV_PARK_Theta",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "INV_PARK1",
+        "terminal": "Theta"
+      }
+    },
+    {
+      "id": "w19",
+      "from": {
+        "type": "pin",
+        "compId": "INV_PARK1",
+        "terminal": "Alpha"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_INV_PARK",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w20",
+      "from": {
+        "type": "pin",
+        "compId": "INV_PARK1",
+        "terminal": "Beta"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_INV_PARK",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w21",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PLL_1PH_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PLL_1PH1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w22",
+      "from": {
+        "type": "pin",
+        "compId": "PLL_1PH1",
+        "terminal": "Theta"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PLL_1PH",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w23",
+      "from": {
+        "type": "pin",
+        "compId": "PLL_1PH1",
+        "terminal": "Freq"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PLL_1PH",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w24",
+      "from": {
+        "type": "pin",
+        "compId": "PLL_1PH1",
+        "terminal": "Cos"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PLL_1PH",
+        "terminal": "In3"
+      }
+    },
+    {
+      "id": "w25",
+      "from": {
+        "type": "pin",
+        "compId": "PLL_1PH1",
+        "terminal": "Sin"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PLL_1PH",
+        "terminal": "In4"
+      }
+    },
+    {
+      "id": "w26",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PLL_3PH_Va",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PLL_3PH1",
+        "terminal": "Va"
+      }
+    },
+    {
+      "id": "w27",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PLL_3PH_Vb",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PLL_3PH1",
+        "terminal": "Vb"
+      }
+    },
+    {
+      "id": "w28",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PLL_3PH_Vc",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PLL_3PH1",
+        "terminal": "Vc"
+      }
+    },
+    {
+      "id": "w29",
+      "from": {
+        "type": "pin",
+        "compId": "PLL_3PH1",
+        "terminal": "Theta"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PLL_3PH",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w30",
+      "from": {
+        "type": "pin",
+        "compId": "PLL_3PH1",
+        "terminal": "Freq"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PLL_3PH",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w31",
+      "from": {
+        "type": "pin",
+        "compId": "PLL_3PH1",
+        "terminal": "Cos"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PLL_3PH",
+        "terminal": "In3"
+      }
+    },
+    {
+      "id": "w32",
+      "from": {
+        "type": "pin",
+        "compId": "PLL_3PH1",
+        "terminal": "Sin"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PLL_3PH",
+        "terminal": "In4"
+      }
+    },
+    {
+      "id": "w33",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_FOURIER_TRANS_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "FOURIER_TRANS1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w34",
+      "from": {
+        "type": "pin",
+        "compId": "FOURIER_TRANS1",
+        "terminal": "Mag"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_FOURIER_TRANS",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w35",
+      "from": {
+        "type": "pin",
+        "compId": "FOURIER_TRANS1",
+        "terminal": "Phase"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_FOURIER_TRANS",
+        "terminal": "In2"
+      }
+    }
+  ],
+  "plotConfiguration": {
+    "plots": []
+  },
+  "simulation_parameters": {
+    "t_end": "0.1",
+    "h": "1e-4",
+    "solver": "euler",
+    "step_type": "fixed"
+  },
+  "description": "Test Transforms"
+}

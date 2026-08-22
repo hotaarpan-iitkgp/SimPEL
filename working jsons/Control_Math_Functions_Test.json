@@ -1,0 +1,590 @@
+{
+  "components": [
+    {
+      "id": "SUM1",
+      "type": "SUM",
+      "x": 200,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_SUM_A",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SRC_SUM_B",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 20,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "120"
+      }
+    },
+    {
+      "id": "SCOPE_SUM",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "PRODUCT_RECT1",
+      "type": "PRODUCT_RECT",
+      "x": 200,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_PRODUCT_RECT_In1",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SRC_PRODUCT_RECT_In2",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 170,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "120"
+      }
+    },
+    {
+      "id": "SCOPE_PRODUCT_RECT",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "DIVIDE1",
+      "type": "DIVIDE",
+      "x": 200,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_DIVIDE_Num",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SRC_DIVIDE_Den",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 320,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "120"
+      }
+    },
+    {
+      "id": "SCOPE_DIVIDE",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "ABS1",
+      "type": "ABS",
+      "x": 200,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_ABS_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_ABS",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "SIGNUM1",
+      "type": "SIGNUM",
+      "x": 200,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_SIGNUM_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_SIGNUM",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "FCN1",
+      "type": "FCN",
+      "x": 200,
+      "y": 750,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_FCN_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 750,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_FCN",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 750,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "CSCRIPT1",
+      "type": "CSCRIPT",
+      "x": 200,
+      "y": 900,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_CSCRIPT_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 900,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_CSCRIPT",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 900,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "LUT_1D1",
+      "type": "LUT_1D",
+      "x": 200,
+      "y": 1050,
+      "rotation": 0,
+      "parameters": {
+        "x": "[0, 1, -1]",
+        "y": "[0, 2, -2]"
+      }
+    },
+    {
+      "id": "SRC_LUT_1D_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 1050,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_LUT_1D",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 1050,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "LUT_2D1",
+      "type": "LUT_2D",
+      "x": 200,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {
+        "x": "[0, 1]",
+        "y": "[0, 1]",
+        "z": "[[1, 2], [3, 4]]"
+      }
+    },
+    {
+      "id": "SRC_LUT_2D_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_LUT_2D",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 1200,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_SUM_A",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SUM1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w2",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_SUM_B",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SUM1",
+        "terminal": "B"
+      }
+    },
+    {
+      "id": "w3",
+      "from": {
+        "type": "pin",
+        "compId": "SUM1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_SUM",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w4",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PRODUCT_RECT_In1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PRODUCT_RECT1",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w5",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_PRODUCT_RECT_In2",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "PRODUCT_RECT1",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w6",
+      "from": {
+        "type": "pin",
+        "compId": "PRODUCT_RECT1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_PRODUCT_RECT",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w7",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_DIVIDE_Num",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "DIVIDE1",
+        "terminal": "Num"
+      }
+    },
+    {
+      "id": "w8",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_DIVIDE_Den",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "DIVIDE1",
+        "terminal": "Den"
+      }
+    },
+    {
+      "id": "w9",
+      "from": {
+        "type": "pin",
+        "compId": "DIVIDE1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DIVIDE",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w10",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_ABS_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "ABS1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w11",
+      "from": {
+        "type": "pin",
+        "compId": "ABS1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_ABS",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w12",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_SIGNUM_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SIGNUM1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w13",
+      "from": {
+        "type": "pin",
+        "compId": "SIGNUM1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_SIGNUM",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w14",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_FCN_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "FCN1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w15",
+      "from": {
+        "type": "pin",
+        "compId": "FCN1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_FCN",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w16",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_CSCRIPT_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "CSCRIPT1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w17",
+      "from": {
+        "type": "pin",
+        "compId": "CSCRIPT1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_CSCRIPT",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w18",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_LUT_1D_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LUT_1D1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w19",
+      "from": {
+        "type": "pin",
+        "compId": "LUT_1D1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_LUT_1D",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w20",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_LUT_2D_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "LUT_2D1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w21",
+      "from": {
+        "type": "pin",
+        "compId": "LUT_2D1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_LUT_2D",
+        "terminal": "In1"
+      }
+    }
+  ],
+  "plotConfiguration": {
+    "plots": []
+  },
+  "simulation_parameters": {
+    "t_end": "0.1",
+    "h": "1e-4",
+    "solver": "euler",
+    "step_type": "fixed"
+  },
+  "description": "Test Math and Functions"
+}

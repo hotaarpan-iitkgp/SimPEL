@@ -1,0 +1,396 @@
+{
+  "components": [
+    {
+      "id": "AND1",
+      "type": "AND",
+      "x": 200,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_AND_A",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SRC_AND_B",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 20,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SCOPE_AND",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "OR1",
+      "type": "OR",
+      "x": 200,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_OR_A",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SRC_OR_B",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 170,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SCOPE_OR",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "NOT1",
+      "type": "NOT",
+      "x": 200,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_NOT_In",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SCOPE_NOT",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "XOR1",
+      "type": "XOR",
+      "x": 200,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_XOR_A",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SRC_XOR_B",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 470,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SCOPE_XOR",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "NAND1",
+      "type": "NAND",
+      "x": 200,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_NAND_A",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SRC_NAND_B",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 620,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SCOPE_NAND",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_AND_A",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "AND1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w2",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_AND_B",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "AND1",
+        "terminal": "B"
+      }
+    },
+    {
+      "id": "w3",
+      "from": {
+        "type": "pin",
+        "compId": "AND1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_AND",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w4",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_OR_A",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "OR1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w5",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_OR_B",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "OR1",
+        "terminal": "B"
+      }
+    },
+    {
+      "id": "w6",
+      "from": {
+        "type": "pin",
+        "compId": "OR1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_OR",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w7",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_NOT_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "NOT1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w8",
+      "from": {
+        "type": "pin",
+        "compId": "NOT1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_NOT",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w9",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_XOR_A",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "XOR1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w10",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_XOR_B",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "XOR1",
+        "terminal": "B"
+      }
+    },
+    {
+      "id": "w11",
+      "from": {
+        "type": "pin",
+        "compId": "XOR1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_XOR",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w12",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_NAND_A",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "NAND1",
+        "terminal": "A"
+      }
+    },
+    {
+      "id": "w13",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_NAND_B",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "NAND1",
+        "terminal": "B"
+      }
+    },
+    {
+      "id": "w14",
+      "from": {
+        "type": "pin",
+        "compId": "NAND1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_NAND",
+        "terminal": "In1"
+      }
+    }
+  ],
+  "plotConfiguration": {
+    "plots": []
+  },
+  "simulation_parameters": {
+    "t_end": "0.1",
+    "h": "1e-4",
+    "solver": "euler",
+    "step_type": "fixed"
+  },
+  "description": "Test Logic Gates"
+}

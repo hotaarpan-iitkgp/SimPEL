@@ -1,0 +1,461 @@
+{
+  "components": [
+    {
+      "id": "FILTER_1ST1",
+      "type": "FILTER_1ST",
+      "x": 200,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_FILTER_1ST_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_FILTER_1ST",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "FILTER_2ND1",
+      "type": "FILTER_2ND",
+      "x": 200,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_FILTER_2ND_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_FILTER_2ND",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "MOV_AVG1",
+      "type": "MOV_AVG",
+      "x": 200,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {
+        "window_time": "0.015"
+      }
+    },
+    {
+      "id": "SRC_MOV_AVG_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_MOV_AVG",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "DELAY1",
+      "type": "DELAY",
+      "x": 200,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_DELAY_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_DELAY",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "TRANSPORT_DELAY1",
+      "type": "TRANSPORT_DELAY",
+      "x": 200,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_TRANSPORT_DELAY_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_TRANSPORT_DELAY",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "TURN_ON_DELAY1",
+      "type": "TURN_ON_DELAY",
+      "x": 200,
+      "y": 750,
+      "rotation": 0,
+      "parameters": {
+        "delay": "0.005"
+      }
+    },
+    {
+      "id": "SRC_TURN_ON_DELAY_In",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 750,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SCOPE_TURN_ON_DELAY",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 750,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "UNIT_DELAY1",
+      "type": "UNIT_DELAY",
+      "x": 200,
+      "y": 900,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_UNIT_DELAY_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 900,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_UNIT_DELAY",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 900,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "ZOH1",
+      "type": "ZOH",
+      "x": 200,
+      "y": 1050,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_ZOH_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 1050,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_ZOH",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 1050,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_FILTER_1ST_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "FILTER_1ST1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w2",
+      "from": {
+        "type": "pin",
+        "compId": "FILTER_1ST1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_FILTER_1ST",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w3",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_FILTER_2ND_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "FILTER_2ND1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w4",
+      "from": {
+        "type": "pin",
+        "compId": "FILTER_2ND1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_FILTER_2ND",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w5",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_MOV_AVG_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "MOV_AVG1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w6",
+      "from": {
+        "type": "pin",
+        "compId": "MOV_AVG1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_MOV_AVG",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w7",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_DELAY_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "DELAY1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w8",
+      "from": {
+        "type": "pin",
+        "compId": "DELAY1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_DELAY",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w9",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_TRANSPORT_DELAY_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "TRANSPORT_DELAY1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w10",
+      "from": {
+        "type": "pin",
+        "compId": "TRANSPORT_DELAY1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_TRANSPORT_DELAY",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w11",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_TURN_ON_DELAY_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "TURN_ON_DELAY1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w12",
+      "from": {
+        "type": "pin",
+        "compId": "TURN_ON_DELAY1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_TURN_ON_DELAY",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w13",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_UNIT_DELAY_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "UNIT_DELAY1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w14",
+      "from": {
+        "type": "pin",
+        "compId": "UNIT_DELAY1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_UNIT_DELAY",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w15",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_ZOH_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "ZOH1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w16",
+      "from": {
+        "type": "pin",
+        "compId": "ZOH1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_ZOH",
+        "terminal": "In1"
+      }
+    }
+  ],
+  "plotConfiguration": {
+    "plots": []
+  },
+  "simulation_parameters": {
+    "t_end": "0.1",
+    "h": "1e-4",
+    "solver": "euler",
+    "step_type": "fixed"
+  },
+  "description": "Test Filters and Delays"
+}

@@ -1,0 +1,441 @@
+{
+  "components": [
+    {
+      "id": "D_FLIP_FLOP1",
+      "type": "D_FLIP_FLOP",
+      "x": 200,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_D_FLIP_FLOP_D",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SRC_D_FLIP_FLOP_Clk",
+      "type": "CLOCK",
+      "x": 0,
+      "y": 20,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SCOPE_D_FLIP_FLOP",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 0,
+      "rotation": 0,
+      "parameters": {
+        "channels": "2"
+      }
+    },
+    {
+      "id": "JK_FLIP_FLOP1",
+      "type": "JK_FLIP_FLOP",
+      "x": 200,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_JK_FLIP_FLOP_J",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SRC_JK_FLIP_FLOP_Clk",
+      "type": "CLOCK",
+      "x": 0,
+      "y": 170,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_JK_FLIP_FLOP_K",
+      "type": "PULSE_GEN",
+      "x": 0,
+      "y": 190,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "period": "0.02",
+        "pulse_width": "50"
+      }
+    },
+    {
+      "id": "SCOPE_JK_FLIP_FLOP",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 150,
+      "rotation": 0,
+      "parameters": {
+        "channels": "2"
+      }
+    },
+    {
+      "id": "MONOFLOP1",
+      "type": "MONOFLOP",
+      "x": 200,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_MONOFLOP_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_MONOFLOP",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 300,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "MONOSTABLE1",
+      "type": "MONOSTABLE",
+      "x": 200,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_MONOSTABLE_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_MONOSTABLE",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 450,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "COMPARE_TO_CONSTANT1",
+      "type": "COMPARE_TO_CONSTANT",
+      "x": 200,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_COMPARE_TO_CONSTANT_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_COMPARE_TO_CONSTANT",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 600,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    },
+    {
+      "id": "STATE_MACHINE1",
+      "type": "STATE_MACHINE",
+      "x": 200,
+      "y": 750,
+      "rotation": 0,
+      "parameters": {}
+    },
+    {
+      "id": "SRC_STATE_MACHINE_In",
+      "type": "SINE_WAVE",
+      "x": 0,
+      "y": 750,
+      "rotation": 0,
+      "parameters": {
+        "amplitude": "1",
+        "phase": "0"
+      }
+    },
+    {
+      "id": "SCOPE_STATE_MACHINE",
+      "type": "SCOPE",
+      "x": 400,
+      "y": 750,
+      "rotation": 0,
+      "parameters": {
+        "channels": "1"
+      }
+    }
+  ],
+  "wires": [
+    {
+      "id": "w1",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_D_FLIP_FLOP_D",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "D_FLIP_FLOP1",
+        "terminal": "D"
+      }
+    },
+    {
+      "id": "w2",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_D_FLIP_FLOP_Clk",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "D_FLIP_FLOP1",
+        "terminal": "Clk"
+      }
+    },
+    {
+      "id": "w3",
+      "from": {
+        "type": "pin",
+        "compId": "D_FLIP_FLOP1",
+        "terminal": "Q"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_D_FLIP_FLOP",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w4",
+      "from": {
+        "type": "pin",
+        "compId": "D_FLIP_FLOP1",
+        "terminal": "Q_bar"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_D_FLIP_FLOP",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w5",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_JK_FLIP_FLOP_J",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "JK_FLIP_FLOP1",
+        "terminal": "J"
+      }
+    },
+    {
+      "id": "w6",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_JK_FLIP_FLOP_Clk",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "JK_FLIP_FLOP1",
+        "terminal": "Clk"
+      }
+    },
+    {
+      "id": "w7",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_JK_FLIP_FLOP_K",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "JK_FLIP_FLOP1",
+        "terminal": "K"
+      }
+    },
+    {
+      "id": "w8",
+      "from": {
+        "type": "pin",
+        "compId": "JK_FLIP_FLOP1",
+        "terminal": "Q"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_JK_FLIP_FLOP",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w9",
+      "from": {
+        "type": "pin",
+        "compId": "JK_FLIP_FLOP1",
+        "terminal": "Q_bar"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_JK_FLIP_FLOP",
+        "terminal": "In2"
+      }
+    },
+    {
+      "id": "w10",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_MONOFLOP_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "MONOFLOP1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w11",
+      "from": {
+        "type": "pin",
+        "compId": "MONOFLOP1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_MONOFLOP",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w12",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_MONOSTABLE_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "MONOSTABLE1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w13",
+      "from": {
+        "type": "pin",
+        "compId": "MONOSTABLE1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_MONOSTABLE",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w14",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_COMPARE_TO_CONSTANT_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "COMPARE_TO_CONSTANT1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w15",
+      "from": {
+        "type": "pin",
+        "compId": "COMPARE_TO_CONSTANT1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_COMPARE_TO_CONSTANT",
+        "terminal": "In1"
+      }
+    },
+    {
+      "id": "w16",
+      "from": {
+        "type": "pin",
+        "compId": "SRC_STATE_MACHINE_In",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "STATE_MACHINE1",
+        "terminal": "In"
+      }
+    },
+    {
+      "id": "w17",
+      "from": {
+        "type": "pin",
+        "compId": "STATE_MACHINE1",
+        "terminal": "Out"
+      },
+      "to": {
+        "type": "pin",
+        "compId": "SCOPE_STATE_MACHINE",
+        "terminal": "In1"
+      }
+    }
+  ],
+  "plotConfiguration": {
+    "plots": []
+  },
+  "simulation_parameters": {
+    "t_end": "0.1",
+    "h": "1e-4",
+    "solver": "euler",
+    "step_type": "fixed"
+  },
+  "description": "Test State Machines"
+}
