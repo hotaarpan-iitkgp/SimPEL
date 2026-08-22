@@ -1,0 +1,65 @@
+{
+  "description": "Step 3: Continuous Sub-Library Test Schematic - 7 Standalone Dedicated Units with Dynamic Scope Channels",
+  "simulationSettings": {
+    "stopTime": 0.1,
+    "stepSize": 0.0001
+  },
+  "components": [
+    { "id": "STEP_INT", "type": "STEP", "x": -200, "y": -450, "rotation": 0, "parameters": { "step_time": "0.01", "initial_value": "0.0", "final_value": "5.0" } },
+    { "id": "INTEGRATOR1", "type": "INTEGRATOR", "x": 0, "y": -450, "rotation": 0, "parameters": { "initial_condition": "0" } },
+    { "id": "SCOPE_INT", "type": "SCOPE", "x": 200, "y": -450, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "RAMP_DERIV", "type": "RAMP", "x": -200, "y": -300, "rotation": 0, "parameters": { "slope": "10.0", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "DERIVATIVE1", "type": "DERIVATIVE", "x": 0, "y": -300, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_DERIV", "type": "SCOPE", "x": 200, "y": -300, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "STEP_TF", "type": "STEP", "x": -200, "y": -150, "rotation": 0, "parameters": { "step_time": "0.01", "initial_value": "0.0", "final_value": "1.0" } },
+    { "id": "TF1", "type": "TRANSFER_FCN", "x": 0, "y": -150, "rotation": 0, "parameters": { "num": "[1]", "den": "[1, 1]" } },
+    { "id": "SCOPE_TF", "type": "SCOPE", "x": 200, "y": -150, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "STEP_SS", "type": "STEP", "x": -200, "y": 0, "rotation": 0, "parameters": { "step_time": "0.01", "initial_value": "0.0", "final_value": "1.0" } },
+    { "id": "SS1", "type": "STATE_SPACE", "x": 0, "y": 0, "rotation": 0, "parameters": { "A": "[-1]", "B": "[1]", "C": "[1]", "D": "[0]", "x0": "0" } },
+    { "id": "SCOPE_SS", "type": "SCOPE", "x": 200, "y": 0, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "STEP_PID", "type": "STEP", "x": -200, "y": 150, "rotation": 0, "parameters": { "step_time": "0.01", "initial_value": "0.0", "final_value": "2.0" } },
+    { "id": "PID1", "type": "PID", "x": 0, "y": 150, "rotation": 0, "parameters": { "Kp": "2.5", "Ki": "50.0", "Kd": "0.0" } },
+    { "id": "SCOPE_PID", "type": "SCOPE", "x": 200, "y": 150, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "STEP_CPID", "type": "STEP", "x": -200, "y": 300, "rotation": 0, "parameters": { "step_time": "0.01", "initial_value": "0.0", "final_value": "2.0" } },
+    { "id": "CONT_PID1", "type": "CONT_PID", "x": 0, "y": 300, "rotation": 0, "parameters": { "Kp": "1.0", "Ki": "10.0", "Kd": "0.1", "Tf": "0.01" } },
+    { "id": "SCOPE_CONT_PID", "type": "SCOPE", "x": 200, "y": 300, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_PLL", "type": "SINE_WAVE", "x": -200, "y": 450, "rotation": 0, "parameters": { "amplitude": "230.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "PLL1", "type": "PLL_1PH", "x": 0, "y": 450, "rotation": 0, "parameters": { "fn": "50.0", "Kp": "20.0", "Ki": "1000.0" } },
+    { "id": "SCOPE_PLL", "type": "SCOPE", "x": 200, "y": 450, "rotation": 0, "parameters": { "channels": "2" } }
+  ],
+  "wires": [
+    { "id": "w1_in", "from": { "type": "pin", "compId": "STEP_INT", "terminal": "Out" }, "to": { "type": "pin", "compId": "INTEGRATOR1", "terminal": "In" } },
+    { "id": "w1_ch1", "from": { "type": "pin", "compId": "STEP_INT", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_INT", "terminal": "In1" } },
+    { "id": "w1_ch2", "from": { "type": "pin", "compId": "INTEGRATOR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_INT", "terminal": "In2" } },
+
+    { "id": "w2_in", "from": { "type": "pin", "compId": "RAMP_DERIV", "terminal": "Out" }, "to": { "type": "pin", "compId": "DERIVATIVE1", "terminal": "In" } },
+    { "id": "w2_ch1", "from": { "type": "pin", "compId": "RAMP_DERIV", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_DERIV", "terminal": "In1" } },
+    { "id": "w2_ch2", "from": { "type": "pin", "compId": "DERIVATIVE1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_DERIV", "terminal": "In2" } },
+
+    { "id": "w3_in", "from": { "type": "pin", "compId": "STEP_TF", "terminal": "Out" }, "to": { "type": "pin", "compId": "TF1", "terminal": "In" } },
+    { "id": "w3_ch1", "from": { "type": "pin", "compId": "STEP_TF", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_TF", "terminal": "In1" } },
+    { "id": "w3_ch2", "from": { "type": "pin", "compId": "TF1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_TF", "terminal": "In2" } },
+
+    { "id": "w4_in", "from": { "type": "pin", "compId": "STEP_SS", "terminal": "Out" }, "to": { "type": "pin", "compId": "SS1", "terminal": "In" } },
+    { "id": "w4_ch1", "from": { "type": "pin", "compId": "STEP_SS", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SS", "terminal": "In1" } },
+    { "id": "w4_ch2", "from": { "type": "pin", "compId": "SS1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SS", "terminal": "In2" } },
+
+    { "id": "w5_in", "from": { "type": "pin", "compId": "STEP_PID", "terminal": "Out" }, "to": { "type": "pin", "compId": "PID1", "terminal": "In" } },
+    { "id": "w5_ch1", "from": { "type": "pin", "compId": "STEP_PID", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PID", "terminal": "In1" } },
+    { "id": "w5_ch2", "from": { "type": "pin", "compId": "PID1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PID", "terminal": "In2" } },
+
+    { "id": "w6_in", "from": { "type": "pin", "compId": "STEP_CPID", "terminal": "Out" }, "to": { "type": "pin", "compId": "CONT_PID1", "terminal": "In" } },
+    { "id": "w6_ch1", "from": { "type": "pin", "compId": "STEP_CPID", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_CONT_PID", "terminal": "In1" } },
+    { "id": "w6_ch2", "from": { "type": "pin", "compId": "CONT_PID1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_CONT_PID", "terminal": "In2" } },
+
+    { "id": "w7_in", "from": { "type": "pin", "compId": "SINE_PLL", "terminal": "Out" }, "to": { "type": "pin", "compId": "PLL1", "terminal": "In" } },
+    { "id": "w7_ch1", "from": { "type": "pin", "compId": "SINE_PLL", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PLL", "terminal": "In1" } },
+    { "id": "w7_ch2", "from": { "type": "pin", "compId": "PLL1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PLL", "terminal": "In2" } }
+  ]
+}

@@ -1,0 +1,1047 @@
+{
+  "components": [
+    {
+      "id": "CONST1",
+      "label": "CONST1",
+      "parameters": {
+        "value": "5.0"
+      },
+      "rotation": 0,
+      "type": "CONST",
+      "x": -198.509033203125,
+      "y": -589.563232421875
+    },
+    {
+      "id": "GAIN_CONST",
+      "label": "GAIN_CONST",
+      "parameters": {
+        "K": "1.0"
+      },
+      "rotation": 0,
+      "type": "GAIN",
+      "x": -1.490966558456421,
+      "y": -588.8177490234375
+    },
+    {
+      "id": "SCOPE_CONST",
+      "label": "SCOPE_CONST",
+      "parameters": {
+        "channels": "2"
+      },
+      "rotation": 0,
+      "type": "SCOPE",
+      "x": 198.509033203125,
+      "y": -573.16259765625
+    },
+    {
+      "id": "CLOCK1",
+      "label": "CLOCK1",
+      "parameters": {},
+      "rotation": 0,
+      "type": "CLOCK",
+      "x": -200.0,
+      "y": -450.0
+    },
+    {
+      "id": "GAIN_CLOCK",
+      "label": "GAIN_CLOCK",
+      "parameters": {
+        "K": "1.0"
+      },
+      "rotation": 0,
+      "type": "GAIN",
+      "x": 0.0,
+      "y": -450.0
+    },
+    {
+      "id": "SCOPE_CLOCK",
+      "label": "SCOPE_CLOCK",
+      "parameters": {
+        "channels": "2"
+      },
+      "rotation": 0,
+      "type": "SCOPE",
+      "x": 197.7635498046875,
+      "y": -435.8358154296875
+    },
+    {
+      "id": "SRC_IC",
+      "label": "SRC_IC",
+      "parameters": {
+        "value": "10.0"
+      },
+      "rotation": 0,
+      "type": "CONST",
+      "x": -312.6417236328125,
+      "y": -298.6961669921875
+    },
+    {
+      "id": "INIT_COND1",
+      "label": "INIT_COND1",
+      "parameters": {
+        "initial_value": "2.0"
+      },
+      "rotation": 0,
+      "type": "INIT_COND",
+      "x": -200.0,
+      "y": -300.0
+    },
+    {
+      "id": "SCOPE_IC",
+      "label": "SCOPE_IC",
+      "parameters": {
+        "channels": "2"
+      },
+      "rotation": 0,
+      "type": "SCOPE",
+      "x": 200.0,
+      "y": -300.0
+    },
+    {
+      "id": "PULSE1",
+      "label": "PULSE1",
+      "parameters": {
+        "amplitude": "5.0",
+        "delay": "0.0",
+        "period": "0.02",
+        "width": "50.0"
+      },
+      "rotation": 0,
+      "type": "PULSE_GEN",
+      "x": -200.0,
+      "y": -150.0
+    },
+    {
+      "id": "GAIN_PULSE",
+      "label": "GAIN_PULSE",
+      "parameters": {
+        "K": "1.0"
+      },
+      "rotation": 0,
+      "type": "GAIN",
+      "x": 0.0,
+      "y": -150.0
+    },
+    {
+      "id": "SCOPE_PULSE",
+      "label": "SCOPE_PULSE",
+      "parameters": {
+        "channels": "2"
+      },
+      "rotation": 0,
+      "type": "SCOPE",
+      "x": 200.0,
+      "y": -150.0
+    },
+    {
+      "id": "RAMP1",
+      "label": "RAMP1",
+      "parameters": {
+        "initial_output": "0.0",
+        "slope": "10.0",
+        "start_time": "0.01"
+      },
+      "rotation": 0,
+      "type": "RAMP",
+      "x": -200.0,
+      "y": 0.0
+    },
+    {
+      "id": "GAIN_RAMP",
+      "label": "GAIN_RAMP",
+      "parameters": {
+        "K": "1.0"
+      },
+      "rotation": 0,
+      "type": "GAIN",
+      "x": 0.0,
+      "y": 0.0
+    },
+    {
+      "id": "SCOPE_RAMP",
+      "label": "SCOPE_RAMP",
+      "parameters": {
+        "channels": "2"
+      },
+      "rotation": 0,
+      "type": "SCOPE",
+      "x": 200.0,
+      "y": 0.0
+    },
+    {
+      "id": "RAND1",
+      "label": "RAND1",
+      "parameters": {
+        "mean": "0.0",
+        "variance": "1.0"
+      },
+      "rotation": 0,
+      "type": "RANDOM_NUM",
+      "x": -200.0,
+      "y": 150.0
+    },
+    {
+      "id": "GAIN_RAND",
+      "label": "GAIN_RAND",
+      "parameters": {
+        "K": "1.0"
+      },
+      "rotation": 0,
+      "type": "GAIN",
+      "x": 0.0,
+      "y": 150.0
+    },
+    {
+      "id": "SCOPE_RAND",
+      "label": "SCOPE_RAND",
+      "parameters": {
+        "channels": "2"
+      },
+      "rotation": 0,
+      "type": "SCOPE",
+      "x": 200.0,
+      "y": 150.0
+    },
+    {
+      "id": "SINE1",
+      "label": "SINE1",
+      "parameters": {
+        "amplitude": "10.0",
+        "frequency": "50.0",
+        "phase": "0.0"
+      },
+      "rotation": 0,
+      "type": "SINE_WAVE",
+      "x": -200.0,
+      "y": 300.0
+    },
+    {
+      "id": "GAIN_SINE",
+      "label": "GAIN_SINE",
+      "parameters": {
+        "K": "1.0"
+      },
+      "rotation": 0,
+      "type": "GAIN",
+      "x": 0.0,
+      "y": 300.0
+    },
+    {
+      "id": "SCOPE_SINE",
+      "label": "SCOPE_SINE",
+      "parameters": {
+        "channels": "2"
+      },
+      "rotation": 0,
+      "type": "SCOPE",
+      "x": 200.0,
+      "y": 300.0
+    },
+    {
+      "id": "STEP1",
+      "label": "STEP1",
+      "parameters": {
+        "final_value": "5.0",
+        "initial_value": "0.0",
+        "step_time": "0.02"
+      },
+      "rotation": 0,
+      "type": "STEP",
+      "x": -200.0,
+      "y": 450.0
+    },
+    {
+      "id": "GAIN_STEP",
+      "label": "GAIN_STEP",
+      "parameters": {
+        "K": "1.0"
+      },
+      "rotation": 0,
+      "type": "GAIN",
+      "x": 0.0,
+      "y": 450.0
+    },
+    {
+      "id": "SCOPE_STEP",
+      "label": "SCOPE_STEP",
+      "parameters": {
+        "channels": "2"
+      },
+      "rotation": 0,
+      "type": "SCOPE",
+      "x": 200.0,
+      "y": 450.0
+    },
+    {
+      "id": "TRI1",
+      "label": "TRI1",
+      "parameters": {
+        "frequency": "100.0",
+        "max": "1.0",
+        "min": "-1.0"
+      },
+      "rotation": 0,
+      "type": "TRI_GEN",
+      "x": -200.0,
+      "y": 600.0
+    },
+    {
+      "id": "GAIN_TRI",
+      "label": "GAIN_TRI",
+      "parameters": {
+        "K": "1.0"
+      },
+      "rotation": 0,
+      "type": "GAIN",
+      "x": 0.0,
+      "y": 600.0
+    },
+    {
+      "id": "SCOPE_TRI",
+      "label": "SCOPE_TRI",
+      "parameters": {
+        "channels": "2"
+      },
+      "rotation": 0,
+      "type": "SCOPE",
+      "x": 200.0,
+      "y": 590.1409912109375
+    },
+    {
+      "id": "NOISE1",
+      "label": "NOISE1",
+      "parameters": {
+        "psd": "0.1"
+      },
+      "rotation": 0,
+      "type": "WHITE_NOISE",
+      "x": -200.0,
+      "y": 750.0
+    },
+    {
+      "id": "GAIN_NOISE",
+      "label": "GAIN_NOISE",
+      "parameters": {
+        "K": "1.0"
+      },
+      "rotation": 0,
+      "type": "GAIN",
+      "x": 0.0,
+      "y": 750.0
+    },
+    {
+      "id": "SCOPE_NOISE",
+      "label": "SCOPE_NOISE",
+      "parameters": {
+        "channels": "2"
+      },
+      "rotation": 0,
+      "type": "SCOPE",
+      "x": 200.0,
+      "y": 750.0
+    }
+  ],
+  "wires": [
+    {
+      "from": {
+        "compId": "CONST1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w1_a",
+      "to": {
+        "compId": "w12",
+        "terminal": "",
+        "type": "junction",
+        "x": -80.0,
+        "y": -590.0
+      }
+    },
+    {
+      "from": {
+        "compId": "CONST1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w1_b",
+      "to": {
+        "compId": "SCOPE_CONST",
+        "terminal": "ch1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_CONST",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w1_c",
+      "to": {
+        "compId": "SCOPE_CONST",
+        "terminal": "ch2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "CLOCK1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w2_a",
+      "to": {
+        "compId": "w15",
+        "terminal": "",
+        "type": "junction",
+        "x": -90.0,
+        "y": -450.0
+      }
+    },
+    {
+      "from": {
+        "compId": "CLOCK1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w2_b",
+      "to": {
+        "compId": "SCOPE_CLOCK",
+        "terminal": "ch1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_CLOCK",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w2_c",
+      "to": {
+        "compId": "SCOPE_CLOCK",
+        "terminal": "ch2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "SRC_IC",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w3_a",
+      "to": {
+        "compId": "INIT_COND1",
+        "terminal": "In",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "SRC_IC",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w3_b",
+      "to": {
+        "compId": "SCOPE_IC",
+        "terminal": "ch1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "INIT_COND1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w3_c",
+      "to": {
+        "compId": "SCOPE_IC",
+        "terminal": "ch2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "PULSE1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w4_a",
+      "to": {
+        "compId": "GAIN_PULSE",
+        "terminal": "In",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "PULSE1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w4_b",
+      "to": {
+        "compId": "SCOPE_PULSE",
+        "terminal": "ch1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_PULSE",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w4_c",
+      "to": {
+        "compId": "SCOPE_PULSE",
+        "terminal": "ch2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "RAMP1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w5_a",
+      "to": {
+        "compId": "GAIN_RAMP",
+        "terminal": "In",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "RAMP1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w5_b",
+      "to": {
+        "compId": "SCOPE_RAMP",
+        "terminal": "ch1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_RAMP",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w5_c",
+      "to": {
+        "compId": "SCOPE_RAMP",
+        "terminal": "ch2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "RAND1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w6_a",
+      "to": {
+        "compId": "GAIN_RAND",
+        "terminal": "In",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "RAND1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w6_b",
+      "to": {
+        "compId": "SCOPE_RAND",
+        "terminal": "ch1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_RAND",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w6_c",
+      "to": {
+        "compId": "SCOPE_RAND",
+        "terminal": "ch2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "SINE1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w7_a",
+      "to": {
+        "compId": "GAIN_SINE",
+        "terminal": "In",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "SINE1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w7_b",
+      "to": {
+        "compId": "SCOPE_SINE",
+        "terminal": "ch1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_SINE",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w7_c",
+      "to": {
+        "compId": "SCOPE_SINE",
+        "terminal": "ch2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "STEP1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w8_a",
+      "to": {
+        "compId": "GAIN_STEP",
+        "terminal": "In",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "STEP1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w8_b",
+      "to": {
+        "compId": "SCOPE_STEP",
+        "terminal": "ch1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_STEP",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w8_c",
+      "to": {
+        "compId": "SCOPE_STEP",
+        "terminal": "ch2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "TRI1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w9_a",
+      "to": {
+        "compId": "GAIN_TRI",
+        "terminal": "In",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "TRI1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w9_b",
+      "to": {
+        "compId": "SCOPE_TRI",
+        "terminal": "ch1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_TRI",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w9_c",
+      "to": {
+        "compId": "SCOPE_TRI",
+        "terminal": "ch2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "NOISE1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w10_a",
+      "to": {
+        "compId": "GAIN_NOISE",
+        "terminal": "In",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "NOISE1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w10_b",
+      "to": {
+        "compId": "SCOPE_NOISE",
+        "terminal": "ch1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_NOISE",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w10_c",
+      "to": {
+        "compId": "SCOPE_NOISE",
+        "terminal": "ch2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_CONST",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w11",
+      "to": {
+        "compId": "SCOPE_CONST",
+        "terminal": "In1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "SCOPE_CONST",
+        "terminal": "In2",
+        "type": "pin"
+      },
+      "id": "w12",
+      "to": {
+        "compId": "w1_a",
+        "terminal": "",
+        "type": "junction",
+        "x": -80.0,
+        "y": -590.0
+      }
+    },
+    {
+      "from": {
+        "compId": "w12",
+        "terminal": "",
+        "type": "junction",
+        "x": -80.0,
+        "y": -590.0
+      },
+      "id": "w13",
+      "to": {
+        "compId": "GAIN_CONST",
+        "terminal": "In",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_CLOCK",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w14",
+      "to": {
+        "compId": "SCOPE_CLOCK",
+        "terminal": "In1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "SCOPE_CLOCK",
+        "terminal": "In2",
+        "type": "pin"
+      },
+      "id": "w15",
+      "to": {
+        "compId": "w2_a",
+        "terminal": "",
+        "type": "junction",
+        "x": -90.0,
+        "y": -450.0
+      }
+    },
+    {
+      "from": {
+        "compId": "w15",
+        "terminal": "",
+        "type": "junction",
+        "x": -90.0,
+        "y": -450.0
+      },
+      "id": "w16",
+      "to": {
+        "compId": "GAIN_CLOCK",
+        "terminal": "In",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "",
+        "terminal": "",
+        "type": "pin"
+      },
+      "id": "w19",
+      "to": {
+        "compId": "INIT_COND1",
+        "terminal": "In",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "PULSE1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w20",
+      "to": {
+        "compId": "SCOPE_PULSE",
+        "terminal": "In1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_PULSE",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w21",
+      "to": {
+        "compId": "SCOPE_PULSE",
+        "terminal": "In2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "RAMP1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w22",
+      "to": {
+        "compId": "SCOPE_RAMP",
+        "terminal": "In1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_RAMP",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w23",
+      "to": {
+        "compId": "SCOPE_RAMP",
+        "terminal": "In2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "RAND1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w24",
+      "to": {
+        "compId": "SCOPE_RAND",
+        "terminal": "In1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_RAND",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w25",
+      "to": {
+        "compId": "SCOPE_RAND",
+        "terminal": "In2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "SINE1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w26",
+      "to": {
+        "compId": "SCOPE_SINE",
+        "terminal": "In1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_SINE",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w27",
+      "to": {
+        "compId": "SCOPE_SINE",
+        "terminal": "In2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "STEP1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w28",
+      "to": {
+        "compId": "SCOPE_STEP",
+        "terminal": "In1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_STEP",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w29",
+      "to": {
+        "compId": "SCOPE_STEP",
+        "terminal": "In2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "TRI1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w30",
+      "to": {
+        "compId": "SCOPE_TRI",
+        "terminal": "In1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_TRI",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w31",
+      "to": {
+        "compId": "SCOPE_TRI",
+        "terminal": "In2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "NOISE1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w32",
+      "to": {
+        "compId": "SCOPE_NOISE",
+        "terminal": "In1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "GAIN_NOISE",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w33",
+      "to": {
+        "compId": "SCOPE_NOISE",
+        "terminal": "In2",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "SRC_IC",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w34",
+      "to": {
+        "compId": "SCOPE_IC",
+        "terminal": "In1",
+        "type": "pin"
+      }
+    },
+    {
+      "from": {
+        "compId": "INIT_COND1",
+        "terminal": "Out",
+        "type": "pin"
+      },
+      "id": "w35",
+      "to": {
+        "compId": "SCOPE_IC",
+        "terminal": "In2",
+        "type": "pin"
+      }
+    }
+  ]
+}

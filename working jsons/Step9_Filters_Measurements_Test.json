@@ -1,0 +1,65 @@
+{
+  "description": "Step 9: Filters & Measurements Sub-Library Test Schematic - 7 Standalone Dedicated Units",
+  "simulationSettings": {
+    "stopTime": 0.1,
+    "stepSize": 0.0001
+  },
+  "components": [
+    { "id": "NOISY_SINE_1", "type": "SINE_WAVE", "x": -200, "y": -450, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "F1ST_1", "type": "FILTER_1ST", "x": 0, "y": -450, "rotation": 0, "parameters": { "cutoff_freq": "100.0" } },
+    { "id": "SCOPE_F1ST", "type": "SCOPE", "x": 200, "y": -450, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "NOISY_SINE_2", "type": "SINE_WAVE", "x": -200, "y": -300, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "F2ND_1", "type": "FILTER_2ND", "x": 0, "y": -300, "rotation": 0, "parameters": { "cutoff_freq": "100.0", "damping": "0.707" } },
+    { "id": "SCOPE_F2ND", "type": "SCOPE", "x": 200, "y": -300, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "NOISY_SINE_3", "type": "SINE_WAVE", "x": -200, "y": -150, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "MAVG1", "type": "MOV_AVG", "x": 0, "y": -150, "rotation": 0, "parameters": { "window_size": "10" } },
+    { "id": "SCOPE_MAVG", "type": "SCOPE", "x": 200, "y": -150, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_PAVG", "type": "SINE_WAVE", "x": -200, "y": 0, "rotation": 0, "parameters": { "amplitude": "10.0", "frequency": "50.0", "phase": "0.0", "bias": "5.0" } },
+    { "id": "PAVG1", "type": "PER_AVG", "x": 0, "y": 0, "rotation": 0, "parameters": { "period": "0.02" } },
+    { "id": "SCOPE_PAVG", "type": "SCOPE", "x": 200, "y": 0, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_RMS", "type": "SINE_WAVE", "x": -200, "y": 150, "rotation": 0, "parameters": { "amplitude": "100.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "RMS1", "type": "RMS_VAL", "x": 0, "y": 150, "rotation": 0, "parameters": { "fundamental_freq": "50.0" } },
+    { "id": "SCOPE_RMS", "type": "SCOPE", "x": 200, "y": 150, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "DISTORTED_SINE", "type": "SINE_WAVE", "x": -200, "y": 300, "rotation": 0, "parameters": { "amplitude": "100.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "THD1", "type": "THD_VAL", "x": 0, "y": 300, "rotation": 0, "parameters": { "fundamental_freq": "50.0" } },
+    { "id": "SCOPE_THD", "type": "SCOPE", "x": 200, "y": 300, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_PLLL", "type": "SINE_WAVE", "x": -200, "y": 450, "rotation": 0, "parameters": { "amplitude": "230.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "PLLL1", "type": "PLL_LOOP", "x": 0, "y": 450, "rotation": 0, "parameters": { "fn": "50.0" } },
+    { "id": "SCOPE_PLLL", "type": "SCOPE", "x": 200, "y": 450, "rotation": 0, "parameters": { "channels": "2" } }
+  ],
+  "wires": [
+    { "id": "w1_in", "from": { "type": "pin", "compId": "NOISY_SINE_1", "terminal": "Out" }, "to": { "type": "pin", "compId": "F1ST_1", "terminal": "In" } },
+    { "id": "w1_ch1", "from": { "type": "pin", "compId": "NOISY_SINE_1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_F1ST", "terminal": "In1" } },
+    { "id": "w1_ch2", "from": { "type": "pin", "compId": "F1ST_1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_F1ST", "terminal": "In2" } },
+
+    { "id": "w2_in", "from": { "type": "pin", "compId": "NOISY_SINE_2", "terminal": "Out" }, "to": { "type": "pin", "compId": "F2ND_1", "terminal": "In" } },
+    { "id": "w2_ch1", "from": { "type": "pin", "compId": "NOISY_SINE_2", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_F2ND", "terminal": "In1" } },
+    { "id": "w2_ch2", "from": { "type": "pin", "compId": "F2ND_1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_F2ND", "terminal": "In2" } },
+
+    { "id": "w3_in", "from": { "type": "pin", "compId": "NOISY_SINE_3", "terminal": "Out" }, "to": { "type": "pin", "compId": "MAVG1", "terminal": "In" } },
+    { "id": "w3_ch1", "from": { "type": "pin", "compId": "NOISY_SINE_3", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_MAVG", "terminal": "In1" } },
+    { "id": "w3_ch2", "from": { "type": "pin", "compId": "MAVG1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_MAVG", "terminal": "In2" } },
+
+    { "id": "w4_in", "from": { "type": "pin", "compId": "SINE_PAVG", "terminal": "Out" }, "to": { "type": "pin", "compId": "PAVG1", "terminal": "In" } },
+    { "id": "w4_ch1", "from": { "type": "pin", "compId": "SINE_PAVG", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PAVG", "terminal": "In1" } },
+    { "id": "w4_ch2", "from": { "type": "pin", "compId": "PAVG1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PAVG", "terminal": "In2" } },
+
+    { "id": "w5_in", "from": { "type": "pin", "compId": "SINE_RMS", "terminal": "Out" }, "to": { "type": "pin", "compId": "RMS1", "terminal": "In" } },
+    { "id": "w5_ch1", "from": { "type": "pin", "compId": "SINE_RMS", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_RMS", "terminal": "In1" } },
+    { "id": "w5_ch2", "from": { "type": "pin", "compId": "RMS1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_RMS", "terminal": "In2" } },
+
+    { "id": "w6_in", "from": { "type": "pin", "compId": "DISTORTED_SINE", "terminal": "Out" }, "to": { "type": "pin", "compId": "THD1", "terminal": "In" } },
+    { "id": "w6_ch1", "from": { "type": "pin", "compId": "DISTORTED_SINE", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_THD", "terminal": "In1" } },
+    { "id": "w6_ch2", "from": { "type": "pin", "compId": "THD1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_THD", "terminal": "In2" } },
+
+    { "id": "w7_in", "from": { "type": "pin", "compId": "SINE_PLLL", "terminal": "Out" }, "to": { "type": "pin", "compId": "PLLL1", "terminal": "In" } },
+    { "id": "w7_ch1", "from": { "type": "pin", "compId": "SINE_PLLL", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PLLL", "terminal": "In1" } },
+    { "id": "w7_ch2", "from": { "type": "pin", "compId": "PLLL1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PLLL", "terminal": "In2" } }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "description": "Step 8: Signal Transforms Sub-Library Test Schematic - 4 Standalone Dedicated Units with 5-Channel Scopes",
+  "simulationSettings": {
+    "stopTime": 0.04,
+    "stepSize": 0.00001
+  },
+  "components": [
+    { "id": "SRC_VA", "type": "SINE_WAVE", "x": -300, "y": -480, "rotation": 0, "parameters": { "amplitude": "100.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "SRC_VB", "type": "SINE_WAVE", "x": -300, "y": -440, "rotation": 0, "parameters": { "amplitude": "100.0", "frequency": "50.0", "phase": "-120.0" } },
+    { "id": "SRC_VC", "type": "SINE_WAVE", "x": -300, "y": -400, "rotation": 0, "parameters": { "amplitude": "100.0", "frequency": "50.0", "phase": "120.0" } },
+    { "id": "CLARKE1", "type": "CLARKE", "x": -100, "y": -440, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_CLARKE", "type": "SCOPE", "x": 200, "y": -440, "rotation": 0, "parameters": { "channels": "5" } },
+
+    { "id": "SRC_ALPHA", "type": "SINE_WAVE", "x": -300, "y": -240, "rotation": 0, "parameters": { "amplitude": "100.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "SRC_BETA", "type": "SINE_WAVE", "x": -300, "y": -200, "rotation": 0, "parameters": { "amplitude": "100.0", "frequency": "50.0", "phase": "90.0" } },
+    { "id": "RAMP_THETA", "type": "RAMP", "x": -300, "y": -160, "rotation": 0, "parameters": { "slope": "314.159", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "PARK1", "type": "PARK", "x": -100, "y": -200, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_PARK", "type": "SCOPE", "x": 200, "y": -200, "rotation": 0, "parameters": { "channels": "5" } },
+
+    { "id": "SRC_INV_ALPHA", "type": "SINE_WAVE", "x": -300, "y": 0, "rotation": 0, "parameters": { "amplitude": "100.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "SRC_INV_BETA", "type": "SINE_WAVE", "x": -300, "y": 40, "rotation": 0, "parameters": { "amplitude": "100.0", "frequency": "50.0", "phase": "90.0" } },
+    { "id": "ICLARKE1", "type": "INV_CLARKE", "x": -100, "y": 20, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_ICLARKE", "type": "SCOPE", "x": 200, "y": 20, "rotation": 0, "parameters": { "channels": "5" } },
+
+    { "id": "CONST_VD", "type": "CONST", "x": -300, "y": 200, "rotation": 0, "parameters": { "value": "100.0" } },
+    { "id": "CONST_VQ", "type": "CONST", "x": -300, "y": 240, "rotation": 0, "parameters": { "value": "0.0" } },
+    { "id": "RAMP_IP_THETA", "type": "RAMP", "x": -300, "y": 280, "rotation": 0, "parameters": { "slope": "314.159", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "IPARK1", "type": "INV_PARK", "x": -100, "y": 240, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_IPARK", "type": "SCOPE", "x": 200, "y": 240, "rotation": 0, "parameters": { "channels": "5" } }
+  ],
+  "wires": [
+    { "id": "w1_va", "from": { "type": "pin", "compId": "SRC_VA", "terminal": "Out" }, "to": { "type": "pin", "compId": "CLARKE1", "terminal": "Va" } },
+    { "id": "w1_vb", "from": { "type": "pin", "compId": "SRC_VB", "terminal": "Out" }, "to": { "type": "pin", "compId": "CLARKE1", "terminal": "Vb" } },
+    { "id": "w1_vc", "from": { "type": "pin", "compId": "SRC_VC", "terminal": "Out" }, "to": { "type": "pin", "compId": "CLARKE1", "terminal": "Vc" } },
+    { "id": "w1_ch1", "from": { "type": "pin", "compId": "SRC_VA", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_CLARKE", "terminal": "In1" } },
+    { "id": "w1_ch2", "from": { "type": "pin", "compId": "SRC_VB", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_CLARKE", "terminal": "In2" } },
+    { "id": "w1_ch3", "from": { "type": "pin", "compId": "SRC_VC", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_CLARKE", "terminal": "In3" } },
+    { "id": "w1_ch4", "from": { "type": "pin", "compId": "CLARKE1", "terminal": "Valpha" }, "to": { "type": "pin", "compId": "SCOPE_CLARKE", "terminal": "In4" } },
+    { "id": "w1_ch5", "from": { "type": "pin", "compId": "CLARKE1", "terminal": "Vbeta" }, "to": { "type": "pin", "compId": "SCOPE_CLARKE", "terminal": "In5" } },
+
+    { "id": "w2_alpha", "from": { "type": "pin", "compId": "SRC_ALPHA", "terminal": "Out" }, "to": { "type": "pin", "compId": "PARK1", "terminal": "Valpha" } },
+    { "id": "w2_beta", "from": { "type": "pin", "compId": "SRC_BETA", "terminal": "Out" }, "to": { "type": "pin", "compId": "PARK1", "terminal": "Vbeta" } },
+    { "id": "w2_theta", "from": { "type": "pin", "compId": "RAMP_THETA", "terminal": "Out" }, "to": { "type": "pin", "compId": "PARK1", "terminal": "theta" } },
+    { "id": "w2_ch1", "from": { "type": "pin", "compId": "SRC_ALPHA", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PARK", "terminal": "In1" } },
+    { "id": "w2_ch2", "from": { "type": "pin", "compId": "SRC_BETA", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PARK", "terminal": "In2" } },
+    { "id": "w2_ch3", "from": { "type": "pin", "compId": "RAMP_THETA", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PARK", "terminal": "In3" } },
+    { "id": "w2_ch4", "from": { "type": "pin", "compId": "PARK1", "terminal": "Vd" }, "to": { "type": "pin", "compId": "SCOPE_PARK", "terminal": "In4" } },
+    { "id": "w2_ch5", "from": { "type": "pin", "compId": "PARK1", "terminal": "Vq" }, "to": { "type": "pin", "compId": "SCOPE_PARK", "terminal": "In5" } },
+
+    { "id": "w3_alpha", "from": { "type": "pin", "compId": "SRC_INV_ALPHA", "terminal": "Out" }, "to": { "type": "pin", "compId": "ICLARKE1", "terminal": "Valpha" } },
+    { "id": "w3_beta", "from": { "type": "pin", "compId": "SRC_INV_BETA", "terminal": "Out" }, "to": { "type": "pin", "compId": "ICLARKE1", "terminal": "Vbeta" } },
+    { "id": "w3_ch1", "from": { "type": "pin", "compId": "SRC_INV_ALPHA", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_ICLARKE", "terminal": "In1" } },
+    { "id": "w3_ch2", "from": { "type": "pin", "compId": "SRC_INV_BETA", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_ICLARKE", "terminal": "In2" } },
+    { "id": "w3_ch3", "from": { "type": "pin", "compId": "ICLARKE1", "terminal": "Va" }, "to": { "type": "pin", "compId": "SCOPE_ICLARKE", "terminal": "In3" } },
+    { "id": "w3_ch4", "from": { "type": "pin", "compId": "ICLARKE1", "terminal": "Vb" }, "to": { "type": "pin", "compId": "SCOPE_ICLARKE", "terminal": "In4" } },
+    { "id": "w3_ch5", "from": { "type": "pin", "compId": "ICLARKE1", "terminal": "Vc" }, "to": { "type": "pin", "compId": "SCOPE_ICLARKE", "terminal": "In5" } },
+
+    { "id": "w4_vd", "from": { "type": "pin", "compId": "CONST_VD", "terminal": "Out" }, "to": { "type": "pin", "compId": "IPARK1", "terminal": "Vd" } },
+    { "id": "w4_vq", "from": { "type": "pin", "compId": "CONST_VQ", "terminal": "Out" }, "to": { "type": "pin", "compId": "IPARK1", "terminal": "Vq" } },
+    { "id": "w4_theta", "from": { "type": "pin", "compId": "RAMP_IP_THETA", "terminal": "Out" }, "to": { "type": "pin", "compId": "IPARK1", "terminal": "theta" } },
+    { "id": "w4_ch1", "from": { "type": "pin", "compId": "CONST_VD", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_IPARK", "terminal": "In1" } },
+    { "id": "w4_ch2", "from": { "type": "pin", "compId": "CONST_VQ", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_IPARK", "terminal": "In2" } },
+    { "id": "w4_ch3", "from": { "type": "pin", "compId": "RAMP_IP_THETA", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_IPARK", "terminal": "In3" } },
+    { "id": "w4_ch4", "from": { "type": "pin", "compId": "IPARK1", "terminal": "Valpha" }, "to": { "type": "pin", "compId": "SCOPE_IPARK", "terminal": "In4" } },
+    { "id": "w4_ch5", "from": { "type": "pin", "compId": "IPARK1", "terminal": "Vbeta" }, "to": { "type": "pin", "compId": "SCOPE_IPARK", "terminal": "In5" } }
+  ]
+}

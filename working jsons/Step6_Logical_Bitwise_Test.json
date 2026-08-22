@@ -1,0 +1,115 @@
+{
+  "description": "Step 6: Logical & Bitwise Sub-Library Test Schematic - 11 Standalone Dedicated Units",
+  "simulationSettings": {
+    "stopTime": 0.1,
+    "stepSize": 0.0001
+  },
+  "components": [
+    { "id": "PULSE_AND1", "type": "PULSE_GEN", "x": -300, "y": -600, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.04", "width": "50.0", "delay": "0.0" } },
+    { "id": "PULSE_AND2", "type": "PULSE_GEN", "x": -300, "y": -560, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.02", "width": "50.0", "delay": "0.0" } },
+    { "id": "AND1", "type": "AND", "x": -100, "y": -580, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_AND", "type": "SCOPE", "x": 200, "y": -580, "rotation": 0, "parameters": { "channels": "3" } },
+
+    { "id": "PULSE_OR1", "type": "PULSE_GEN", "x": -300, "y": -460, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.04", "width": "50.0", "delay": "0.0" } },
+    { "id": "PULSE_OR2", "type": "PULSE_GEN", "x": -300, "y": -420, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.02", "width": "50.0", "delay": "0.0" } },
+    { "id": "OR1", "type": "OR", "x": -100, "y": -440, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_OR", "type": "SCOPE", "x": 200, "y": -440, "rotation": 0, "parameters": { "channels": "3" } },
+
+    { "id": "PULSE_NOT", "type": "PULSE_GEN", "x": -200, "y": -320, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.02", "width": "50.0", "delay": "0.0" } },
+    { "id": "NOT1", "type": "NOT", "x": 0, "y": -320, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_NOT", "type": "SCOPE", "x": 200, "y": -320, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "PULSE_NAND1", "type": "PULSE_GEN", "x": -300, "y": -220, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.04", "width": "50.0", "delay": "0.0" } },
+    { "id": "PULSE_NAND2", "type": "PULSE_GEN", "x": -300, "y": -180, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.02", "width": "50.0", "delay": "0.0" } },
+    { "id": "NAND1", "type": "NAND", "x": -100, "y": -200, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_NAND", "type": "SCOPE", "x": 200, "y": -200, "rotation": 0, "parameters": { "channels": "3" } },
+
+    { "id": "PULSE_NOR1", "type": "PULSE_GEN", "x": -300, "y": -100, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.04", "width": "50.0", "delay": "0.0" } },
+    { "id": "PULSE_NOR2", "type": "PULSE_GEN", "x": -300, "y": -60, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.02", "width": "50.0", "delay": "0.0" } },
+    { "id": "NOR1", "type": "NOR", "x": -100, "y": -80, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_NOR", "type": "SCOPE", "x": 200, "y": -80, "rotation": 0, "parameters": { "channels": "3" } },
+
+    { "id": "PULSE_XOR1", "type": "PULSE_GEN", "x": -300, "y": 20, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.04", "width": "50.0", "delay": "0.0" } },
+    { "id": "PULSE_XOR2", "type": "PULSE_GEN", "x": -300, "y": 60, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.02", "width": "50.0", "delay": "0.0" } },
+    { "id": "XOR1", "type": "XOR", "x": -100, "y": 40, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_XOR", "type": "SCOPE", "x": 200, "y": 40, "rotation": 0, "parameters": { "channels": "3" } },
+
+    { "id": "PULSE_XNOR1", "type": "PULSE_GEN", "x": -300, "y": 140, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.04", "width": "50.0", "delay": "0.0" } },
+    { "id": "PULSE_XNOR2", "type": "PULSE_GEN", "x": -300, "y": 180, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.02", "width": "50.0", "delay": "0.0" } },
+    { "id": "XNOR1", "type": "XNOR", "x": -100, "y": 160, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_XNOR", "type": "SCOPE", "x": 200, "y": 160, "rotation": 0, "parameters": { "channels": "3" } },
+
+    { "id": "RAMP_COMPC", "type": "RAMP", "x": -200, "y": 270, "rotation": 0, "parameters": { "slope": "10.0", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "COMPC1", "type": "COMP_CONST", "x": 0, "y": 270, "rotation": 0, "parameters": { "threshold": "2.5", "operator": ">" } },
+    { "id": "SCOPE_COMPC", "type": "SCOPE", "x": 200, "y": 270, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "PULSE_EDGE", "type": "PULSE_GEN", "x": -200, "y": 370, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.02", "width": "50.0", "delay": "0.0" } },
+    { "id": "EDGE1", "type": "EDGE_DETECT", "x": 0, "y": 370, "rotation": 0, "parameters": { "edge_type": "rising" } },
+    { "id": "SCOPE_EDGE", "type": "SCOPE", "x": 200, "y": 370, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "PULSE_MONO", "type": "PULSE_GEN", "x": -200, "y": 470, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.04", "width": "10.0", "delay": "0.0" } },
+    { "id": "MONO1", "type": "MONOSTABLE", "x": 0, "y": 470, "rotation": 0, "parameters": { "pulse_duration": "0.01" } },
+    { "id": "SCOPE_MONO", "type": "SCOPE", "x": 200, "y": 470, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "PULSE_MFLOP", "type": "PULSE_GEN", "x": -200, "y": 570, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.04", "width": "10.0", "delay": "0.0" } },
+    { "id": "MFLOP1", "type": "MONOFLOP", "x": 0, "y": 570, "rotation": 0, "parameters": { "pulse_duration": "0.01" } },
+    { "id": "SCOPE_MFLOP", "type": "SCOPE", "x": 200, "y": 570, "rotation": 0, "parameters": { "channels": "2" } }
+  ],
+  "wires": [
+    { "id": "w1_in1", "from": { "type": "pin", "compId": "PULSE_AND1", "terminal": "Out" }, "to": { "type": "pin", "compId": "AND1", "terminal": "A" } },
+    { "id": "w1_in2", "from": { "type": "pin", "compId": "PULSE_AND2", "terminal": "Out" }, "to": { "type": "pin", "compId": "AND1", "terminal": "B" } },
+    { "id": "w1_ch1", "from": { "type": "pin", "compId": "PULSE_AND1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_AND", "terminal": "In1" } },
+    { "id": "w1_ch2", "from": { "type": "pin", "compId": "PULSE_AND2", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_AND", "terminal": "In2" } },
+    { "id": "w1_ch3", "from": { "type": "pin", "compId": "AND1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_AND", "terminal": "In3" } },
+
+    { "id": "w2_in1", "from": { "type": "pin", "compId": "PULSE_OR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "OR1", "terminal": "A" } },
+    { "id": "w2_in2", "from": { "type": "pin", "compId": "PULSE_OR2", "terminal": "Out" }, "to": { "type": "pin", "compId": "OR1", "terminal": "B" } },
+    { "id": "w2_ch1", "from": { "type": "pin", "compId": "PULSE_OR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_OR", "terminal": "In1" } },
+    { "id": "w2_ch2", "from": { "type": "pin", "compId": "PULSE_OR2", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_OR", "terminal": "In2" } },
+    { "id": "w2_ch3", "from": { "type": "pin", "compId": "OR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_OR", "terminal": "In3" } },
+
+    { "id": "w3_in", "from": { "type": "pin", "compId": "PULSE_NOT", "terminal": "Out" }, "to": { "type": "pin", "compId": "NOT1", "terminal": "In" } },
+    { "id": "w3_ch1", "from": { "type": "pin", "compId": "PULSE_NOT", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_NOT", "terminal": "In1" } },
+    { "id": "w3_ch2", "from": { "type": "pin", "compId": "NOT1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_NOT", "terminal": "In2" } },
+
+    { "id": "w4_in1", "from": { "type": "pin", "compId": "PULSE_NAND1", "terminal": "Out" }, "to": { "type": "pin", "compId": "NAND1", "terminal": "A" } },
+    { "id": "w4_in2", "from": { "type": "pin", "compId": "PULSE_NAND2", "terminal": "Out" }, "to": { "type": "pin", "compId": "NAND1", "terminal": "B" } },
+    { "id": "w4_ch1", "from": { "type": "pin", "compId": "PULSE_NAND1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_NAND", "terminal": "In1" } },
+    { "id": "w4_ch2", "from": { "type": "pin", "compId": "PULSE_NAND2", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_NAND", "terminal": "In2" } },
+    { "id": "w4_ch3", "from": { "type": "pin", "compId": "NAND1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_NAND", "terminal": "In3" } },
+
+    { "id": "w5_in1", "from": { "type": "pin", "compId": "PULSE_NOR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "NOR1", "terminal": "A" } },
+    { "id": "w5_in2", "from": { "type": "pin", "compId": "PULSE_NOR2", "terminal": "Out" }, "to": { "type": "pin", "compId": "NOR1", "terminal": "B" } },
+    { "id": "w5_ch1", "from": { "type": "pin", "compId": "PULSE_NOR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_NOR", "terminal": "In1" } },
+    { "id": "w5_ch2", "from": { "type": "pin", "compId": "PULSE_NOR2", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_NOR", "terminal": "In2" } },
+    { "id": "w5_ch3", "from": { "type": "pin", "compId": "NOR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_NOR", "terminal": "In3" } },
+
+    { "id": "w6_in1", "from": { "type": "pin", "compId": "PULSE_XOR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "XOR1", "terminal": "A" } },
+    { "id": "w6_in2", "from": { "type": "pin", "compId": "PULSE_XOR2", "terminal": "Out" }, "to": { "type": "pin", "compId": "XOR1", "terminal": "B" } },
+    { "id": "w6_ch1", "from": { "type": "pin", "compId": "PULSE_XOR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_XOR", "terminal": "In1" } },
+    { "id": "w6_ch2", "from": { "type": "pin", "compId": "PULSE_XOR2", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_XOR", "terminal": "In2" } },
+    { "id": "w6_ch3", "from": { "type": "pin", "compId": "XOR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_XOR", "terminal": "In3" } },
+
+    { "id": "w7_in1", "from": { "type": "pin", "compId": "PULSE_XNOR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "XNOR1", "terminal": "A" } },
+    { "id": "w7_in2", "from": { "type": "pin", "compId": "PULSE_XNOR2", "terminal": "Out" }, "to": { "type": "pin", "compId": "XNOR1", "terminal": "B" } },
+    { "id": "w7_ch1", "from": { "type": "pin", "compId": "PULSE_XNOR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_XNOR", "terminal": "In1" } },
+    { "id": "w7_ch2", "from": { "type": "pin", "compId": "PULSE_XNOR2", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_XNOR", "terminal": "In2" } },
+    { "id": "w7_ch3", "from": { "type": "pin", "compId": "XNOR1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_XNOR", "terminal": "In3" } },
+
+    { "id": "w8_in", "from": { "type": "pin", "compId": "RAMP_COMPC", "terminal": "Out" }, "to": { "type": "pin", "compId": "COMPC1", "terminal": "In" } },
+    { "id": "w8_ch1", "from": { "type": "pin", "compId": "RAMP_COMPC", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_COMPC", "terminal": "In1" } },
+    { "id": "w8_ch2", "from": { "type": "pin", "compId": "COMPC1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_COMPC", "terminal": "In2" } },
+
+    { "id": "w9_in", "from": { "type": "pin", "compId": "PULSE_EDGE", "terminal": "Out" }, "to": { "type": "pin", "compId": "EDGE1", "terminal": "In" } },
+    { "id": "w9_ch1", "from": { "type": "pin", "compId": "PULSE_EDGE", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_EDGE", "terminal": "In1" } },
+    { "id": "w9_ch2", "from": { "type": "pin", "compId": "EDGE1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_EDGE", "terminal": "In2" } },
+
+    { "id": "w10_in", "from": { "type": "pin", "compId": "PULSE_MONO", "terminal": "Out" }, "to": { "type": "pin", "compId": "MONO1", "terminal": "In" } },
+    { "id": "w10_ch1", "from": { "type": "pin", "compId": "PULSE_MONO", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_MONO", "terminal": "In1" } },
+    { "id": "w10_ch2", "from": { "type": "pin", "compId": "MONO1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_MONO", "terminal": "In2" } },
+
+    { "id": "w11_in", "from": { "type": "pin", "compId": "PULSE_MFLOP", "terminal": "Out" }, "to": { "type": "pin", "compId": "MFLOP1", "terminal": "In" } },
+    { "id": "w11_ch1", "from": { "type": "pin", "compId": "PULSE_MFLOP", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_MFLOP", "terminal": "In1" } },
+    { "id": "w11_ch2", "from": { "type": "pin", "compId": "MFLOP1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_MFLOP", "terminal": "In2" } }
+  ]
+}

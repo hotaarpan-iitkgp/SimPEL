@@ -1,0 +1,41 @@
+{
+  "description": "Step 4: Delays Sub-Library Test Schematic - 4 Standalone Dedicated Units",
+  "simulationSettings": {
+    "stopTime": 0.1,
+    "stepSize": 0.0001
+  },
+  "components": [
+    { "id": "PULSE_DELAY", "type": "PULSE_GEN", "x": -200, "y": -225, "rotation": 0, "parameters": { "amplitude": "5.0", "period": "0.02", "width": "50.0", "delay": "0.0" } },
+    { "id": "DELAY1", "type": "DELAY", "x": 0, "y": -225, "rotation": 0, "parameters": { "delay": "0.005" } },
+    { "id": "SCOPE_DELAY", "type": "SCOPE", "x": 200, "y": -225, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_TD", "type": "SINE_WAVE", "x": -200, "y": -75, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "TDELAY1", "type": "TRANSPORT_DELAY", "x": 0, "y": -75, "rotation": 0, "parameters": { "delay": "0.005" } },
+    { "id": "SCOPE_TDELAY", "type": "SCOPE", "x": 200, "y": -75, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "PULSE_TON", "type": "PULSE_GEN", "x": -200, "y": 75, "rotation": 0, "parameters": { "amplitude": "5.0", "period": "0.04", "width": "50.0", "delay": "0.0" } },
+    { "id": "TON1", "type": "TURN_ON_DELAY", "x": 0, "y": 75, "rotation": 0, "parameters": { "delay": "0.005" } },
+    { "id": "SCOPE_TON", "type": "SCOPE", "x": 200, "y": 75, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_MEM", "type": "SINE_WAVE", "x": -200, "y": 225, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "MEM1", "type": "MEMORY_BLOCK", "x": 0, "y": 225, "rotation": 0, "parameters": { "initial_value": "0.0" } },
+    { "id": "SCOPE_MEM", "type": "SCOPE", "x": 200, "y": 225, "rotation": 0, "parameters": { "channels": "2" } }
+  ],
+  "wires": [
+    { "id": "w1_in", "from": { "type": "pin", "compId": "PULSE_DELAY", "terminal": "Out" }, "to": { "type": "pin", "compId": "DELAY1", "terminal": "In" } },
+    { "id": "w1_ch1", "from": { "type": "pin", "compId": "PULSE_DELAY", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_DELAY", "terminal": "In1" } },
+    { "id": "w1_ch2", "from": { "type": "pin", "compId": "DELAY1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_DELAY", "terminal": "In2" } },
+
+    { "id": "w2_in", "from": { "type": "pin", "compId": "SINE_TD", "terminal": "Out" }, "to": { "type": "pin", "compId": "TDELAY1", "terminal": "In" } },
+    { "id": "w2_ch1", "from": { "type": "pin", "compId": "SINE_TD", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_TDELAY", "terminal": "In1" } },
+    { "id": "w2_ch2", "from": { "type": "pin", "compId": "TDELAY1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_TDELAY", "terminal": "In2" } },
+
+    { "id": "w3_in", "from": { "type": "pin", "compId": "PULSE_TON", "terminal": "Out" }, "to": { "type": "pin", "compId": "TON1", "terminal": "In" } },
+    { "id": "w3_ch1", "from": { "type": "pin", "compId": "PULSE_TON", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_TON", "terminal": "In1" } },
+    { "id": "w3_ch2", "from": { "type": "pin", "compId": "TON1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_TON", "terminal": "In2" } },
+
+    { "id": "w4_in", "from": { "type": "pin", "compId": "SINE_MEM", "terminal": "Out" }, "to": { "type": "pin", "compId": "MEM1", "terminal": "In" } },
+    { "id": "w4_ch1", "from": { "type": "pin", "compId": "SINE_MEM", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_MEM", "terminal": "In1" } },
+    { "id": "w4_ch2", "from": { "type": "pin", "compId": "MEM1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_MEM", "terminal": "In2" } }
+  ]
+}

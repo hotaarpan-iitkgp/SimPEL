@@ -1,0 +1,129 @@
+{
+  "description": "Step 2: Functions & Tables Sub-Library Test Schematic - 14 Isolated Dedicated Units",
+  "simulationSettings": {
+    "stopTime": 0.1,
+    "stepSize": 0.0001
+  },
+  "components": [
+    { "id": "SINE_GAIN", "type": "SINE_WAVE", "x": -200, "y": -700, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "GAIN1", "type": "GAIN", "x": 0, "y": -700, "rotation": 0, "parameters": { "K": "2.5" } },
+    { "id": "SCOPE_GAIN", "type": "SCOPE", "x": 200, "y": -700, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "CONST_SUM1", "type": "CONST", "x": -300, "y": -580, "rotation": 0, "parameters": { "value": "5.0" } },
+    { "id": "CONST_SUM2", "type": "CONST", "x": -300, "y": -540, "rotation": 0, "parameters": { "value": "3.0" } },
+    { "id": "SUM_RECT1", "type": "SUM_RECT", "x": -100, "y": -560, "rotation": 0, "parameters": { "signs": "++" } },
+    { "id": "SCOPE_SUM_RECT", "type": "SCOPE", "x": 200, "y": -560, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "RAMP_PROD", "type": "RAMP", "x": -300, "y": -440, "rotation": 0, "parameters": { "slope": "10.0", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "CONST_PROD", "type": "CONST", "x": -300, "y": -400, "rotation": 0, "parameters": { "value": "2.0" } },
+    { "id": "PROD_RECT1", "type": "PRODUCT_RECT", "x": -100, "y": -420, "rotation": 0, "parameters": { "operators": "**" } },
+    { "id": "SCOPE_PROD_RECT", "type": "SCOPE", "x": 200, "y": -420, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "RAMP_TRIG", "type": "RAMP", "x": -200, "y": -300, "rotation": 0, "parameters": { "slope": "62.83", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "TRIG1", "type": "TRIG_FCN", "x": 0, "y": -300, "rotation": 0, "parameters": { "function": "sin" } },
+    { "id": "SCOPE_TRIG", "type": "SCOPE", "x": 200, "y": -300, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "STEP_MATH", "type": "STEP", "x": -200, "y": -180, "rotation": 0, "parameters": { "step_time": "0.01", "initial_value": "0.0", "final_value": "2.0" } },
+    { "id": "MATH1", "type": "MATH_FCN", "x": 0, "y": -180, "rotation": 0, "parameters": { "function": "exp" } },
+    { "id": "SCOPE_MATH", "type": "SCOPE", "x": 200, "y": -180, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_ABS", "type": "SINE_WAVE", "x": -200, "y": -60, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "ABS1", "type": "ABS", "x": 0, "y": -60, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_ABS", "type": "SCOPE", "x": 200, "y": -60, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_SIGN", "type": "SINE_WAVE", "x": -200, "y": 60, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "SIGN1", "type": "SIGN", "x": 0, "y": 60, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_SIGN", "type": "SCOPE", "x": 200, "y": 60, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "RAMP_ROUND", "type": "RAMP", "x": -200, "y": 180, "rotation": 0, "parameters": { "slope": "10.0", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "ROUND1", "type": "ROUND", "x": 0, "y": 180, "rotation": 0, "parameters": { "mode": "nearest" } },
+    { "id": "SCOPE_ROUND", "type": "SCOPE", "x": 200, "y": 180, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_MM", "type": "SINE_WAVE", "x": -300, "y": 280, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "CONST_MM", "type": "CONST", "x": -300, "y": 320, "rotation": 0, "parameters": { "value": "2.0" } },
+    { "id": "MIN_MAX1", "type": "MIN_MAX", "x": -100, "y": 300, "rotation": 0, "parameters": { "function": "min" } },
+    { "id": "SCOPE_MIN_MAX", "type": "SCOPE", "x": 200, "y": 300, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "RAMP_POLY", "type": "RAMP", "x": -200, "y": 420, "rotation": 0, "parameters": { "slope": "5.0", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "POLY1", "type": "POLYNOMIAL", "x": 0, "y": 420, "rotation": 0, "parameters": { "coefficients": "[1, 0]" } },
+    { "id": "SCOPE_POLY", "type": "SCOPE", "x": 200, "y": 420, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "RAMP_LUT1D", "type": "RAMP", "x": -200, "y": 540, "rotation": 0, "parameters": { "slope": "10.0", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "LUT1D_1", "type": "LUT_1D", "x": 0, "y": 540, "rotation": 0, "parameters": { "x_data": "[0, 1, 2]", "y_data": "[0, 2, 4]" } },
+    { "id": "SCOPE_LUT1D", "type": "SCOPE", "x": 200, "y": 540, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "RAMP_LUT2D_X", "type": "RAMP", "x": -300, "y": 640, "rotation": 0, "parameters": { "slope": "10.0", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "CONST_LUT2D_Y", "type": "CONST", "x": -300, "y": 680, "rotation": 0, "parameters": { "value": "1.0" } },
+    { "id": "LUT2D_1", "type": "LUT_2D", "x": -100, "y": 660, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_LUT2D", "type": "SCOPE", "x": 200, "y": 660, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_CS", "type": "SINE_WAVE", "x": -200, "y": 780, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "CSCRIPT1", "type": "CSCRIPT", "x": 0, "y": 780, "rotation": 0, "parameters": { "code": "// Step code\noutputs[0] = inputs[0] * 2.0;\n" } },
+    { "id": "SCOPE_CSCRIPT", "type": "SCOPE", "x": 200, "y": 780, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "CONST_ALG", "type": "CONST", "x": -200, "y": 900, "rotation": 0, "parameters": { "value": "5.0" } },
+    { "id": "ALG1", "type": "ALGEBRAIC_CONSTRAINT", "x": 0, "y": 900, "rotation": 0, "parameters": { "initial_guess": "0.0" } },
+    { "id": "SCOPE_ALG", "type": "SCOPE", "x": 200, "y": 900, "rotation": 0, "parameters": { "channels": "2" } }
+  ],
+  "wires": [
+    { "id": "w1_in", "from": { "type": "pin", "compId": "SINE_GAIN", "terminal": "Out" }, "to": { "type": "pin", "compId": "GAIN1", "terminal": "In" } },
+    { "id": "w1_ch1", "from": { "type": "pin", "compId": "SINE_GAIN", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_GAIN", "terminal": "In1" } },
+    { "id": "w1_ch2", "from": { "type": "pin", "compId": "GAIN1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_GAIN", "terminal": "In2" } },
+
+    { "id": "w2_in1", "from": { "type": "pin", "compId": "CONST_SUM1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SUM_RECT1", "terminal": "A" } },
+    { "id": "w2_in2", "from": { "type": "pin", "compId": "CONST_SUM2", "terminal": "Out" }, "to": { "type": "pin", "compId": "SUM_RECT1", "terminal": "B" } },
+    { "id": "w2_ch1", "from": { "type": "pin", "compId": "CONST_SUM1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SUM_RECT", "terminal": "In1" } },
+    { "id": "w2_ch2", "from": { "type": "pin", "compId": "SUM_RECT1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SUM_RECT", "terminal": "In2" } },
+
+    { "id": "w3_in1", "from": { "type": "pin", "compId": "RAMP_PROD", "terminal": "Out" }, "to": { "type": "pin", "compId": "PROD_RECT1", "terminal": "In1" } },
+    { "id": "w3_in2", "from": { "type": "pin", "compId": "CONST_PROD", "terminal": "Out" }, "to": { "type": "pin", "compId": "PROD_RECT1", "terminal": "In2" } },
+    { "id": "w3_ch1", "from": { "type": "pin", "compId": "RAMP_PROD", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PROD_RECT", "terminal": "In1" } },
+    { "id": "w3_ch2", "from": { "type": "pin", "compId": "PROD_RECT1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PROD_RECT", "terminal": "In2" } },
+
+    { "id": "w4_in", "from": { "type": "pin", "compId": "RAMP_TRIG", "terminal": "Out" }, "to": { "type": "pin", "compId": "TRIG1", "terminal": "In" } },
+    { "id": "w4_ch1", "from": { "type": "pin", "compId": "RAMP_TRIG", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_TRIG", "terminal": "In1" } },
+    { "id": "w4_ch2", "from": { "type": "pin", "compId": "TRIG1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_TRIG", "terminal": "In2" } },
+
+    { "id": "w5_in", "from": { "type": "pin", "compId": "STEP_MATH", "terminal": "Out" }, "to": { "type": "pin", "compId": "MATH1", "terminal": "In1" } },
+    { "id": "w5_ch1", "from": { "type": "pin", "compId": "STEP_MATH", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_MATH", "terminal": "In1" } },
+    { "id": "w5_ch2", "from": { "type": "pin", "compId": "MATH1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_MATH", "terminal": "In2" } },
+
+    { "id": "w6_in", "from": { "type": "pin", "compId": "SINE_ABS", "terminal": "Out" }, "to": { "type": "pin", "compId": "ABS1", "terminal": "In" } },
+    { "id": "w6_ch1", "from": { "type": "pin", "compId": "SINE_ABS", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_ABS", "terminal": "In1" } },
+    { "id": "w6_ch2", "from": { "type": "pin", "compId": "ABS1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_ABS", "terminal": "In2" } },
+
+    { "id": "w7_in", "from": { "type": "pin", "compId": "SINE_SIGN", "terminal": "Out" }, "to": { "type": "pin", "compId": "SIGN1", "terminal": "In" } },
+    { "id": "w7_ch1", "from": { "type": "pin", "compId": "SINE_SIGN", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SIGN", "terminal": "In1" } },
+    { "id": "w7_ch2", "from": { "type": "pin", "compId": "SIGN1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SIGN", "terminal": "In2" } },
+
+    { "id": "w8_in", "from": { "type": "pin", "compId": "RAMP_ROUND", "terminal": "Out" }, "to": { "type": "pin", "compId": "ROUND1", "terminal": "In" } },
+    { "id": "w8_ch1", "from": { "type": "pin", "compId": "RAMP_ROUND", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_ROUND", "terminal": "In1" } },
+    { "id": "w8_ch2", "from": { "type": "pin", "compId": "ROUND1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_ROUND", "terminal": "In2" } },
+
+    { "id": "w9_in1", "from": { "type": "pin", "compId": "SINE_MM", "terminal": "Out" }, "to": { "type": "pin", "compId": "MIN_MAX1", "terminal": "In1" } },
+    { "id": "w9_in2", "from": { "type": "pin", "compId": "CONST_MM", "terminal": "Out" }, "to": { "type": "pin", "compId": "MIN_MAX1", "terminal": "In2" } },
+    { "id": "w9_ch1", "from": { "type": "pin", "compId": "SINE_MM", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_MIN_MAX", "terminal": "In1" } },
+    { "id": "w9_ch2", "from": { "type": "pin", "compId": "MIN_MAX1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_MIN_MAX", "terminal": "In2" } },
+
+    { "id": "w10_in", "from": { "type": "pin", "compId": "RAMP_POLY", "terminal": "Out" }, "to": { "type": "pin", "compId": "POLY1", "terminal": "In" } },
+    { "id": "w10_ch1", "from": { "type": "pin", "compId": "RAMP_POLY", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_POLY", "terminal": "In1" } },
+    { "id": "w10_ch2", "from": { "type": "pin", "compId": "POLY1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_POLY", "terminal": "In2" } },
+
+    { "id": "w11_in", "from": { "type": "pin", "compId": "RAMP_LUT1D", "terminal": "Out" }, "to": { "type": "pin", "compId": "LUT1D_1", "terminal": "In" } },
+    { "id": "w11_ch1", "from": { "type": "pin", "compId": "RAMP_LUT1D", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_LUT1D", "terminal": "In1" } },
+    { "id": "w11_ch2", "from": { "type": "pin", "compId": "LUT1D_1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_LUT1D", "terminal": "In2" } },
+
+    { "id": "w12_in1", "from": { "type": "pin", "compId": "RAMP_LUT2D_X", "terminal": "Out" }, "to": { "type": "pin", "compId": "LUT2D_1", "terminal": "In1" } },
+    { "id": "w12_in2", "from": { "type": "pin", "compId": "CONST_LUT2D_Y", "terminal": "Out" }, "to": { "type": "pin", "compId": "LUT2D_1", "terminal": "In2" } },
+    { "id": "w12_ch1", "from": { "type": "pin", "compId": "RAMP_LUT2D_X", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_LUT2D", "terminal": "In1" } },
+    { "id": "w12_ch2", "from": { "type": "pin", "compId": "LUT2D_1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_LUT2D", "terminal": "In2" } },
+
+    { "id": "w13_in", "from": { "type": "pin", "compId": "SINE_CS", "terminal": "Out" }, "to": { "type": "pin", "compId": "CSCRIPT1", "terminal": "In1" } },
+    { "id": "w13_ch1", "from": { "type": "pin", "compId": "SINE_CS", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_CSCRIPT", "terminal": "In1" } },
+    { "id": "w13_ch2", "from": { "type": "pin", "compId": "CSCRIPT1", "terminal": "Out1" }, "to": { "type": "pin", "compId": "SCOPE_CSCRIPT", "terminal": "In2" } },
+
+    { "id": "w14_in", "from": { "type": "pin", "compId": "CONST_ALG", "terminal": "Out" }, "to": { "type": "pin", "compId": "ALG1", "terminal": "In" } },
+    { "id": "w14_ch1", "from": { "type": "pin", "compId": "CONST_ALG", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_ALG", "terminal": "In1" } },
+    { "id": "w14_ch2", "from": { "type": "pin", "compId": "ALG1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_ALG", "terminal": "In2" } }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "description": "Step 5: Discontinuous Sub-Library Test Schematic - 8 Standalone Dedicated Units with Dynamic Scopes",
+  "simulationSettings": {
+    "stopTime": 0.1,
+    "stepSize": 0.0001
+  },
+  "components": [
+    { "id": "RAMP_QUANT", "type": "RAMP", "x": -200, "y": -525, "rotation": 0, "parameters": { "slope": "10.0", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "QUANT1", "type": "QUANTIZER", "x": 0, "y": -525, "rotation": 0, "parameters": { "interval": "0.5" } },
+    { "id": "SCOPE_QUANT", "type": "SCOPE", "x": 200, "y": -525, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_SW1", "type": "SINE_WAVE", "x": -300, "y": -400, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "PULSE_SW", "type": "PULSE_GEN", "x": -300, "y": -360, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.04", "width": "50.0", "delay": "0.0" } },
+    { "id": "CONST_SW2", "type": "CONST", "x": -300, "y": -320, "rotation": 0, "parameters": { "value": "-5.0" } },
+    { "id": "SWITCH1", "type": "SIGNAL_SWITCH", "x": -100, "y": -360, "rotation": 0, "parameters": { "threshold": "0.5" } },
+    { "id": "SCOPE_SWITCH", "type": "SCOPE", "x": 200, "y": -360, "rotation": 0, "parameters": { "channels": "4" } },
+
+    { "id": "SINE_HIT", "type": "SINE_WAVE", "x": -200, "y": -210, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "HIT1", "type": "HIT_CROSSING", "x": 0, "y": -210, "rotation": 0, "parameters": { "hit_threshold": "0.0", "direction": "either" } },
+    { "id": "SCOPE_HIT", "type": "SCOPE", "x": 200, "y": -210, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_SAT", "type": "SINE_WAVE", "x": -200, "y": -75, "rotation": 0, "parameters": { "amplitude": "10.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "SAT1", "type": "SATURATION", "x": 0, "y": -75, "rotation": 0, "parameters": { "upper_limit": "5.0", "lower_limit": "-5.0" } },
+    { "id": "SCOPE_SAT", "type": "SCOPE", "x": 200, "y": -75, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_DZ", "type": "SINE_WAVE", "x": -200, "y": 60, "rotation": 0, "parameters": { "amplitude": "10.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "DZ1", "type": "DEAD_ZONE", "x": 0, "y": 60, "rotation": 0, "parameters": { "start_of_dead_zone": "-2.0", "end_of_dead_zone": "2.0" } },
+    { "id": "SCOPE_DZ", "type": "SCOPE", "x": 200, "y": 60, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "STEP_RL", "type": "STEP", "x": -200, "y": 195, "rotation": 0, "parameters": { "step_time": "0.01", "initial_value": "0.0", "final_value": "10.0" } },
+    { "id": "RL1", "type": "RATE_LIMITER", "x": 0, "y": 195, "rotation": 0, "parameters": { "rising_slew_rate": "100.0", "falling_slew_rate": "-100.0" } },
+    { "id": "SCOPE_RL", "type": "SCOPE", "x": 200, "y": 195, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_RELAY", "type": "SINE_WAVE", "x": -200, "y": 330, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "RELAY1", "type": "RELAY", "x": 0, "y": 330, "rotation": 0, "parameters": { "switch_on_point": "1.0", "switch_off_point": "-1.0", "output_on": "5.0", "output_off": "0.0" } },
+    { "id": "SCOPE_RELAY", "type": "SCOPE", "x": 200, "y": 330, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_COMP", "type": "SINE_WAVE", "x": -300, "y": 450, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "CONST_COMP", "type": "CONST", "x": -300, "y": 490, "rotation": 0, "parameters": { "value": "1.5" } },
+    { "id": "COMP1", "type": "COMP", "x": -100, "y": 470, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_COMP", "type": "SCOPE", "x": 200, "y": 470, "rotation": 0, "parameters": { "channels": "3" } }
+  ],
+  "wires": [
+    { "id": "w1_in", "from": { "type": "pin", "compId": "RAMP_QUANT", "terminal": "Out" }, "to": { "type": "pin", "compId": "QUANT1", "terminal": "In" } },
+    { "id": "w1_ch1", "from": { "type": "pin", "compId": "RAMP_QUANT", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_QUANT", "terminal": "In1" } },
+    { "id": "w1_ch2", "from": { "type": "pin", "compId": "QUANT1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_QUANT", "terminal": "In2" } },
+
+    { "id": "w2_in1", "from": { "type": "pin", "compId": "SINE_SW1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SWITCH1", "terminal": "In1" } },
+    { "id": "w2_ctrl", "from": { "type": "pin", "compId": "PULSE_SW", "terminal": "Out" }, "to": { "type": "pin", "compId": "SWITCH1", "terminal": "Control" } },
+    { "id": "w2_in2", "from": { "type": "pin", "compId": "CONST_SW2", "terminal": "Out" }, "to": { "type": "pin", "compId": "SWITCH1", "terminal": "In2" } },
+    { "id": "w2_ch1", "from": { "type": "pin", "compId": "SINE_SW1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SWITCH", "terminal": "In1" } },
+    { "id": "w2_ch2", "from": { "type": "pin", "compId": "PULSE_SW", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SWITCH", "terminal": "In2" } },
+    { "id": "w2_ch3", "from": { "type": "pin", "compId": "CONST_SW2", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SWITCH", "terminal": "In3" } },
+    { "id": "w2_ch4", "from": { "type": "pin", "compId": "SWITCH1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SWITCH", "terminal": "In4" } },
+
+    { "id": "w3_in", "from": { "type": "pin", "compId": "SINE_HIT", "terminal": "Out" }, "to": { "type": "pin", "compId": "HIT1", "terminal": "In" } },
+    { "id": "w3_ch1", "from": { "type": "pin", "compId": "SINE_HIT", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_HIT", "terminal": "In1" } },
+    { "id": "w3_ch2", "from": { "type": "pin", "compId": "HIT1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_HIT", "terminal": "In2" } },
+
+    { "id": "w4_in", "from": { "type": "pin", "compId": "SINE_SAT", "terminal": "Out" }, "to": { "type": "pin", "compId": "SAT1", "terminal": "In" } },
+    { "id": "w4_ch1", "from": { "type": "pin", "compId": "SINE_SAT", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SAT", "terminal": "In1" } },
+    { "id": "w4_ch2", "from": { "type": "pin", "compId": "SAT1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SAT", "terminal": "In2" } },
+
+    { "id": "w5_in", "from": { "type": "pin", "compId": "SINE_DZ", "terminal": "Out" }, "to": { "type": "pin", "compId": "DZ1", "terminal": "In" } },
+    { "id": "w5_ch1", "from": { "type": "pin", "compId": "SINE_DZ", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_DZ", "terminal": "In1" } },
+    { "id": "w5_ch2", "from": { "type": "pin", "compId": "DZ1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_DZ", "terminal": "In2" } },
+
+    { "id": "w6_in", "from": { "type": "pin", "compId": "STEP_RL", "terminal": "Out" }, "to": { "type": "pin", "compId": "RL1", "terminal": "In" } },
+    { "id": "w6_ch1", "from": { "type": "pin", "compId": "STEP_RL", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_RL", "terminal": "In1" } },
+    { "id": "w6_ch2", "from": { "type": "pin", "compId": "RL1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_RL", "terminal": "In2" } },
+
+    { "id": "w7_in", "from": { "type": "pin", "compId": "SINE_RELAY", "terminal": "Out" }, "to": { "type": "pin", "compId": "RELAY1", "terminal": "In" } },
+    { "id": "w7_ch1", "from": { "type": "pin", "compId": "SINE_RELAY", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_RELAY", "terminal": "In1" } },
+    { "id": "w7_ch2", "from": { "type": "pin", "compId": "RELAY1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_RELAY", "terminal": "In2" } },
+
+    { "id": "w8_in1", "from": { "type": "pin", "compId": "SINE_COMP", "terminal": "Out" }, "to": { "type": "pin", "compId": "COMP1", "terminal": "In1" } },
+    { "id": "w8_in2", "from": { "type": "pin", "compId": "CONST_COMP", "terminal": "Out" }, "to": { "type": "pin", "compId": "COMP1", "terminal": "In2" } },
+    { "id": "w8_ch1", "from": { "type": "pin", "compId": "SINE_COMP", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_COMP", "terminal": "In1" } },
+    { "id": "w8_ch2", "from": { "type": "pin", "compId": "CONST_COMP", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_COMP", "terminal": "In2" } },
+    { "id": "w8_ch3", "from": { "type": "pin", "compId": "COMP1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_COMP", "terminal": "In3" } }
+  ]
+}

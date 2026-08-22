@@ -1,0 +1,55 @@
+{
+  "description": "Step 10: State Machines & Math Sub-Library Test Schematic - 5 Standalone Dedicated Units",
+  "simulationSettings": {
+    "stopTime": 0.1,
+    "stepSize": 0.0001
+  },
+  "components": [
+    { "id": "PULSE_SM_TRIG1", "type": "PULSE_GEN", "x": -300, "y": -320, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.04", "width": "20.0", "delay": "0.0" } },
+    { "id": "PULSE_SM_TRIG2", "type": "PULSE_GEN", "x": -300, "y": -280, "rotation": 0, "parameters": { "amplitude": "1.0", "period": "0.08", "width": "20.0", "delay": "0.02" } },
+    { "id": "FSM1", "type": "STATE_MACHINE", "x": -100, "y": -300, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_FSM", "type": "SCOPE", "x": 200, "y": -300, "rotation": 0, "parameters": { "channels": "3" } },
+
+    { "id": "SINE_OFF", "type": "SINE_WAVE", "x": -200, "y": -160, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "OFFSET1", "type": "OFFSET", "x": 0, "y": -160, "rotation": 0, "parameters": { "offset": "2.5" } },
+    { "id": "SCOPE_OFF", "type": "SCOPE", "x": 200, "y": -160, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_SGN", "type": "SINE_WAVE", "x": -200, "y": -20, "rotation": 0, "parameters": { "amplitude": "5.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "SIGNUM1", "type": "SIGNUM", "x": 0, "y": -20, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_SGN", "type": "SCOPE", "x": 200, "y": -20, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "RAMP_NUM", "type": "RAMP", "x": -300, "y": 100, "rotation": 0, "parameters": { "slope": "10.0", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "CONST_DEN", "type": "CONST", "x": -300, "y": 140, "rotation": 0, "parameters": { "value": "2.0" } },
+    { "id": "DIV1", "type": "DIVIDE", "x": -100, "y": 120, "rotation": 0, "parameters": {} },
+    { "id": "SCOPE_DIV", "type": "SCOPE", "x": 200, "y": 120, "rotation": 0, "parameters": { "channels": "3" } },
+
+    { "id": "RAMP_CONV", "type": "RAMP", "x": -200, "y": 240, "rotation": 0, "parameters": { "slope": "5.0", "start_time": "0.0", "initial_output": "0.0" } },
+    { "id": "CONV1", "type": "DATATYPE_CONV", "x": 0, "y": 240, "rotation": 0, "parameters": { "datatype": "integer" } },
+    { "id": "SCOPE_CONV", "type": "SCOPE", "x": 200, "y": 240, "rotation": 0, "parameters": { "channels": "2" } }
+  ],
+  "wires": [
+    { "id": "w1_in1", "from": { "type": "pin", "compId": "PULSE_SM_TRIG1", "terminal": "Out" }, "to": { "type": "pin", "compId": "FSM1", "terminal": "In1" } },
+    { "id": "w1_in2", "from": { "type": "pin", "compId": "PULSE_SM_TRIG2", "terminal": "Out" }, "to": { "type": "pin", "compId": "FSM1", "terminal": "In2" } },
+    { "id": "w1_ch1", "from": { "type": "pin", "compId": "PULSE_SM_TRIG1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_FSM", "terminal": "In1" } },
+    { "id": "w1_ch2", "from": { "type": "pin", "compId": "PULSE_SM_TRIG2", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_FSM", "terminal": "In2" } },
+    { "id": "w1_ch3", "from": { "type": "pin", "compId": "FSM1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_FSM", "terminal": "In3" } },
+
+    { "id": "w2_in", "from": { "type": "pin", "compId": "SINE_OFF", "terminal": "Out" }, "to": { "type": "pin", "compId": "OFFSET1", "terminal": "In" } },
+    { "id": "w2_ch1", "from": { "type": "pin", "compId": "SINE_OFF", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_OFF", "terminal": "In1" } },
+    { "id": "w2_ch2", "from": { "type": "pin", "compId": "OFFSET1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_OFF", "terminal": "In2" } },
+
+    { "id": "w3_in", "from": { "type": "pin", "compId": "SINE_SGN", "terminal": "Out" }, "to": { "type": "pin", "compId": "SIGNUM1", "terminal": "In" } },
+    { "id": "w3_ch1", "from": { "type": "pin", "compId": "SINE_SGN", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SGN", "terminal": "In1" } },
+    { "id": "w3_ch2", "from": { "type": "pin", "compId": "SIGNUM1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SGN", "terminal": "In2" } },
+
+    { "id": "w4_num", "from": { "type": "pin", "compId": "RAMP_NUM", "terminal": "Out" }, "to": { "type": "pin", "compId": "DIV1", "terminal": "Num" } },
+    { "id": "w4_den", "from": { "type": "pin", "compId": "CONST_DEN", "terminal": "Out" }, "to": { "type": "pin", "compId": "DIV1", "terminal": "Den" } },
+    { "id": "w4_ch1", "from": { "type": "pin", "compId": "RAMP_NUM", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_DIV", "terminal": "In1" } },
+    { "id": "w4_ch2", "from": { "type": "pin", "compId": "CONST_DEN", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_DIV", "terminal": "In2" } },
+    { "id": "w4_ch3", "from": { "type": "pin", "compId": "DIV1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_DIV", "terminal": "In3" } },
+
+    { "id": "w5_in", "from": { "type": "pin", "compId": "RAMP_CONV", "terminal": "Out" }, "to": { "type": "pin", "compId": "CONV1", "terminal": "In" } },
+    { "id": "w5_ch1", "from": { "type": "pin", "compId": "RAMP_CONV", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_CONV", "terminal": "In1" } },
+    { "id": "w5_ch2", "from": { "type": "pin", "compId": "CONV1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_CONV", "terminal": "In2" } }
+  ]
+}

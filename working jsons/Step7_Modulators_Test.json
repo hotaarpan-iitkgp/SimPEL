@@ -1,0 +1,57 @@
+{
+  "description": "Step 7: Modulators Sub-Library Test Schematic - 4 Standalone Dedicated Units with Dynamic Multi-Channel Scopes",
+  "simulationSettings": {
+    "stopTime": 0.04,
+    "stepSize": 0.00001
+  },
+  "components": [
+    { "id": "SINE_PWM", "type": "SINE_WAVE", "x": -200, "y": -450, "rotation": 0, "parameters": { "amplitude": "0.8", "frequency": "50.0", "phase": "0.0", "bias": "0.5" } },
+    { "id": "PWM1", "type": "PWM", "x": 0, "y": -450, "rotation": 0, "parameters": { "carrier_freq": "10000.0", "min_val": "0.0", "max_val": "1.0" } },
+    { "id": "SCOPE_PWM", "type": "SCOPE", "x": 200, "y": -450, "rotation": 0, "parameters": { "channels": "2" } },
+
+    { "id": "SINE_PWM_A", "type": "SINE_WAVE", "x": -300, "y": -280, "rotation": 0, "parameters": { "amplitude": "0.8", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "SINE_PWM_B", "type": "SINE_WAVE", "x": -300, "y": -240, "rotation": 0, "parameters": { "amplitude": "0.8", "frequency": "50.0", "phase": "-120.0" } },
+    { "id": "SINE_PWM_C", "type": "SINE_WAVE", "x": -300, "y": -200, "rotation": 0, "parameters": { "amplitude": "0.8", "frequency": "50.0", "phase": "120.0" } },
+    { "id": "PWM_MASTER1", "type": "PWM_MASTER", "x": -100, "y": -240, "rotation": 0, "parameters": { "carrier_freq": "10000.0" } },
+    { "id": "SCOPE_PWM_MASTER", "type": "SCOPE", "x": 200, "y": -240, "rotation": 0, "parameters": { "channels": "4" } },
+
+    { "id": "SINE_3P_A", "type": "SINE_WAVE", "x": -300, "y": -40, "rotation": 0, "parameters": { "amplitude": "1.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "SINE_3P_B", "type": "SINE_WAVE", "x": -300, "y": 0, "rotation": 0, "parameters": { "amplitude": "1.0", "frequency": "50.0", "phase": "-120.0" } },
+    { "id": "SINE_3P_C", "type": "SINE_WAVE", "x": -300, "y": 40, "rotation": 0, "parameters": { "amplitude": "1.0", "frequency": "50.0", "phase": "120.0" } },
+    { "id": "PWM3P_1", "type": "PWM_3PH", "x": -100, "y": 0, "rotation": 0, "parameters": { "carrier_freq": "10000.0" } },
+    { "id": "SCOPE_PWM_3PH", "type": "SCOPE", "x": 200, "y": 0, "rotation": 0, "parameters": { "channels": "4" } },
+
+    { "id": "SINE_ALPHA", "type": "SINE_WAVE", "x": -300, "y": 180, "rotation": 0, "parameters": { "amplitude": "1.0", "frequency": "50.0", "phase": "0.0" } },
+    { "id": "COS_BETA", "type": "SINE_WAVE", "x": -300, "y": 220, "rotation": 0, "parameters": { "amplitude": "1.0", "frequency": "50.0", "phase": "90.0" } },
+    { "id": "SVPWM1", "type": "SVPWM", "x": -100, "y": 200, "rotation": 0, "parameters": { "carrier_freq": "10000.0" } },
+    { "id": "SCOPE_SVPWM", "type": "SCOPE", "x": 200, "y": 200, "rotation": 0, "parameters": { "channels": "4" } }
+  ],
+  "wires": [
+    { "id": "w1_in", "from": { "type": "pin", "compId": "SINE_PWM", "terminal": "Out" }, "to": { "type": "pin", "compId": "PWM1", "terminal": "In" } },
+    { "id": "w1_ch1", "from": { "type": "pin", "compId": "SINE_PWM", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PWM", "terminal": "In1" } },
+    { "id": "w1_ch2", "from": { "type": "pin", "compId": "PWM1", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PWM", "terminal": "In2" } },
+
+    { "id": "w2_in1", "from": { "type": "pin", "compId": "SINE_PWM_A", "terminal": "Out" }, "to": { "type": "pin", "compId": "PWM_MASTER1", "terminal": "In1" } },
+    { "id": "w2_in2", "from": { "type": "pin", "compId": "SINE_PWM_B", "terminal": "Out" }, "to": { "type": "pin", "compId": "PWM_MASTER1", "terminal": "In2" } },
+    { "id": "w2_in3", "from": { "type": "pin", "compId": "SINE_PWM_C", "terminal": "Out" }, "to": { "type": "pin", "compId": "PWM_MASTER1", "terminal": "In3" } },
+    { "id": "w2_ch1", "from": { "type": "pin", "compId": "SINE_PWM_A", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PWM_MASTER", "terminal": "In1" } },
+    { "id": "w2_ch2", "from": { "type": "pin", "compId": "PWM_MASTER1", "terminal": "P1" }, "to": { "type": "pin", "compId": "SCOPE_PWM_MASTER", "terminal": "In2" } },
+    { "id": "w2_ch3", "from": { "type": "pin", "compId": "PWM_MASTER1", "terminal": "P1_n" }, "to": { "type": "pin", "compId": "SCOPE_PWM_MASTER", "terminal": "In3" } },
+    { "id": "w2_ch4", "from": { "type": "pin", "compId": "PWM_MASTER1", "terminal": "P2" }, "to": { "type": "pin", "compId": "SCOPE_PWM_MASTER", "terminal": "In4" } },
+
+    { "id": "w3_in1", "from": { "type": "pin", "compId": "SINE_3P_A", "terminal": "Out" }, "to": { "type": "pin", "compId": "PWM3P_1", "terminal": "Va" } },
+    { "id": "w3_in2", "from": { "type": "pin", "compId": "SINE_3P_B", "terminal": "Out" }, "to": { "type": "pin", "compId": "PWM3P_1", "terminal": "Vb" } },
+    { "id": "w3_in3", "from": { "type": "pin", "compId": "SINE_3P_C", "terminal": "Out" }, "to": { "type": "pin", "compId": "PWM3P_1", "terminal": "Vc" } },
+    { "id": "w3_ch1", "from": { "type": "pin", "compId": "SINE_3P_A", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_PWM_3PH", "terminal": "In1" } },
+    { "id": "w3_ch2", "from": { "type": "pin", "compId": "PWM3P_1", "terminal": "G1" }, "to": { "type": "pin", "compId": "SCOPE_PWM_3PH", "terminal": "In2" } },
+    { "id": "w3_ch3", "from": { "type": "pin", "compId": "PWM3P_1", "terminal": "G2" }, "to": { "type": "pin", "compId": "SCOPE_PWM_3PH", "terminal": "In3" } },
+    { "id": "w3_ch4", "from": { "type": "pin", "compId": "PWM3P_1", "terminal": "G3" }, "to": { "type": "pin", "compId": "SCOPE_PWM_3PH", "terminal": "In4" } },
+
+    { "id": "w4_in1", "from": { "type": "pin", "compId": "SINE_ALPHA", "terminal": "Out" }, "to": { "type": "pin", "compId": "SVPWM1", "terminal": "Valpha" } },
+    { "id": "w4_in2", "from": { "type": "pin", "compId": "COS_BETA", "terminal": "Out" }, "to": { "type": "pin", "compId": "SVPWM1", "terminal": "Vbeta" } },
+    { "id": "w4_ch1", "from": { "type": "pin", "compId": "SINE_ALPHA", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SVPWM", "terminal": "In1" } },
+    { "id": "w4_ch2", "from": { "type": "pin", "compId": "COS_BETA", "terminal": "Out" }, "to": { "type": "pin", "compId": "SCOPE_SVPWM", "terminal": "In2" } },
+    { "id": "w4_ch3", "from": { "type": "pin", "compId": "SVPWM1", "terminal": "G1" }, "to": { "type": "pin", "compId": "SCOPE_SVPWM", "terminal": "In3" } },
+    { "id": "w4_ch4", "from": { "type": "pin", "compId": "SVPWM1", "terminal": "G2" }, "to": { "type": "pin", "compId": "SCOPE_SVPWM", "terminal": "In4" } }
+  ]
+}
