@@ -1,0 +1,82 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: Abs (ABS)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "SINE_ABS",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SINE_WAVE",
+                           "x":  -200,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "phase":  "0.0",
+                                              "amplitude":  "5.0"
+                                          }
+                       },
+                       {
+                           "id":  "ABS1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "ABS",
+                           "x":  0,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_ABS",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SINE_ABS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "ABS1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SINE_ABS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_ABS",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "ABS1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_ABS",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

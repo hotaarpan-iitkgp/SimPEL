@@ -1,0 +1,176 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: Inductor (L)",
+    "simulationSettings":  {
+                               "stopTime":  0.05,
+                               "stepSize":  1E-05
+                           },
+    "components":  [
+                       {
+                           "id":  "VS_L",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "AC_V",
+                           "x":  -300,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "amplitude":  "50.0"
+                                          }
+                       },
+                       {
+                           "id":  "AM_L",
+                           "rotation":  0,
+                           "y":  -40,
+                           "type":  "AM",
+                           "x":  -150,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "L1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "L",
+                           "x":  0,
+                           "parameters":  {
+                                              "inductance":  "0.01"
+                                          }
+                       },
+                       {
+                           "id":  "VM_L",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "VM",
+                           "x":  150,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "GND_L",
+                           "rotation":  0,
+                           "y":  80,
+                           "type":  "GND",
+                           "x":  0,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_L",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  300,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "VS_L",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "AM_L",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "AM_L",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "L1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "L1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "VS_L",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "L1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Gnd",
+                                 "compId":  "GND_L",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "L1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "VM_L",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "L1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "VM_L",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "VM_L",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_L",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "AM_L",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_L",
+                                 "type":  "pin"
+                             },
+                      "id":  "w8"
+                  }
+              ]
+}

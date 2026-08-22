@@ -1,0 +1,82 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: Polynomial (POLYNOMIAL)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "RAMP_POLY",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "RAMP",
+                           "x":  -200,
+                           "parameters":  {
+                                              "slope":  "5.0",
+                                              "initial_output":  "0.0",
+                                              "start_time":  "0.0"
+                                          }
+                       },
+                       {
+                           "id":  "POLY1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "POLYNOMIAL",
+                           "x":  0,
+                           "parameters":  {
+                                              "coefficients":  "[1, 0]"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_POLY",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "RAMP_POLY",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "POLY1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "RAMP_POLY",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_POLY",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "POLY1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_POLY",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

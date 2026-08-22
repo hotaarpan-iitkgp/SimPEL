@@ -1,0 +1,80 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: WhiteNoise (WHITE_NOISE)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "NOISE1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "WHITE_NOISE",
+                           "x":  -200,
+                           "parameters":  {
+                                              "psd":  "0.1"
+                                          }
+                       },
+                       {
+                           "id":  "GAIN_NOISE",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "GAIN",
+                           "x":  0,
+                           "parameters":  {
+                                              "K":  "1.0"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_NOISE",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "NOISE1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "GAIN_NOISE",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "NOISE1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_NOISE",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "GAIN_NOISE",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_NOISE",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

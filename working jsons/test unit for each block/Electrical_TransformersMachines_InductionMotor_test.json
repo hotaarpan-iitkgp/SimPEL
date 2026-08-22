@@ -1,0 +1,158 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: InductionMotor (INDUCTION_MOTOR)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "V_3PH_MOT",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "V_3PH",
+                           "x":  -600,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "magnitude":  "400.0",
+                                              "connection":  "Y"
+                                          }
+                       },
+                       {
+                           "id":  "IND_MOTOR1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "INDUCTION_MOTOR",
+                           "x":  -300,
+                           "parameters":  {
+                                              "power":  "5000.0",
+                                              "poles":  "4"
+                                          }
+                       },
+                       {
+                           "id":  "CONST_TL",
+                           "rotation":  0,
+                           "y":  130,
+                           "type":  "CONSTANT",
+                           "x":  -450,
+                           "parameters":  {
+                                              "value":  "10.0"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_MOTOR",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  150,
+                           "parameters":  {
+                                              "channels":  "4"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "V_3PH_MOT",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "IND_MOTOR1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "V_3PH_MOT",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "IND_MOTOR1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "C",
+                                   "compId":  "V_3PH_MOT",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "C",
+                                 "compId":  "IND_MOTOR1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "CONST_TL",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Tl",
+                                 "compId":  "IND_MOTOR1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "V_3PH_MOT",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_MOTOR",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Ia",
+                                   "compId":  "IND_MOTOR1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_MOTOR",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Speed",
+                                   "compId":  "IND_MOTOR1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In3",
+                                 "compId":  "SCOPE_MOTOR",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Torque",
+                                   "compId":  "IND_MOTOR1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In4",
+                                 "compId":  "SCOPE_MOTOR",
+                                 "type":  "pin"
+                             },
+                      "id":  "w8"
+                  }
+              ]
+}

@@ -1,0 +1,288 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: ThreePhaseSource (V_3PH)",
+    "simulationSettings":  {
+                               "stopTime":  0.04,
+                               "stepSize":  1E-05
+                           },
+    "components":  [
+                       {
+                           "id":  "V_3PH_V1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "V_3PH",
+                           "x":  -600,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "magnitude":  "400.0",
+                                              "connection":  "Y"
+                                          }
+                       },
+                       {
+                           "id":  "AM_3PH_V1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "AM_3PH",
+                           "x":  -350,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "R_3PH_VA",
+                           "rotation":  0,
+                           "y":  -80,
+                           "type":  "R",
+                           "x":  -150,
+                           "parameters":  {
+                                              "resistance":  "20.0"
+                                          }
+                       },
+                       {
+                           "id":  "R_3PH_VB",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "R",
+                           "x":  -150,
+                           "parameters":  {
+                                              "resistance":  "20.0"
+                                          }
+                       },
+                       {
+                           "id":  "R_3PH_VC",
+                           "rotation":  0,
+                           "y":  80,
+                           "type":  "R",
+                           "x":  -150,
+                           "parameters":  {
+                                              "resistance":  "20.0"
+                                          }
+                       },
+                       {
+                           "id":  "VM_3PH_V1",
+                           "rotation":  0,
+                           "y":  130,
+                           "type":  "VM_3PH",
+                           "x":  -350,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "GND1_3PH",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "GND",
+                           "x":  0,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_V3PH",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  150,
+                           "parameters":  {
+                                              "channels":  "3"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "V_3PH_V1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A_In",
+                                 "compId":  "AM_3PH_V1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "V_3PH_V1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B_In",
+                                 "compId":  "AM_3PH_V1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "C",
+                                   "compId":  "V_3PH_V1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "C_In",
+                                 "compId":  "AM_3PH_V1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A_Out",
+                                   "compId":  "AM_3PH_V1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "R_3PH_VA",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B_Out",
+                                   "compId":  "AM_3PH_V1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "R_3PH_VB",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "C_Out",
+                                   "compId":  "AM_3PH_V1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "R_3PH_VC",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_3PH_VA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Gnd",
+                                 "compId":  "GND1_3PH",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_3PH_VB",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Gnd",
+                                 "compId":  "GND1_3PH",
+                                 "type":  "pin"
+                             },
+                      "id":  "w8"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_3PH_VC",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Gnd",
+                                 "compId":  "GND1_3PH",
+                                 "type":  "pin"
+                             },
+                      "id":  "w9"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "R_3PH_VA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "VM_3PH_V1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w10"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "R_3PH_VB",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "VM_3PH_V1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w11"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "R_3PH_VC",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "C",
+                                 "compId":  "VM_3PH_V1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w12"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "OutA",
+                                   "compId":  "VM_3PH_V1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_V3PH",
+                                 "type":  "pin"
+                             },
+                      "id":  "w13"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "OutB",
+                                   "compId":  "VM_3PH_V1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_V3PH",
+                                 "type":  "pin"
+                             },
+                      "id":  "w14"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "OutC",
+                                   "compId":  "VM_3PH_V1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In3",
+                                 "compId":  "SCOPE_V3PH",
+                                 "type":  "pin"
+                             },
+                      "id":  "w15"
+                  }
+              ]
+}

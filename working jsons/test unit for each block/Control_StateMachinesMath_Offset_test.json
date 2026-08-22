@@ -1,0 +1,82 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: Offset (OFFSET)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "SINE_OFF",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SINE_WAVE",
+                           "x":  -200,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "phase":  "0.0",
+                                              "amplitude":  "5.0"
+                                          }
+                       },
+                       {
+                           "id":  "OFFSET1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "OFFSET",
+                           "x":  0,
+                           "parameters":  {
+                                              "offset":  "2.5"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_OFF",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SINE_OFF",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "OFFSET1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SINE_OFF",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_OFF",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "OFFSET1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_OFF",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

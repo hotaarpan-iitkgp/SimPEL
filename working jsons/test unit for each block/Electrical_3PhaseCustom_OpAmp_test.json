@@ -1,0 +1,262 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: OpAmp (OPAMP)",
+    "simulationSettings":  {
+                               "stopTime":  0.04,
+                               "stepSize":  1E-05
+                           },
+    "components":  [
+                       {
+                           "id":  "AC_V_OP",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "AC_V",
+                           "x":  -600,
+                           "parameters":  {
+                                              "frequency":  "1000.0",
+                                              "phase":  "0.0",
+                                              "amplitude":  "1.0"
+                                          }
+                       },
+                       {
+                           "id":  "OPAMP1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "OPAMP",
+                           "x":  -450,
+                           "parameters":  {
+                                              "Aol":  "100000.0"
+                                          }
+                       },
+                       {
+                           "id":  "RF_OP",
+                           "rotation":  0,
+                           "y":  -80,
+                           "type":  "R",
+                           "x":  -300,
+                           "parameters":  {
+                                              "resistance":  "9000.0"
+                                          }
+                       },
+                       {
+                           "id":  "RIN_OP",
+                           "rotation":  0,
+                           "y":  80,
+                           "type":  "R",
+                           "x":  -300,
+                           "parameters":  {
+                                              "resistance":  "1000.0"
+                                          }
+                       },
+                       {
+                           "id":  "VM_OP_IN",
+                           "rotation":  0,
+                           "y":  120,
+                           "type":  "VM",
+                           "x":  -450,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "VM_OP_OUT",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "VM",
+                           "x":  -150,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "GND_OP",
+                           "rotation":  0,
+                           "y":  160,
+                           "type":  "GND",
+                           "x":  -300,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_OPAMP",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  0,
+                           "parameters":  {
+                                              "channels":  "3"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "AC_V_OP",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Plus",
+                                 "compId":  "OPAMP1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "AC_V_OP",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Gnd",
+                                 "compId":  "GND_OP",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "OPAMP1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "RF_OP",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "RF_OP",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Minus",
+                                 "compId":  "OPAMP1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Minus",
+                                   "compId":  "OPAMP1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "RIN_OP",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "RIN_OP",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Gnd",
+                                 "compId":  "GND_OP",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "AC_V_OP",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "VM_OP_IN",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "AC_V_OP",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "VM_OP_IN",
+                                 "type":  "pin"
+                             },
+                      "id":  "w8"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "OPAMP1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "VM_OP_OUT",
+                                 "type":  "pin"
+                             },
+                      "id":  "w9"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Gnd",
+                                   "compId":  "GND_OP",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "VM_OP_OUT",
+                                 "type":  "pin"
+                             },
+                      "id":  "w10"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "VM_OP_IN",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_OPAMP",
+                                 "type":  "pin"
+                             },
+                      "id":  "w11"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "VM_OP_OUT",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_OPAMP",
+                                 "type":  "pin"
+                             },
+                      "id":  "w12"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "RF_OP",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In3",
+                                 "compId":  "SCOPE_OPAMP",
+                                 "type":  "pin"
+                             },
+                      "id":  "w13"
+                  }
+              ]
+}

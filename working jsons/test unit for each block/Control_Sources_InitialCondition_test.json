@@ -1,0 +1,80 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: InitialCondition (INIT_COND)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "SRC_IC",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "CONST",
+                           "x":  -400,
+                           "parameters":  {
+                                              "value":  "10.0"
+                                          }
+                       },
+                       {
+                           "id":  "INIT_COND1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "INIT_COND",
+                           "x":  -200,
+                           "parameters":  {
+                                              "initial_value":  "2.0"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_IC",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SRC_IC",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "INIT_COND1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SRC_IC",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_IC",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "INIT_COND1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_IC",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

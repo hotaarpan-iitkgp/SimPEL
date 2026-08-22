@@ -1,0 +1,82 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: CScript (CSCRIPT)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "SINE_CS",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SINE_WAVE",
+                           "x":  -200,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "phase":  "0.0",
+                                              "amplitude":  "5.0"
+                                          }
+                       },
+                       {
+                           "id":  "CSCRIPT1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "CSCRIPT",
+                           "x":  0,
+                           "parameters":  {
+                                              "code":  "outputs[0] = inputs[0] * 2.0;"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_CSCRIPT",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SINE_CS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "CSCRIPT1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SINE_CS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_CSCRIPT",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "CSCRIPT1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_CSCRIPT",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

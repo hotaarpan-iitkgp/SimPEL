@@ -1,0 +1,237 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: MOSFET (MOSFET)",
+    "simulationSettings":  {
+                               "stopTime":  0.04,
+                               "stepSize":  1E-05
+                           },
+    "components":  [
+                       {
+                           "id":  "DC_V_MOS",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "DC_V",
+                           "x":  -600,
+                           "parameters":  {
+                                              "value":  "50.0"
+                                          }
+                       },
+                       {
+                           "id":  "PULSE_MOS",
+                           "rotation":  0,
+                           "y":  130,
+                           "type":  "PULSE_GEN",
+                           "x":  -600,
+                           "parameters":  {
+                                              "frequency":  "10000.0",
+                                              "duty":  "0.5",
+                                              "amplitude":  "15.0"
+                                          }
+                       },
+                       {
+                           "id":  "MOS1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "MOSFET",
+                           "x":  -450,
+                           "parameters":  {
+                                              "Roff":  "1000000.0",
+                                              "Ron":  "0.01"
+                                          }
+                       },
+                       {
+                           "id":  "AM_MOS",
+                           "rotation":  0,
+                           "y":  -40,
+                           "type":  "AM",
+                           "x":  -300,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "R_MOS",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "R",
+                           "x":  -150,
+                           "parameters":  {
+                                              "resistance":  "10.0"
+                                          }
+                       },
+                       {
+                           "id":  "VM_MOS",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "VM",
+                           "x":  0,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "GND2",
+                           "rotation":  0,
+                           "y":  100,
+                           "type":  "GND",
+                           "x":  -150,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_MOS",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  150,
+                           "parameters":  {
+                                              "channels":  "3"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PULSE_MOS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "G",
+                                 "compId":  "MOS1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "DC_V_MOS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "D",
+                                 "compId":  "MOS1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "S",
+                                   "compId":  "MOS1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "AM_MOS",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "AM_MOS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "R_MOS",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_MOS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "DC_V_MOS",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_MOS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Gnd",
+                                 "compId":  "GND2",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "R_MOS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "VM_MOS",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_MOS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "VM_MOS",
+                                 "type":  "pin"
+                             },
+                      "id":  "w8"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PULSE_MOS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_MOS",
+                                 "type":  "pin"
+                             },
+                      "id":  "w9"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "VM_MOS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_MOS",
+                                 "type":  "pin"
+                             },
+                      "id":  "w10"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "AM_MOS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In3",
+                                 "compId":  "SCOPE_MOS",
+                                 "type":  "pin"
+                             },
+                      "id":  "w11"
+                  }
+              ]
+}

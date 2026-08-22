@@ -1,0 +1,80 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: AlgebraicConstraint (ALGEBRAIC_CONSTRAINT)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "CONST_ALG",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "CONST",
+                           "x":  -200,
+                           "parameters":  {
+                                              "value":  "5.0"
+                                          }
+                       },
+                       {
+                           "id":  "ALG1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "ALGEBRAIC_CONSTRAINT",
+                           "x":  0,
+                           "parameters":  {
+                                              "initial_guess":  "0.0"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_ALG",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "CONST_ALG",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "ALG1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "CONST_ALG",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_ALG",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "ALG1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_ALG",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

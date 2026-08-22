@@ -1,0 +1,82 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: TriangleCarrier (TRI_GEN)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "TRI1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "TRI_GEN",
+                           "x":  -200,
+                           "parameters":  {
+                                              "frequency":  "100.0",
+                                              "min":  "-1.0",
+                                              "max":  "1.0"
+                                          }
+                       },
+                       {
+                           "id":  "GAIN_TRI",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "GAIN",
+                           "x":  0,
+                           "parameters":  {
+                                              "K":  "1.0"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_TRI",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "TRI1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "GAIN_TRI",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "TRI1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_TRI",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "GAIN_TRI",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_TRI",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

@@ -1,0 +1,146 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: InvClarke (INV_CLARKE)",
+    "simulationSettings":  {
+                               "stopTime":  0.04,
+                               "stepSize":  1E-05
+                           },
+    "components":  [
+                       {
+                           "id":  "SRC_INV_ALPHA",
+                           "rotation":  0,
+                           "y":  -20,
+                           "type":  "SINE_WAVE",
+                           "x":  -300,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "phase":  "0.0",
+                                              "amplitude":  "100.0"
+                                          }
+                       },
+                       {
+                           "id":  "SRC_INV_BETA",
+                           "rotation":  0,
+                           "y":  20,
+                           "type":  "SINE_WAVE",
+                           "x":  -300,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "phase":  "90.0",
+                                              "amplitude":  "100.0"
+                                          }
+                       },
+                       {
+                           "id":  "ICLARKE1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "INV_CLARKE",
+                           "x":  -100,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_ICLARKE",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "5"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SRC_INV_ALPHA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Valpha",
+                                 "compId":  "ICLARKE1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SRC_INV_BETA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Vbeta",
+                                 "compId":  "ICLARKE1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SRC_INV_ALPHA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_ICLARKE",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SRC_INV_BETA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_ICLARKE",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Va",
+                                   "compId":  "ICLARKE1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In3",
+                                 "compId":  "SCOPE_ICLARKE",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Vb",
+                                   "compId":  "ICLARKE1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In4",
+                                 "compId":  "SCOPE_ICLARKE",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Vc",
+                                   "compId":  "ICLARKE1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In5",
+                                 "compId":  "SCOPE_ICLARKE",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  }
+              ]
+}

@@ -1,0 +1,84 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: PLL1Ph (PLL_1PH)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "SINE_PLL",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SINE_WAVE",
+                           "x":  -200,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "phase":  "0.0",
+                                              "amplitude":  "230.0"
+                                          }
+                       },
+                       {
+                           "id":  "PLL1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "PLL_1PH",
+                           "x":  0,
+                           "parameters":  {
+                                              "fn":  "50.0",
+                                              "Ki":  "1000.0",
+                                              "Kp":  "20.0"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_PLL",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SINE_PLL",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "PLL1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SINE_PLL",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_PLL",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PLL1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_PLL",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

@@ -1,0 +1,176 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: AC Current Source (AC_I)",
+    "simulationSettings":  {
+                               "stopTime":  0.04,
+                               "stepSize":  1E-05
+                           },
+    "components":  [
+                       {
+                           "id":  "AC_I1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "AC_I",
+                           "x":  -300,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "amplitude":  "10.0"
+                                          }
+                       },
+                       {
+                           "id":  "AM_ACI",
+                           "rotation":  0,
+                           "y":  -40,
+                           "type":  "AM",
+                           "x":  -150,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "R_ACI",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "R",
+                           "x":  0,
+                           "parameters":  {
+                                              "resistance":  "20.0"
+                                          }
+                       },
+                       {
+                           "id":  "VM_ACI",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "VM",
+                           "x":  150,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "GND4",
+                           "rotation":  0,
+                           "y":  80,
+                           "type":  "GND",
+                           "x":  0,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_ACI",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  300,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "AC_I1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "AM_ACI",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "AM_ACI",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "R_ACI",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_ACI",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "AC_I1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_ACI",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Gnd",
+                                 "compId":  "GND4",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "R_ACI",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "VM_ACI",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_ACI",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "VM_ACI",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "VM_ACI",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_ACI",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "AM_ACI",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_ACI",
+                                 "type":  "pin"
+                             },
+                      "id":  "w8"
+                  }
+              ]
+}

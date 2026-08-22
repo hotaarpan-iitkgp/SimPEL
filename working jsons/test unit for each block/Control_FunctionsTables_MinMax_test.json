@@ -1,0 +1,105 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: MinMax (MIN_MAX)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "SINE_MM",
+                           "rotation":  0,
+                           "y":  -20,
+                           "type":  "SINE_WAVE",
+                           "x":  -300,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "phase":  "0.0",
+                                              "amplitude":  "5.0"
+                                          }
+                       },
+                       {
+                           "id":  "CONST_MM",
+                           "rotation":  0,
+                           "y":  20,
+                           "type":  "CONST",
+                           "x":  -300,
+                           "parameters":  {
+                                              "value":  "2.0"
+                                          }
+                       },
+                       {
+                           "id":  "MIN_MAX1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "MIN_MAX",
+                           "x":  -100,
+                           "parameters":  {
+                                              "function":  "min"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_MIN_MAX",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SINE_MM",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "MIN_MAX1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "CONST_MM",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "MIN_MAX1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SINE_MM",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_MIN_MAX",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "MIN_MAX1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_MIN_MAX",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  }
+              ]
+}

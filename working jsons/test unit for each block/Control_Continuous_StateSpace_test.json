@@ -1,0 +1,86 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: StateSpace (STATE_SPACE)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "STEP_SS",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "STEP",
+                           "x":  -200,
+                           "parameters":  {
+                                              "step_time":  "0.01",
+                                              "final_value":  "1.0",
+                                              "initial_value":  "0.0"
+                                          }
+                       },
+                       {
+                           "id":  "SS1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "STATE_SPACE",
+                           "x":  0,
+                           "parameters":  {
+                                              "C":  "[1]",
+                                              "x0":  "0",
+                                              "D":  "[0]",
+                                              "B":  "[1]",
+                                              "A":  "[-1]"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_SS",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "STEP_SS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "SS1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "STEP_SS",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_SS",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SS1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_SS",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

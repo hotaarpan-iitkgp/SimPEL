@@ -1,0 +1,322 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: IdealTransformer (IDEAL_XFMR)",
+    "simulationSettings":  {
+                               "stopTime":  0.04,
+                               "stepSize":  1E-05
+                           },
+    "components":  [
+                       {
+                           "id":  "AC_V_ID",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "AC_V",
+                           "x":  -600,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "phase":  "0.0",
+                                              "amplitude":  "325.27"
+                                          }
+                       },
+                       {
+                           "id":  "AM_ID_P",
+                           "rotation":  0,
+                           "y":  -40,
+                           "type":  "AM",
+                           "x":  -450,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "XFMR_ID1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "IDEAL_XFMR",
+                           "x":  -300,
+                           "parameters":  {
+                                              "N1":  "2.0",
+                                              "N2":  "1.0"
+                                          }
+                       },
+                       {
+                           "id":  "AM_ID_S",
+                           "rotation":  0,
+                           "y":  -40,
+                           "type":  "AM",
+                           "x":  -150,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "R_ID_S",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "R",
+                           "x":  0,
+                           "parameters":  {
+                                              "resistance":  "10.0"
+                                          }
+                       },
+                       {
+                           "id":  "VM_ID_P",
+                           "rotation":  0,
+                           "y":  80,
+                           "type":  "VM",
+                           "x":  -450,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "VM_ID_S",
+                           "rotation":  0,
+                           "y":  80,
+                           "type":  "VM",
+                           "x":  0,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "GND1_P",
+                           "rotation":  0,
+                           "y":  100,
+                           "type":  "GND",
+                           "x":  -600,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "GND1_S",
+                           "rotation":  0,
+                           "y":  100,
+                           "type":  "GND",
+                           "x":  -150,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_XFMR_ID",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  150,
+                           "parameters":  {
+                                              "channels":  "4"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "AC_V_ID",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "AM_ID_P",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "AM_ID_P",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "P1",
+                                 "compId":  "XFMR_ID1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "P2",
+                                   "compId":  "XFMR_ID1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "AC_V_ID",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "AC_V_ID",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Gnd",
+                                 "compId":  "GND1_P",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "AM_ID_P",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "VM_ID_P",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "AC_V_ID",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "VM_ID_P",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "S1",
+                                   "compId":  "XFMR_ID1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "AM_ID_S",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "AM_ID_S",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "R_ID_S",
+                                 "type":  "pin"
+                             },
+                      "id":  "w8"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_ID_S",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "S2",
+                                 "compId":  "XFMR_ID1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w9"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "S2",
+                                   "compId":  "XFMR_ID1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Gnd",
+                                 "compId":  "GND1_S",
+                                 "type":  "pin"
+                             },
+                      "id":  "w10"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "R_ID_S",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "VM_ID_S",
+                                 "type":  "pin"
+                             },
+                      "id":  "w11"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_ID_S",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "VM_ID_S",
+                                 "type":  "pin"
+                             },
+                      "id":  "w12"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "VM_ID_P",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_XFMR_ID",
+                                 "type":  "pin"
+                             },
+                      "id":  "w13"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "AM_ID_P",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_XFMR_ID",
+                                 "type":  "pin"
+                             },
+                      "id":  "w14"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "VM_ID_S",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In3",
+                                 "compId":  "SCOPE_XFMR_ID",
+                                 "type":  "pin"
+                             },
+                      "id":  "w15"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "AM_ID_S",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In4",
+                                 "compId":  "SCOPE_XFMR_ID",
+                                 "type":  "pin"
+                             },
+                      "id":  "w16"
+                  }
+              ]
+}

@@ -1,0 +1,122 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: OR (OR)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "PULSE_OR1",
+                           "rotation":  0,
+                           "y":  -20,
+                           "type":  "PULSE_GEN",
+                           "x":  -300,
+                           "parameters":  {
+                                              "delay":  "0.0",
+                                              "width":  "50.0",
+                                              "period":  "0.04",
+                                              "amplitude":  "1.0"
+                                          }
+                       },
+                       {
+                           "id":  "PULSE_OR2",
+                           "rotation":  0,
+                           "y":  20,
+                           "type":  "PULSE_GEN",
+                           "x":  -300,
+                           "parameters":  {
+                                              "delay":  "0.0",
+                                              "width":  "50.0",
+                                              "period":  "0.02",
+                                              "amplitude":  "1.0"
+                                          }
+                       },
+                       {
+                           "id":  "OR1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "OR",
+                           "x":  -100,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_OR",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "3"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PULSE_OR1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "OR1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PULSE_OR2",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "OR1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PULSE_OR1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_OR",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PULSE_OR2",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_OR",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "OR1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In3",
+                                 "compId":  "SCOPE_OR",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  }
+              ]
+}

@@ -1,0 +1,176 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: Capacitor (C)",
+    "simulationSettings":  {
+                               "stopTime":  0.05,
+                               "stepSize":  1E-05
+                           },
+    "components":  [
+                       {
+                           "id":  "VS_C",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "AC_V",
+                           "x":  -300,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "amplitude":  "50.0"
+                                          }
+                       },
+                       {
+                           "id":  "AM_C",
+                           "rotation":  0,
+                           "y":  -40,
+                           "type":  "AM",
+                           "x":  -150,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "C1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "C",
+                           "x":  0,
+                           "parameters":  {
+                                              "capacitance":  "0.0001"
+                                          }
+                       },
+                       {
+                           "id":  "VM_C",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "VM",
+                           "x":  150,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "GND_C",
+                           "rotation":  0,
+                           "y":  80,
+                           "type":  "GND",
+                           "x":  0,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_C",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  300,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "VS_C",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "AM_C",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "AM_C",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "C1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "C1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "VS_C",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "C1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Gnd",
+                                 "compId":  "GND_C",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "C1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "VM_C",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "C1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "VM_C",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "VM_C",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_C",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "AM_C",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_C",
+                                 "type":  "pin"
+                             },
+                      "id":  "w8"
+                  }
+              ]
+}

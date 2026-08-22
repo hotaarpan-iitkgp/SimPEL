@@ -1,0 +1,82 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: Quantizer (QUANTIZER)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "RAMP_QUANT",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "RAMP",
+                           "x":  -200,
+                           "parameters":  {
+                                              "slope":  "10.0",
+                                              "initial_output":  "0.0",
+                                              "start_time":  "0.0"
+                                          }
+                       },
+                       {
+                           "id":  "QUANT1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "QUANTIZER",
+                           "x":  0,
+                           "parameters":  {
+                                              "interval":  "0.5"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_QUANT",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "RAMP_QUANT",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "QUANT1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "RAMP_QUANT",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_QUANT",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "QUANT1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_QUANT",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

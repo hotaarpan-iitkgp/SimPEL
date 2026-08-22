@@ -1,0 +1,240 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: Thyristor (THYRISTOR)",
+    "simulationSettings":  {
+                               "stopTime":  0.04,
+                               "stepSize":  1E-05
+                           },
+    "components":  [
+                       {
+                           "id":  "AC_V_THY",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "AC_V",
+                           "x":  -600,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "phase":  "0.0",
+                                              "amplitude":  "100.0"
+                                          }
+                       },
+                       {
+                           "id":  "PULSE_THY",
+                           "rotation":  0,
+                           "y":  130,
+                           "type":  "PULSE_GEN",
+                           "x":  -600,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "delay":  "0.0025",
+                                              "width":  "10.0",
+                                              "amplitude":  "5.0"
+                                          }
+                       },
+                       {
+                           "id":  "THY1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "THYRISTOR",
+                           "x":  -450,
+                           "parameters":  {
+                                              "Vd":  "0.8",
+                                              "Ron":  "0.001"
+                                          }
+                       },
+                       {
+                           "id":  "AM_THY",
+                           "rotation":  0,
+                           "y":  -40,
+                           "type":  "AM",
+                           "x":  -300,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "R_THY",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "R",
+                           "x":  -150,
+                           "parameters":  {
+                                              "resistance":  "10.0"
+                                          }
+                       },
+                       {
+                           "id":  "VM_THY",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "VM",
+                           "x":  0,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "GND3",
+                           "rotation":  0,
+                           "y":  100,
+                           "type":  "GND",
+                           "x":  -150,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_THY",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  150,
+                           "parameters":  {
+                                              "channels":  "3"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PULSE_THY",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "G",
+                                 "compId":  "THY1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "AC_V_THY",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "THY1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "K",
+                                   "compId":  "THY1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "AM_THY",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "AM_THY",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "R_THY",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_THY",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "AC_V_THY",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_THY",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Gnd",
+                                 "compId":  "GND3",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "A",
+                                   "compId":  "R_THY",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "A",
+                                 "compId":  "VM_THY",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "B",
+                                   "compId":  "R_THY",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "B",
+                                 "compId":  "VM_THY",
+                                 "type":  "pin"
+                             },
+                      "id":  "w8"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PULSE_THY",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_THY",
+                                 "type":  "pin"
+                             },
+                      "id":  "w9"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "VM_THY",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_THY",
+                                 "type":  "pin"
+                             },
+                      "id":  "w10"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "AM_THY",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In3",
+                                 "compId":  "SCOPE_THY",
+                                 "type":  "pin"
+                             },
+                      "id":  "w11"
+                  }
+              ]
+}

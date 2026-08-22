@@ -1,0 +1,82 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: MathFcn (MATH_FCN)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "STEP_MATH",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "STEP",
+                           "x":  -200,
+                           "parameters":  {
+                                              "step_time":  "0.01",
+                                              "final_value":  "2.0",
+                                              "initial_value":  "0.0"
+                                          }
+                       },
+                       {
+                           "id":  "MATH1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "MATH_FCN",
+                           "x":  0,
+                           "parameters":  {
+                                              "function":  "exp"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_MATH",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "STEP_MATH",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "MATH1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "STEP_MATH",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_MATH",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "MATH1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_MATH",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

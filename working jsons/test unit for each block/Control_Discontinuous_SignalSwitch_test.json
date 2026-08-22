@@ -1,0 +1,157 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: SignalSwitch (SIGNAL_SWITCH)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "SINE_SW1",
+                           "rotation":  0,
+                           "y":  -40,
+                           "type":  "SINE_WAVE",
+                           "x":  -300,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "phase":  "0.0",
+                                              "amplitude":  "5.0"
+                                          }
+                       },
+                       {
+                           "id":  "PULSE_SW",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "PULSE_GEN",
+                           "x":  -300,
+                           "parameters":  {
+                                              "delay":  "0.0",
+                                              "width":  "50.0",
+                                              "period":  "0.04",
+                                              "amplitude":  "1.0"
+                                          }
+                       },
+                       {
+                           "id":  "CONST_SW2",
+                           "rotation":  0,
+                           "y":  40,
+                           "type":  "CONST",
+                           "x":  -300,
+                           "parameters":  {
+                                              "value":  "-5.0"
+                                          }
+                       },
+                       {
+                           "id":  "SWITCH1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SIGNAL_SWITCH",
+                           "x":  -100,
+                           "parameters":  {
+                                              "threshold":  "0.5"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_SWITCH",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "4"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SINE_SW1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SWITCH1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PULSE_SW",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Control",
+                                 "compId":  "SWITCH1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "CONST_SW2",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SWITCH1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SINE_SW1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_SWITCH",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PULSE_SW",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_SWITCH",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "CONST_SW2",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In3",
+                                 "compId":  "SCOPE_SWITCH",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SWITCH1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In4",
+                                 "compId":  "SCOPE_SWITCH",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  }
+              ]
+}

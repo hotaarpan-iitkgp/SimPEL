@@ -1,0 +1,167 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: InvPark (INV_PARK)",
+    "simulationSettings":  {
+                               "stopTime":  0.04,
+                               "stepSize":  1E-05
+                           },
+    "components":  [
+                       {
+                           "id":  "CONST_VD",
+                           "rotation":  0,
+                           "y":  -40,
+                           "type":  "CONST",
+                           "x":  -300,
+                           "parameters":  {
+                                              "value":  "100.0"
+                                          }
+                       },
+                       {
+                           "id":  "CONST_VQ",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "CONST",
+                           "x":  -300,
+                           "parameters":  {
+                                              "value":  "0.0"
+                                          }
+                       },
+                       {
+                           "id":  "RAMP_IP_THETA",
+                           "rotation":  0,
+                           "y":  40,
+                           "type":  "RAMP",
+                           "x":  -300,
+                           "parameters":  {
+                                              "slope":  "314.159",
+                                              "initial_output":  "0.0",
+                                              "start_time":  "0.0"
+                                          }
+                       },
+                       {
+                           "id":  "IPARK1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "INV_PARK",
+                           "x":  -100,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_IPARK",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "5"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "CONST_VD",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Vd",
+                                 "compId":  "IPARK1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "CONST_VQ",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Vq",
+                                 "compId":  "IPARK1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "RAMP_IP_THETA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "theta",
+                                 "compId":  "IPARK1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "CONST_VD",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_IPARK",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "CONST_VQ",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_IPARK",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "RAMP_IP_THETA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In3",
+                                 "compId":  "SCOPE_IPARK",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Valpha",
+                                   "compId":  "IPARK1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In4",
+                                 "compId":  "SCOPE_IPARK",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Vbeta",
+                                   "compId":  "IPARK1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In5",
+                                 "compId":  "SCOPE_IPARK",
+                                 "type":  "pin"
+                             },
+                      "id":  "w8"
+                  }
+              ]
+}

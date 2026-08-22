@@ -1,0 +1,82 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: Ramp (RAMP)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "RAMP1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "RAMP",
+                           "x":  -200,
+                           "parameters":  {
+                                              "slope":  "10.0",
+                                              "initial_output":  "0.0",
+                                              "start_time":  "0.01"
+                                          }
+                       },
+                       {
+                           "id":  "GAIN_RAMP",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "GAIN",
+                           "x":  0,
+                           "parameters":  {
+                                              "K":  "1.0"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_RAMP",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "RAMP1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "GAIN_RAMP",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "RAMP1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_RAMP",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "GAIN_RAMP",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_RAMP",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

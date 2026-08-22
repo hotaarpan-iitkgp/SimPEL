@@ -1,0 +1,83 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: TransferFunction (TRANSFER_FCN)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "STEP_TF",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "STEP",
+                           "x":  -200,
+                           "parameters":  {
+                                              "step_time":  "0.01",
+                                              "final_value":  "1.0",
+                                              "initial_value":  "0.0"
+                                          }
+                       },
+                       {
+                           "id":  "TF1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "TRANSFER_FCN",
+                           "x":  0,
+                           "parameters":  {
+                                              "num":  "[1]",
+                                              "den":  "[1, 1]"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_TF",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "STEP_TF",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "TF1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "STEP_TF",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_TF",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "TF1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_TF",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

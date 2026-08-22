@@ -1,0 +1,658 @@
+{
+  "description": "Step 15: 3-Phase Sources, Measurements & Custom Electrical Blocks Sub-Library Test Schematic",
+  "components": [
+    {
+      "id": "V_3PH_V1",
+      "type": "V_3PH",
+      "x": -600.0,
+      "y": -800.0,
+      "rotation": 0,
+      "parameters": { "magnitude": "400.0", "frequency": "50.0", "connection": "Y" },
+      "label": "V_3PH_V1"
+    },
+    {
+      "id": "AM_3PH_V1",
+      "type": "AM_3PH",
+      "x": -350.0,
+      "y": -800.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_3PH_V1"
+    },
+    {
+      "id": "R_3PH_VA",
+      "type": "R",
+      "x": -150.0,
+      "y": -880.0,
+      "rotation": 0,
+      "parameters": { "resistance": "20.0" },
+      "label": "R_3PH_VA"
+    },
+    {
+      "id": "R_3PH_VB",
+      "type": "R",
+      "x": -150.0,
+      "y": -800.0,
+      "rotation": 0,
+      "parameters": { "resistance": "20.0" },
+      "label": "R_3PH_VB"
+    },
+    {
+      "id": "R_3PH_VC",
+      "type": "R",
+      "x": -150.0,
+      "y": -720.0,
+      "rotation": 0,
+      "parameters": { "resistance": "20.0" },
+      "label": "R_3PH_VC"
+    },
+    {
+      "id": "VM_3PH_V1",
+      "type": "VM_3PH",
+      "x": -350.0,
+      "y": -670.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_3PH_V1"
+    },
+    {
+      "id": "GND1_3PH",
+      "type": "GND",
+      "x": 0.0,
+      "y": -800.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND1_3PH"
+    },
+    {
+      "id": "SCOPE_V3PH",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": -800.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_V3PH"
+    },
+
+    {
+      "id": "I_3PH_I1",
+      "type": "I_3PH",
+      "x": -600.0,
+      "y": -550.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "10.0", "frequency": "50.0" },
+      "label": "I_3PH_I1"
+    },
+    {
+      "id": "AM_3PH_I1",
+      "type": "AM_3PH",
+      "x": -350.0,
+      "y": -550.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_3PH_I1"
+    },
+    {
+      "id": "R_3PH_IA",
+      "type": "R",
+      "x": -150.0,
+      "y": -630.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_3PH_IA"
+    },
+    {
+      "id": "R_3PH_IB",
+      "type": "R",
+      "x": -150.0,
+      "y": -550.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_3PH_IB"
+    },
+    {
+      "id": "R_3PH_IC",
+      "type": "R",
+      "x": -150.0,
+      "y": -470.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_3PH_IC"
+    },
+    {
+      "id": "GND2_3PH",
+      "type": "GND",
+      "x": 0.0,
+      "y": -550.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND2_3PH"
+    },
+    {
+      "id": "SCOPE_I3PH",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": -550.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_I3PH"
+    },
+
+    {
+      "id": "V_3PH_M",
+      "type": "V_3PH",
+      "x": -600.0,
+      "y": -300.0,
+      "rotation": 0,
+      "parameters": { "magnitude": "400.0", "frequency": "50.0", "connection": "Y" },
+      "label": "V_3PH_M"
+    },
+    {
+      "id": "VM_3PH_TEST",
+      "type": "VM_3PH",
+      "x": -400.0,
+      "y": -300.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_3PH_TEST"
+    },
+    {
+      "id": "AM_3PH_TEST",
+      "type": "AM_3PH",
+      "x": -200.0,
+      "y": -300.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_3PH_TEST"
+    },
+    {
+      "id": "R_3PH_MA",
+      "type": "R",
+      "x": 0.0,
+      "y": -380.0,
+      "rotation": 0,
+      "parameters": { "resistance": "20.0" },
+      "label": "R_3PH_MA"
+    },
+    {
+      "id": "R_3PH_MB",
+      "type": "R",
+      "x": 0.0,
+      "y": -300.0,
+      "rotation": 0,
+      "parameters": { "resistance": "20.0" },
+      "label": "R_3PH_MB"
+    },
+    {
+      "id": "R_3PH_MC",
+      "type": "R",
+      "x": 0.0,
+      "y": -220.0,
+      "rotation": 0,
+      "parameters": { "resistance": "20.0" },
+      "label": "R_3PH_MC"
+    },
+    {
+      "id": "GND3_3PH",
+      "type": "GND",
+      "x": 150.0,
+      "y": -300.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND3_3PH"
+    },
+    {
+      "id": "SCOPE_VM3PH",
+      "type": "SCOPE",
+      "x": -400.0,
+      "y": -180.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_VM3PH"
+    },
+    {
+      "id": "SCOPE_AM3PH",
+      "type": "SCOPE",
+      "x": -200.0,
+      "y": -180.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_AM3PH"
+    },
+
+    {
+      "id": "AC_V_OP",
+      "type": "AC_V",
+      "x": -600.0,
+      "y": -50.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "1.0", "frequency": "1000.0", "phase": "0.0" },
+      "label": "AC_V_OP"
+    },
+    {
+      "id": "OPAMP1",
+      "type": "OPAMP",
+      "x": -450.0,
+      "y": -50.0,
+      "rotation": 0,
+      "parameters": { "Aol": "100000.0" },
+      "label": "OPAMP1"
+    },
+    {
+      "id": "RF_OP",
+      "type": "R",
+      "x": -300.0,
+      "y": -130.0,
+      "rotation": 0,
+      "parameters": { "resistance": "9000.0" },
+      "label": "RF_OP"
+    },
+    {
+      "id": "RIN_OP",
+      "type": "R",
+      "x": -300.0,
+      "y": 30.0,
+      "rotation": 0,
+      "parameters": { "resistance": "1000.0" },
+      "label": "RIN_OP"
+    },
+    {
+      "id": "VM_OP_IN",
+      "type": "VM",
+      "x": -450.0,
+      "y": 70.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_OP_IN"
+    },
+    {
+      "id": "VM_OP_OUT",
+      "type": "VM",
+      "x": -150.0,
+      "y": -50.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_OP_OUT"
+    },
+    {
+      "id": "GND_OP",
+      "type": "GND",
+      "x": -300.0,
+      "y": 110.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND_OP"
+    },
+    {
+      "id": "SCOPE_OPAMP",
+      "type": "SCOPE",
+      "x": 0.0,
+      "y": -50.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_OPAMP"
+    },
+
+    {
+      "id": "DC_V_EC",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": 200.0,
+      "rotation": 0,
+      "parameters": { "value": "100.0" },
+      "label": "DC_V_EC"
+    },
+    {
+      "id": "ECOMP1",
+      "type": "E_COMP",
+      "x": -450.0,
+      "y": 200.0,
+      "rotation": 0,
+      "parameters": { "R": "10.0", "L": "0.01" },
+      "label": "ECOMP1"
+    },
+    {
+      "id": "AM_ECOMP",
+      "type": "AM",
+      "x": -300.0,
+      "y": 160.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_ECOMP"
+    },
+    {
+      "id": "R_ECOMP",
+      "type": "R",
+      "x": -150.0,
+      "y": 200.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_ECOMP"
+    },
+    {
+      "id": "VM_ECOMP",
+      "type": "VM",
+      "x": 0.0,
+      "y": 200.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_ECOMP"
+    },
+    {
+      "id": "GND_EC",
+      "type": "GND",
+      "x": -150.0,
+      "y": 300.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND_EC"
+    },
+    {
+      "id": "SCOPE_ECOMP",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 200.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_ECOMP"
+    },
+
+    {
+      "id": "AC_V_GEN",
+      "type": "AC_V",
+      "x": -600.0,
+      "y": 450.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "50.0", "frequency": "50.0", "phase": "0.0" },
+      "label": "AC_V_GEN"
+    },
+    {
+      "id": "GEN_E1",
+      "type": "GEN_EBLOCK",
+      "x": -450.0,
+      "y": 450.0,
+      "rotation": 0,
+      "parameters": { "code": "v = 10*i;" },
+      "label": "GEN_E1"
+    },
+    {
+      "id": "AM_GEN",
+      "type": "AM",
+      "x": -300.0,
+      "y": 410.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_GEN"
+    },
+    {
+      "id": "R_GEN",
+      "type": "R",
+      "x": -150.0,
+      "y": 450.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_GEN"
+    },
+    {
+      "id": "VM_GEN",
+      "type": "VM",
+      "x": 0.0,
+      "y": 450.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_GEN"
+    },
+    {
+      "id": "GND_GEN",
+      "type": "GND",
+      "x": -150.0,
+      "y": 550.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND_GEN"
+    },
+    {
+      "id": "SCOPE_GEN_E",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 450.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_GEN_E"
+    },
+
+    {
+      "id": "AC_V_PORT",
+      "type": "AC_V",
+      "x": -600.0,
+      "y": 700.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "100.0", "frequency": "50.0", "phase": "0.0" },
+      "label": "AC_V_PORT"
+    },
+    {
+      "id": "E_PORT1",
+      "type": "E_PORT",
+      "x": -450.0,
+      "y": 700.0,
+      "rotation": 0,
+      "parameters": { "port_num": "1" },
+      "label": "E_PORT1"
+    },
+    {
+      "id": "E_PORT2",
+      "type": "E_PORT",
+      "x": -300.0,
+      "y": 700.0,
+      "rotation": 0,
+      "parameters": { "port_num": "2" },
+      "label": "E_PORT2"
+    },
+    {
+      "id": "R_PORT",
+      "type": "R",
+      "x": -150.0,
+      "y": 700.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_PORT"
+    },
+    {
+      "id": "VM_PORT",
+      "type": "VM",
+      "x": 0.0,
+      "y": 700.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_PORT"
+    },
+    {
+      "id": "GND_PORT",
+      "type": "GND",
+      "x": -150.0,
+      "y": 800.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND_PORT"
+    },
+    {
+      "id": "SCOPE_EPORT",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 700.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_EPORT"
+    },
+
+    {
+      "id": "DC_V_LBL",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": 950.0,
+      "rotation": 0,
+      "parameters": { "value": "24.0" },
+      "label": "DC_V_LBL"
+    },
+    {
+      "id": "E_LABEL_BUS1",
+      "type": "E_LABEL",
+      "x": -450.0,
+      "y": 950.0,
+      "rotation": 0,
+      "parameters": { "label": "BUS_24V" },
+      "label": "E_LABEL_BUS1"
+    },
+    {
+      "id": "E_LABEL_BUS2",
+      "type": "E_LABEL",
+      "x": -300.0,
+      "y": 950.0,
+      "rotation": 0,
+      "parameters": { "label": "BUS_24V" },
+      "label": "E_LABEL_BUS2"
+    },
+    {
+      "id": "R_LBL",
+      "type": "R",
+      "x": -150.0,
+      "y": 950.0,
+      "rotation": 0,
+      "parameters": { "resistance": "10.0" },
+      "label": "R_LBL"
+    },
+    {
+      "id": "VM_LBL",
+      "type": "VM",
+      "x": 0.0,
+      "y": 950.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_LBL"
+    },
+    {
+      "id": "GND_LBL",
+      "type": "GND",
+      "x": -150.0,
+      "y": 1050.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND_LBL"
+    },
+    {
+      "id": "SCOPE_ELABEL",
+      "type": "SCOPE",
+      "x": 150.0,
+      "y": 950.0,
+      "rotation": 0,
+      "parameters": { "channels": "3" },
+      "label": "SCOPE_ELABEL"
+    }
+  ],
+  "wires": [
+    { "id": "w1_va", "from": { "compId": "V_3PH_V1", "terminal": "A", "type": "pin" }, "to": { "compId": "AM_3PH_V1", "terminal": "A_In", "type": "pin" } },
+    { "id": "w1_vb", "from": { "compId": "V_3PH_V1", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_3PH_V1", "terminal": "B_In", "type": "pin" } },
+    { "id": "w1_vc", "from": { "compId": "V_3PH_V1", "terminal": "C", "type": "pin" }, "to": { "compId": "AM_3PH_V1", "terminal": "C_In", "type": "pin" } },
+    { "id": "w1_ra", "from": { "compId": "AM_3PH_V1", "terminal": "A_Out", "type": "pin" }, "to": { "compId": "R_3PH_VA", "terminal": "A", "type": "pin" } },
+    { "id": "w1_rb", "from": { "compId": "AM_3PH_V1", "terminal": "B_Out", "type": "pin" }, "to": { "compId": "R_3PH_VB", "terminal": "A", "type": "pin" } },
+    { "id": "w1_rc", "from": { "compId": "AM_3PH_V1", "terminal": "C_Out", "type": "pin" }, "to": { "compId": "R_3PH_VC", "terminal": "A", "type": "pin" } },
+    { "id": "w1_gnda", "from": { "compId": "R_3PH_VA", "terminal": "B", "type": "pin" }, "to": { "compId": "GND1_3PH", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w1_gndb", "from": { "compId": "R_3PH_VB", "terminal": "B", "type": "pin" }, "to": { "compId": "GND1_3PH", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w1_gndc", "from": { "compId": "R_3PH_VC", "terminal": "B", "type": "pin" }, "to": { "compId": "GND1_3PH", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w1_vma", "from": { "compId": "R_3PH_VA", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_3PH_V1", "terminal": "A", "type": "pin" } },
+    { "id": "w1_vmb", "from": { "compId": "R_3PH_VB", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_3PH_V1", "terminal": "B", "type": "pin" } },
+    { "id": "w1_vmc", "from": { "compId": "R_3PH_VC", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_3PH_V1", "terminal": "C", "type": "pin" } },
+    { "id": "w1_ch1", "from": { "compId": "VM_3PH_V1", "terminal": "OutA", "type": "pin" }, "to": { "compId": "SCOPE_V3PH", "terminal": "In1", "type": "pin" } },
+    { "id": "w1_ch2", "from": { "compId": "VM_3PH_V1", "terminal": "OutB", "type": "pin" }, "to": { "compId": "SCOPE_V3PH", "terminal": "In2", "type": "pin" } },
+    { "id": "w1_ch3", "from": { "compId": "VM_3PH_V1", "terminal": "OutC", "type": "pin" }, "to": { "compId": "SCOPE_V3PH", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w2_ia", "from": { "compId": "I_3PH_I1", "terminal": "A", "type": "pin" }, "to": { "compId": "AM_3PH_I1", "terminal": "A_In", "type": "pin" } },
+    { "id": "w2_ib", "from": { "compId": "I_3PH_I1", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_3PH_I1", "terminal": "B_In", "type": "pin" } },
+    { "id": "w2_ic", "from": { "compId": "I_3PH_I1", "terminal": "C", "type": "pin" }, "to": { "compId": "AM_3PH_I1", "terminal": "C_In", "type": "pin" } },
+    { "id": "w2_ra", "from": { "compId": "AM_3PH_I1", "terminal": "A_Out", "type": "pin" }, "to": { "compId": "R_3PH_IA", "terminal": "A", "type": "pin" } },
+    { "id": "w2_rb", "from": { "compId": "AM_3PH_I1", "terminal": "B_Out", "type": "pin" }, "to": { "compId": "R_3PH_IB", "terminal": "A", "type": "pin" } },
+    { "id": "w2_rc", "from": { "compId": "AM_3PH_I1", "terminal": "C_Out", "type": "pin" }, "to": { "compId": "R_3PH_IC", "terminal": "A", "type": "pin" } },
+    { "id": "w2_gnda", "from": { "compId": "R_3PH_IA", "terminal": "B", "type": "pin" }, "to": { "compId": "GND2_3PH", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_gndb", "from": { "compId": "R_3PH_IB", "terminal": "B", "type": "pin" }, "to": { "compId": "GND2_3PH", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_gndc", "from": { "compId": "R_3PH_IC", "terminal": "B", "type": "pin" }, "to": { "compId": "GND2_3PH", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_ch1", "from": { "compId": "AM_3PH_I1", "terminal": "OutA", "type": "pin" }, "to": { "compId": "SCOPE_I3PH", "terminal": "In1", "type": "pin" } },
+    { "id": "w2_ch2", "from": { "compId": "AM_3PH_I1", "terminal": "OutB", "type": "pin" }, "to": { "compId": "SCOPE_I3PH", "terminal": "In2", "type": "pin" } },
+    { "id": "w2_ch3", "from": { "compId": "AM_3PH_I1", "terminal": "OutC", "type": "pin" }, "to": { "compId": "SCOPE_I3PH", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w3_va", "from": { "compId": "V_3PH_M", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_3PH_TEST", "terminal": "A", "type": "pin" } },
+    { "id": "w3_vb", "from": { "compId": "V_3PH_M", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_3PH_TEST", "terminal": "B", "type": "pin" } },
+    { "id": "w3_vc", "from": { "compId": "V_3PH_M", "terminal": "C", "type": "pin" }, "to": { "compId": "VM_3PH_TEST", "terminal": "C", "type": "pin" } },
+    { "id": "w3_aa", "from": { "compId": "V_3PH_M", "terminal": "A", "type": "pin" }, "to": { "compId": "AM_3PH_TEST", "terminal": "A_In", "type": "pin" } },
+    { "id": "w3_ab", "from": { "compId": "V_3PH_M", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_3PH_TEST", "terminal": "B_In", "type": "pin" } },
+    { "id": "w3_ac", "from": { "compId": "V_3PH_M", "terminal": "C", "type": "pin" }, "to": { "compId": "AM_3PH_TEST", "terminal": "C_In", "type": "pin" } },
+    { "id": "w3_ra", "from": { "compId": "AM_3PH_TEST", "terminal": "A_Out", "type": "pin" }, "to": { "compId": "R_3PH_MA", "terminal": "A", "type": "pin" } },
+    { "id": "w3_rb", "from": { "compId": "AM_3PH_TEST", "terminal": "B_Out", "type": "pin" }, "to": { "compId": "R_3PH_MB", "terminal": "A", "type": "pin" } },
+    { "id": "w3_rc", "from": { "compId": "AM_3PH_TEST", "terminal": "C_Out", "type": "pin" }, "to": { "compId": "R_3PH_MC", "terminal": "A", "type": "pin" } },
+    { "id": "w3_gnda", "from": { "compId": "R_3PH_MA", "terminal": "B", "type": "pin" }, "to": { "compId": "GND3_3PH", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w3_gndb", "from": { "compId": "R_3PH_MB", "terminal": "B", "type": "pin" }, "to": { "compId": "GND3_3PH", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w3_gndc", "from": { "compId": "R_3PH_MC", "terminal": "B", "type": "pin" }, "to": { "compId": "GND3_3PH", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w3_vmch1", "from": { "compId": "VM_3PH_TEST", "terminal": "OutA", "type": "pin" }, "to": { "compId": "SCOPE_VM3PH", "terminal": "In1", "type": "pin" } },
+    { "id": "w3_vmch2", "from": { "compId": "VM_3PH_TEST", "terminal": "OutB", "type": "pin" }, "to": { "compId": "SCOPE_VM3PH", "terminal": "In2", "type": "pin" } },
+    { "id": "w3_vmch3", "from": { "compId": "VM_3PH_TEST", "terminal": "OutC", "type": "pin" }, "to": { "compId": "SCOPE_VM3PH", "terminal": "In3", "type": "pin" } },
+    { "id": "w3_amch1", "from": { "compId": "AM_3PH_TEST", "terminal": "OutA", "type": "pin" }, "to": { "compId": "SCOPE_AM3PH", "terminal": "In1", "type": "pin" } },
+    { "id": "w3_amch2", "from": { "compId": "AM_3PH_TEST", "terminal": "OutB", "type": "pin" }, "to": { "compId": "SCOPE_AM3PH", "terminal": "In2", "type": "pin" } },
+    { "id": "w3_amch3", "from": { "compId": "AM_3PH_TEST", "terminal": "OutC", "type": "pin" }, "to": { "compId": "SCOPE_AM3PH", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w5_a", "from": { "compId": "AC_V_OP", "terminal": "A", "type": "pin" }, "to": { "compId": "OPAMP1", "terminal": "Plus", "type": "pin" } },
+    { "id": "w5_b", "from": { "compId": "AC_V_OP", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_OP", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w5_c", "from": { "compId": "OPAMP1", "terminal": "Out", "type": "pin" }, "to": { "compId": "RF_OP", "terminal": "A", "type": "pin" } },
+    { "id": "w5_d", "from": { "compId": "RF_OP", "terminal": "B", "type": "pin" }, "to": { "compId": "OPAMP1", "terminal": "Minus", "type": "pin" } },
+    { "id": "w5_e", "from": { "compId": "OPAMP1", "terminal": "Minus", "type": "pin" }, "to": { "compId": "RIN_OP", "terminal": "A", "type": "pin" } },
+    { "id": "w5_f", "from": { "compId": "RIN_OP", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_OP", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w5_vma", "from": { "compId": "AC_V_OP", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_OP_IN", "terminal": "A", "type": "pin" } },
+    { "id": "w5_vmb", "from": { "compId": "AC_V_OP", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_OP_IN", "terminal": "B", "type": "pin" } },
+    { "id": "w5_vmoa", "from": { "compId": "OPAMP1", "terminal": "Out", "type": "pin" }, "to": { "compId": "VM_OP_OUT", "terminal": "A", "type": "pin" } },
+    { "id": "w5_vmob", "from": { "compId": "GND_OP", "terminal": "Gnd", "type": "pin" }, "to": { "compId": "VM_OP_OUT", "terminal": "B", "type": "pin" } },
+    { "id": "w5_ch1", "from": { "compId": "VM_OP_IN", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_OPAMP", "terminal": "In1", "type": "pin" } },
+    { "id": "w5_ch2", "from": { "compId": "VM_OP_OUT", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_OPAMP", "terminal": "In2", "type": "pin" } },
+    { "id": "w5_ch3", "from": { "compId": "RF_OP", "terminal": "B", "type": "pin" }, "to": { "compId": "SCOPE_OPAMP", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w6_a", "from": { "compId": "DC_V_EC", "terminal": "A", "type": "pin" }, "to": { "compId": "ECOMP1", "terminal": "A", "type": "pin" } },
+    { "id": "w6_b", "from": { "compId": "ECOMP1", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_ECOMP", "terminal": "A", "type": "pin" } },
+    { "id": "w6_c", "from": { "compId": "AM_ECOMP", "terminal": "B", "type": "pin" }, "to": { "compId": "R_ECOMP", "terminal": "A", "type": "pin" } },
+    { "id": "w6_d", "from": { "compId": "R_ECOMP", "terminal": "B", "type": "pin" }, "to": { "compId": "DC_V_EC", "terminal": "B", "type": "pin" } },
+    { "id": "w6_gnd", "from": { "compId": "R_ECOMP", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_EC", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w6_vma", "from": { "compId": "R_ECOMP", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_ECOMP", "terminal": "A", "type": "pin" } },
+    { "id": "w6_vmb", "from": { "compId": "R_ECOMP", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_ECOMP", "terminal": "B", "type": "pin" } },
+    { "id": "w6_ch1", "from": { "compId": "VM_ECOMP", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_ECOMP", "terminal": "In1", "type": "pin" } },
+    { "id": "w6_ch2", "from": { "compId": "AM_ECOMP", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_ECOMP", "terminal": "In2", "type": "pin" } },
+    { "id": "w6_ch3", "from": { "compId": "DC_V_EC", "terminal": "A", "type": "pin" }, "to": { "compId": "SCOPE_ECOMP", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w7_a", "from": { "compId": "AC_V_GEN", "terminal": "A", "type": "pin" }, "to": { "compId": "GEN_E1", "terminal": "A", "type": "pin" } },
+    { "id": "w7_b", "from": { "compId": "GEN_E1", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_GEN", "terminal": "A", "type": "pin" } },
+    { "id": "w7_c", "from": { "compId": "AM_GEN", "terminal": "B", "type": "pin" }, "to": { "compId": "R_GEN", "terminal": "A", "type": "pin" } },
+    { "id": "w7_d", "from": { "compId": "R_GEN", "terminal": "B", "type": "pin" }, "to": { "compId": "AC_V_GEN", "terminal": "B", "type": "pin" } },
+    { "id": "w7_gnd", "from": { "compId": "R_GEN", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_GEN", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w7_vma", "from": { "compId": "R_GEN", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_GEN", "terminal": "A", "type": "pin" } },
+    { "id": "w7_vmb", "from": { "compId": "R_GEN", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_GEN", "terminal": "B", "type": "pin" } },
+    { "id": "w7_ch1", "from": { "compId": "VM_GEN", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_GEN_E", "terminal": "In1", "type": "pin" } },
+    { "id": "w7_ch2", "from": { "compId": "AM_GEN", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_GEN_E", "terminal": "In2", "type": "pin" } },
+    { "id": "w7_ch3", "from": { "compId": "AC_V_GEN", "terminal": "A", "type": "pin" }, "to": { "compId": "SCOPE_GEN_E", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w8_a", "from": { "compId": "AC_V_PORT", "terminal": "A", "type": "pin" }, "to": { "compId": "E_PORT1", "terminal": "A", "type": "pin" } },
+    { "id": "w8_b", "from": { "compId": "E_PORT1", "terminal": "B", "type": "pin" }, "to": { "compId": "E_PORT2", "terminal": "A", "type": "pin" } },
+    { "id": "w8_c", "from": { "compId": "E_PORT2", "terminal": "B", "type": "pin" }, "to": { "compId": "R_PORT", "terminal": "A", "type": "pin" } },
+    { "id": "w8_d", "from": { "compId": "R_PORT", "terminal": "B", "type": "pin" }, "to": { "compId": "AC_V_PORT", "terminal": "B", "type": "pin" } },
+    { "id": "w8_gnd", "from": { "compId": "R_PORT", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_PORT", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w8_vma", "from": { "compId": "R_PORT", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_PORT", "terminal": "A", "type": "pin" } },
+    { "id": "w8_vmb", "from": { "compId": "R_PORT", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_PORT", "terminal": "B", "type": "pin" } },
+    { "id": "w8_ch1", "from": { "compId": "AC_V_PORT", "terminal": "A", "type": "pin" }, "to": { "compId": "SCOPE_EPORT", "terminal": "In1", "type": "pin" } },
+    { "id": "w8_ch2", "from": { "compId": "VM_PORT", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_EPORT", "terminal": "In2", "type": "pin" } },
+    { "id": "w8_ch3", "from": { "compId": "E_PORT2", "terminal": "B", "type": "pin" }, "to": { "compId": "SCOPE_EPORT", "terminal": "In3", "type": "pin" } },
+
+    { "id": "w9_a", "from": { "compId": "DC_V_LBL", "terminal": "A", "type": "pin" }, "to": { "compId": "E_LABEL_BUS1", "terminal": "A", "type": "pin" } },
+    { "id": "w9_b", "from": { "compId": "E_LABEL_BUS2", "terminal": "B", "type": "pin" }, "to": { "compId": "R_LBL", "terminal": "A", "type": "pin" } },
+    { "id": "w9_c", "from": { "compId": "R_LBL", "terminal": "B", "type": "pin" }, "to": { "compId": "DC_V_LBL", "terminal": "B", "type": "pin" } },
+    { "id": "w9_gnd", "from": { "compId": "R_LBL", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_LBL", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w9_vma", "from": { "compId": "R_LBL", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_LBL", "terminal": "A", "type": "pin" } },
+    { "id": "w9_vmb", "from": { "compId": "R_LBL", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_LBL", "terminal": "B", "type": "pin" } },
+    { "id": "w9_ch1", "from": { "compId": "DC_V_LBL", "terminal": "A", "type": "pin" }, "to": { "compId": "SCOPE_ELABEL", "terminal": "In1", "type": "pin" } },
+    { "id": "w9_ch2", "from": { "compId": "VM_LBL", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_ELABEL", "terminal": "In2", "type": "pin" } },
+    { "id": "w9_ch3", "from": { "compId": "E_LABEL_BUS2", "terminal": "B", "type": "pin" }, "to": { "compId": "SCOPE_ELABEL", "terminal": "In3", "type": "pin" } }
+  ]
+}

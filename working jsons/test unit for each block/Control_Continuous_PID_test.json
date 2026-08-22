@@ -1,0 +1,84 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: PID (PID)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "STEP_PID",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "STEP",
+                           "x":  -200,
+                           "parameters":  {
+                                              "step_time":  "0.01",
+                                              "final_value":  "2.0",
+                                              "initial_value":  "0.0"
+                                          }
+                       },
+                       {
+                           "id":  "PID1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "PID",
+                           "x":  0,
+                           "parameters":  {
+                                              "Kd":  "0.0",
+                                              "Ki":  "50.0",
+                                              "Kp":  "2.5"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_PID",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "STEP_PID",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "PID1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "STEP_PID",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_PID",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PID1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_PID",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

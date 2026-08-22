@@ -1,0 +1,83 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: EdgeDetect (EDGE_DETECT)",
+    "simulationSettings":  {
+                               "stopTime":  0.1,
+                               "stepSize":  0.0001
+                           },
+    "components":  [
+                       {
+                           "id":  "PULSE_EDGE",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "PULSE_GEN",
+                           "x":  -200,
+                           "parameters":  {
+                                              "delay":  "0.0",
+                                              "width":  "50.0",
+                                              "period":  "0.02",
+                                              "amplitude":  "1.0"
+                                          }
+                       },
+                       {
+                           "id":  "EDGE1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "EDGE_DETECT",
+                           "x":  0,
+                           "parameters":  {
+                                              "edge_type":  "rising"
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_EDGE",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "2"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PULSE_EDGE",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In",
+                                 "compId":  "EDGE1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "PULSE_EDGE",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_EDGE",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "EDGE1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_EDGE",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  }
+              ]
+}

@@ -1,5 +1,5 @@
 {
-  "description": "Step 16: Co-Simulation & Full Integrated System Benchmark Test Schematic",
+  "description": "Step 16: Co-Simulation & Full Integrated System Benchmarks Test Schematic",
   "components": [
     {
       "id": "DC_V_FOC",
@@ -75,10 +75,137 @@
     },
 
     {
+      "id": "DC_V_BUCK",
+      "type": "DC_V",
+      "x": -600.0,
+      "y": -150.0,
+      "rotation": 0,
+      "parameters": { "value": "48.0" },
+      "label": "DC_V_BUCK"
+    },
+    {
+      "id": "MOS_BUCK",
+      "type": "MOSFET",
+      "x": -450.0,
+      "y": -150.0,
+      "rotation": 0,
+      "parameters": { "Ron": "0.01", "Roff": "1000000.0" },
+      "label": "MOS_BUCK"
+    },
+    {
+      "id": "D_BUCK",
+      "type": "D",
+      "x": -350.0,
+      "y": -50.0,
+      "rotation": 90,
+      "parameters": { "Vd": "0.7", "Ron": "0.001", "Roff": "1000000.0" },
+      "label": "D_BUCK"
+    },
+    {
+      "id": "L_BUCK",
+      "type": "L",
+      "x": -250.0,
+      "y": -150.0,
+      "rotation": 0,
+      "parameters": { "inductance": "0.0001" },
+      "label": "L_BUCK"
+    },
+    {
+      "id": "AM_L_BUCK",
+      "type": "AM",
+      "x": -150.0,
+      "y": -190.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "AM_L_BUCK"
+    },
+    {
+      "id": "C_BUCK",
+      "type": "C",
+      "x": -50.0,
+      "y": -50.0,
+      "rotation": 0,
+      "parameters": { "capacitance": "0.00047" },
+      "label": "C_BUCK"
+    },
+    {
+      "id": "R_BUCK",
+      "type": "R",
+      "x": 50.0,
+      "y": -150.0,
+      "rotation": 0,
+      "parameters": { "resistance": "5.0" },
+      "label": "R_BUCK"
+    },
+    {
+      "id": "VM_BUCK",
+      "type": "VM",
+      "x": 150.0,
+      "y": -150.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "VM_BUCK"
+    },
+    {
+      "id": "CONST_VREF",
+      "type": "CONST",
+      "x": -600.0,
+      "y": 0.0,
+      "rotation": 0,
+      "parameters": { "value": "12.0" },
+      "label": "CONST_VREF"
+    },
+    {
+      "id": "SUM_BUCK",
+      "type": "SUM_RECT",
+      "x": -450.0,
+      "y": 0.0,
+      "rotation": 0,
+      "parameters": { "signs": "+-" },
+      "label": "SUM_BUCK"
+    },
+    {
+      "id": "PI_BUCK",
+      "type": "PI_CONTROLLER",
+      "x": -300.0,
+      "y": 0.0,
+      "rotation": 0,
+      "parameters": { "Kp": "0.5", "Ki": "50.0" },
+      "label": "PI_BUCK"
+    },
+    {
+      "id": "PULSE_BUCK",
+      "type": "PULSE_GEN",
+      "x": -150.0,
+      "y": 0.0,
+      "rotation": 0,
+      "parameters": { "amplitude": "15.0", "frequency": "100000.0", "duty": "0.25" },
+      "label": "PULSE_BUCK"
+    },
+    {
+      "id": "GND_BUCK",
+      "type": "GND",
+      "x": -250.0,
+      "y": 50.0,
+      "rotation": 0,
+      "parameters": {},
+      "label": "GND_BUCK"
+    },
+    {
+      "id": "SCOPE_BUCK_BENCH",
+      "type": "SCOPE",
+      "x": 300.0,
+      "y": -150.0,
+      "rotation": 0,
+      "parameters": { "channels": "4" },
+      "label": "SCOPE_BUCK_BENCH"
+    },
+
+    {
       "id": "SINE_GRID",
       "type": "SINE_WAVE",
       "x": -600.0,
-      "y": -150.0,
+      "y": 250.0,
       "rotation": 0,
       "parameters": { "amplitude": "325.27", "frequency": "50.0", "phase": "0.0" },
       "label": "SINE_GRID"
@@ -87,7 +214,7 @@
       "id": "PLL_GRID",
       "type": "PLL_1PH",
       "x": -450.0,
-      "y": -150.0,
+      "y": 250.0,
       "rotation": 0,
       "parameters": { "fn": "50.0", "Kp": "20.0", "Ki": "1000.0" },
       "label": "PLL_GRID"
@@ -96,7 +223,7 @@
       "id": "DC_V_PV",
       "type": "DC_V",
       "x": -600.0,
-      "y": 0.0,
+      "y": 400.0,
       "rotation": 0,
       "parameters": { "value": "400.0" },
       "label": "DC_V_PV"
@@ -105,7 +232,7 @@
       "id": "AC_V_GRID",
       "type": "AC_V",
       "x": -250.0,
-      "y": 0.0,
+      "y": 400.0,
       "rotation": 0,
       "parameters": { "amplitude": "325.27", "frequency": "50.0", "phase": "0.0" },
       "label": "AC_V_GRID"
@@ -114,7 +241,7 @@
       "id": "AM_GRID",
       "type": "AM",
       "x": -100.0,
-      "y": -40.0,
+      "y": 360.0,
       "rotation": 0,
       "parameters": {},
       "label": "AM_GRID"
@@ -123,7 +250,7 @@
       "id": "R_GRID",
       "type": "R",
       "x": 50.0,
-      "y": 0.0,
+      "y": 400.0,
       "rotation": 0,
       "parameters": { "resistance": "10.0" },
       "label": "R_GRID"
@@ -132,7 +259,7 @@
       "id": "VM_GRID",
       "type": "VM",
       "x": 150.0,
-      "y": 0.0,
+      "y": 400.0,
       "rotation": 0,
       "parameters": {},
       "label": "VM_GRID"
@@ -141,7 +268,7 @@
       "id": "GND_GRID",
       "type": "GND",
       "x": 50.0,
-      "y": 100.0,
+      "y": 500.0,
       "rotation": 0,
       "parameters": {},
       "label": "GND_GRID"
@@ -150,7 +277,7 @@
       "id": "SCOPE_PV_BENCH",
       "type": "SCOPE",
       "x": 300.0,
-      "y": -100.0,
+      "y": 300.0,
       "rotation": 0,
       "parameters": { "channels": "4" },
       "label": "SCOPE_PV_BENCH"
@@ -171,17 +298,37 @@
     { "id": "w1_ch3", "from": { "compId": "IND_MOTOR_FOC", "terminal": "Torque", "type": "pin" }, "to": { "compId": "SCOPE_FOC_BENCH", "terminal": "In3", "type": "pin" } },
     { "id": "w1_ch4", "from": { "compId": "IND_MOTOR_FOC", "terminal": "Ia", "type": "pin" }, "to": { "compId": "SCOPE_FOC_BENCH", "terminal": "In4", "type": "pin" } },
 
-    { "id": "w2_pll_in", "from": { "compId": "SINE_GRID", "terminal": "Out", "type": "pin" }, "to": { "compId": "PLL_GRID", "terminal": "In", "type": "pin" } },
-    { "id": "w2_ga", "from": { "compId": "AC_V_GRID", "terminal": "A", "type": "pin" }, "to": { "compId": "AM_GRID", "terminal": "A", "type": "pin" } },
-    { "id": "w2_gb", "from": { "compId": "AM_GRID", "terminal": "B", "type": "pin" }, "to": { "compId": "R_GRID", "terminal": "A", "type": "pin" } },
-    { "id": "w2_gc", "from": { "compId": "R_GRID", "terminal": "B", "type": "pin" }, "to": { "compId": "AC_V_GRID", "terminal": "B", "type": "pin" } },
-    { "id": "w2_gnd", "from": { "compId": "R_GRID", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_GRID", "terminal": "Gnd", "type": "pin" } },
-    { "id": "w2_vma", "from": { "compId": "R_GRID", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_GRID", "terminal": "A", "type": "pin" } },
-    { "id": "w2_vmb", "from": { "compId": "R_GRID", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_GRID", "terminal": "B", "type": "pin" } },
+    { "id": "w2_a", "from": { "compId": "DC_V_BUCK", "terminal": "A", "type": "pin" }, "to": { "compId": "MOS_BUCK", "terminal": "D", "type": "pin" } },
+    { "id": "w2_g", "from": { "compId": "PULSE_BUCK", "terminal": "Out", "type": "pin" }, "to": { "compId": "MOS_BUCK", "terminal": "G", "type": "pin" } },
+    { "id": "w2_b", "from": { "compId": "MOS_BUCK", "terminal": "S", "type": "pin" }, "to": { "compId": "D_BUCK", "terminal": "K", "type": "pin" } },
+    { "id": "w2_c", "from": { "compId": "MOS_BUCK", "terminal": "S", "type": "pin" }, "to": { "compId": "L_BUCK", "terminal": "A", "type": "pin" } },
+    { "id": "w2_d", "from": { "compId": "D_BUCK", "terminal": "A", "type": "pin" }, "to": { "compId": "GND_BUCK", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_e", "from": { "compId": "DC_V_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_BUCK", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_f", "from": { "compId": "L_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "AM_L_BUCK", "terminal": "A", "type": "pin" } },
+    { "id": "w2_h", "from": { "compId": "AM_L_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "C_BUCK", "terminal": "A", "type": "pin" } },
+    { "id": "w2_i", "from": { "compId": "AM_L_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "R_BUCK", "terminal": "A", "type": "pin" } },
+    { "id": "w2_j", "from": { "compId": "C_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_BUCK", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_k", "from": { "compId": "R_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_BUCK", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w2_vma", "from": { "compId": "R_BUCK", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_BUCK", "terminal": "A", "type": "pin" } },
+    { "id": "w2_vmb", "from": { "compId": "R_BUCK", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_BUCK", "terminal": "B", "type": "pin" } },
+    { "id": "w2_err_a", "from": { "compId": "CONST_VREF", "terminal": "Out", "type": "pin" }, "to": { "compId": "SUM_BUCK", "terminal": "In1", "type": "pin" } },
+    { "id": "w2_err_b", "from": { "compId": "VM_BUCK", "terminal": "Out", "type": "pin" }, "to": { "compId": "SUM_BUCK", "terminal": "In2", "type": "pin" } },
+    { "id": "w2_pi_in", "from": { "compId": "SUM_BUCK", "terminal": "Out", "type": "pin" }, "to": { "compId": "PI_BUCK", "terminal": "In", "type": "pin" } },
+    { "id": "w2_ch1", "from": { "compId": "VM_BUCK", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_BUCK_BENCH", "terminal": "In1", "type": "pin" } },
+    { "id": "w2_ch2", "from": { "compId": "AM_L_BUCK", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_BUCK_BENCH", "terminal": "In2", "type": "pin" } },
+    { "id": "w2_ch3", "from": { "compId": "PI_BUCK", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_BUCK_BENCH", "terminal": "In3", "type": "pin" } },
+    { "id": "w2_ch4", "from": { "compId": "DC_V_BUCK", "terminal": "A", "type": "pin" }, "to": { "compId": "SCOPE_BUCK_BENCH", "terminal": "In4", "type": "pin" } },
 
-    { "id": "w2_ch1", "from": { "compId": "PLL_GRID", "terminal": "Theta", "type": "pin" }, "to": { "compId": "SCOPE_PV_BENCH", "terminal": "In1", "type": "pin" } },
-    { "id": "w2_ch2", "from": { "compId": "PLL_GRID", "terminal": "Sin", "type": "pin" }, "to": { "compId": "SCOPE_PV_BENCH", "terminal": "In2", "type": "pin" } },
-    { "id": "w2_ch3", "from": { "compId": "VM_GRID", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_PV_BENCH", "terminal": "In3", "type": "pin" } },
-    { "id": "w2_ch4", "from": { "compId": "AM_GRID", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_PV_BENCH", "terminal": "In4", "type": "pin" } }
+    { "id": "w3_pll_in", "from": { "compId": "SINE_GRID", "terminal": "Out", "type": "pin" }, "to": { "compId": "PLL_GRID", "terminal": "In", "type": "pin" } },
+    { "id": "w3_ga", "from": { "compId": "AC_V_GRID", "terminal": "A", "type": "pin" }, "to": { "compId": "AM_GRID", "terminal": "A", "type": "pin" } },
+    { "id": "w3_gb", "from": { "compId": "AM_GRID", "terminal": "B", "type": "pin" }, "to": { "compId": "R_GRID", "terminal": "A", "type": "pin" } },
+    { "id": "w3_gc", "from": { "compId": "R_GRID", "terminal": "B", "type": "pin" }, "to": { "compId": "AC_V_GRID", "terminal": "B", "type": "pin" } },
+    { "id": "w3_gnd", "from": { "compId": "R_GRID", "terminal": "B", "type": "pin" }, "to": { "compId": "GND_GRID", "terminal": "Gnd", "type": "pin" } },
+    { "id": "w3_vma", "from": { "compId": "R_GRID", "terminal": "A", "type": "pin" }, "to": { "compId": "VM_GRID", "terminal": "A", "type": "pin" } },
+    { "id": "w3_vmb", "from": { "compId": "R_GRID", "terminal": "B", "type": "pin" }, "to": { "compId": "VM_GRID", "terminal": "B", "type": "pin" } },
+    { "id": "w3_ch1", "from": { "compId": "PLL_GRID", "terminal": "Theta", "type": "pin" }, "to": { "compId": "SCOPE_PV_BENCH", "terminal": "In1", "type": "pin" } },
+    { "id": "w3_ch2", "from": { "compId": "PLL_GRID", "terminal": "Sin", "type": "pin" }, "to": { "compId": "SCOPE_PV_BENCH", "terminal": "In2", "type": "pin" } },
+    { "id": "w3_ch3", "from": { "compId": "VM_GRID", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_PV_BENCH", "terminal": "In3", "type": "pin" } },
+    { "id": "w3_ch4", "from": { "compId": "AM_GRID", "terminal": "Out", "type": "pin" }, "to": { "compId": "SCOPE_PV_BENCH", "terminal": "In4", "type": "pin" } }
   ]
 }

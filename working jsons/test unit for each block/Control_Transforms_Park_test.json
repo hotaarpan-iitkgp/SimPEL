@@ -1,0 +1,171 @@
+﻿{
+    "description":  "Standalone Single-Unit Test: Park (PARK)",
+    "simulationSettings":  {
+                               "stopTime":  0.04,
+                               "stepSize":  1E-05
+                           },
+    "components":  [
+                       {
+                           "id":  "SRC_ALPHA",
+                           "rotation":  0,
+                           "y":  -40,
+                           "type":  "SINE_WAVE",
+                           "x":  -300,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "phase":  "0.0",
+                                              "amplitude":  "100.0"
+                                          }
+                       },
+                       {
+                           "id":  "SRC_BETA",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SINE_WAVE",
+                           "x":  -300,
+                           "parameters":  {
+                                              "frequency":  "50.0",
+                                              "phase":  "90.0",
+                                              "amplitude":  "100.0"
+                                          }
+                       },
+                       {
+                           "id":  "RAMP_THETA",
+                           "rotation":  0,
+                           "y":  40,
+                           "type":  "RAMP",
+                           "x":  -300,
+                           "parameters":  {
+                                              "slope":  "314.159",
+                                              "initial_output":  "0.0",
+                                              "start_time":  "0.0"
+                                          }
+                       },
+                       {
+                           "id":  "PARK1",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "PARK",
+                           "x":  -100,
+                           "parameters":  {
+
+                                          }
+                       },
+                       {
+                           "id":  "SCOPE_PARK",
+                           "rotation":  0,
+                           "y":  0,
+                           "type":  "SCOPE",
+                           "x":  200,
+                           "parameters":  {
+                                              "channels":  "5"
+                                          }
+                       }
+                   ],
+    "wires":  [
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SRC_ALPHA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Valpha",
+                                 "compId":  "PARK1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w1"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SRC_BETA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "Vbeta",
+                                 "compId":  "PARK1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w2"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "RAMP_THETA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "theta",
+                                 "compId":  "PARK1",
+                                 "type":  "pin"
+                             },
+                      "id":  "w3"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SRC_ALPHA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In1",
+                                 "compId":  "SCOPE_PARK",
+                                 "type":  "pin"
+                             },
+                      "id":  "w4"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "SRC_BETA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In2",
+                                 "compId":  "SCOPE_PARK",
+                                 "type":  "pin"
+                             },
+                      "id":  "w5"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Out",
+                                   "compId":  "RAMP_THETA",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In3",
+                                 "compId":  "SCOPE_PARK",
+                                 "type":  "pin"
+                             },
+                      "id":  "w6"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Vd",
+                                   "compId":  "PARK1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In4",
+                                 "compId":  "SCOPE_PARK",
+                                 "type":  "pin"
+                             },
+                      "id":  "w7"
+                  },
+                  {
+                      "from":  {
+                                   "terminal":  "Vq",
+                                   "compId":  "PARK1",
+                                   "type":  "pin"
+                               },
+                      "to":  {
+                                 "terminal":  "In5",
+                                 "compId":  "SCOPE_PARK",
+                                 "type":  "pin"
+                             },
+                      "id":  "w8"
+                  }
+              ]
+}
